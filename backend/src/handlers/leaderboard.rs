@@ -17,29 +17,43 @@ async fn map_leaderboard_entries(
     entries: Vec<LeaderboardSnapshot>,
     pool: &PgPool,
 ) -> Result<Vec<LeaderboardEntry>, StatusError> {
-    let mut result = Vec::with_capacity(entries.len());
-    
-    for entry in entries {
-        let profile = sqlx::query_as::<_, (Option<String>, Option<String>)>(
-            "SELECT nickname, avatar_url FROM user_profiles WHERE account_id = $1"
-        )
-        .bind(entry.learner_id)
-        .fetch_optional(pool)
-        .await
-        .map_err(|_| StatusError::internal_server_error())?;
-        
-        let (nickname, avatar_url) = profile
-            .map(|(n, a)| (n.unwrap_or_else(|| "Anonymous".to_string()), a))
-            .unwrap_or_else(|| ("Anonymous".to_string(), None));
-        
-        result.push(LeaderboardEntry {
-            rank: entry.rank_position,
-            learner_id: entry.learner_id.to_string(),
-            nickname,
-            score: entry.score,
-            avatar_url,
-        });
+    if entries.is_empty() {
+        return Ok(Vec::new());
     }
+    
+    let learner_ids: Vec<String> = entries.iter()
+        .map(|e| e.learner_id.to_string())
+        .collect();
+    
+    let profiles = sqlx::query_as::<_, (String, Option<String>, Option<String>)>(
+        "SELECT account_id::text, nickname, avatar_url FROM user_profiles WHERE account_id = ANY($1::uuid[])"
+    )
+    .bind(&learner_ids)
+    .fetch_all(pool)
+    .await
+    .map_err(|_| StatusError::internal_server_error())?;
+    
+    let profile_map: std::collections::HashMap<String, (Option<String>, Option<String>)> = profiles
+        .into_iter()
+        .map(|(id, n, a)| (id, (n, a)))
+        .collect();
+    
+    let result = entries.into_iter()
+        .map(|entry| {
+            let (nickname, avatar_url) = profile_map
+                .get(&entry.learner_id.to_string())
+                .cloned()
+                .unwrap_or_else(|| (None, None));
+            
+            LeaderboardEntry {
+                rank: entry.rank_position,
+                learner_id: entry.learner_id.to_string(),
+                nickname: nickname.unwrap_or_else(|| "Anonymous".to_string()),
+                score: entry.score,
+                avatar_url,
+            }
+        })
+        .collect();
     
     Ok(result)
 }

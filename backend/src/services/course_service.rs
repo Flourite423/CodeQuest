@@ -2,10 +2,23 @@ use sqlx::PgPool;
 use uuid::Uuid;
 use crate::models::Course;
 
-pub async fn list_published_courses(pool: &PgPool) -> Result<Vec<Course>, sqlx::Error> {
-    sqlx::query_as::<_, Course>("SELECT * FROM courses WHERE status = 'published' ORDER BY sort_order")
-        .fetch_all(pool)
-        .await
+pub async fn list_published_courses(pool: &PgPool, page: i64, per_page: i64) -> Result<Vec<Course>, sqlx::Error> {
+    let offset = (page - 1) * per_page;
+    sqlx::query_as::<_, Course>(
+        "SELECT * FROM courses WHERE status = 'published' ORDER BY sort_order LIMIT $1 OFFSET $2"
+    )
+    .bind(per_page)
+    .bind(offset)
+    .fetch_all(pool)
+    .await
+}
+
+#[allow(dead_code)]
+pub async fn count_published_courses(pool: &PgPool) -> Result<i64, sqlx::Error> {
+    let row: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM courses WHERE status = 'published'")
+        .fetch_one(pool)
+        .await?;
+    Ok(row.0)
 }
 
 pub async fn find_course_by_id(pool: &PgPool, id: Uuid) -> Result<Option<Course>, sqlx::Error> {

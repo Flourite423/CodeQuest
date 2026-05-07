@@ -14,14 +14,22 @@ pub struct UpdateUserRequest {
 }
 
 #[handler]
-pub async fn list_users(depot: &mut Depot) -> Result<Json<ApiResponse<Vec<Account>>>, StatusError> {
+pub async fn list_users(req: &mut Request, depot: &mut Depot) -> Result<Json<ApiResponse<Vec<Account>>>, StatusError> {
     let pool = depot.obtain::<PgPool>()
         .map_err(|_| StatusError::internal_server_error())?;
     
-    let users = sqlx::query_as::<_, Account>("SELECT * FROM accounts WHERE default_role = 'learner' ORDER BY created_at DESC")
-        .fetch_all(pool)
-        .await
-        .map_err(|_| StatusError::internal_server_error())?;
+    let page = req.query::<i64>("page").unwrap_or(1).max(1);
+    let per_page = req.query::<i64>("per_page").unwrap_or(20).clamp(1, 100);
+    let offset = (page - 1) * per_page;
+    
+    let users = sqlx::query_as::<_, Account>(
+        "SELECT * FROM accounts WHERE default_role = 'learner' ORDER BY created_at DESC LIMIT $1 OFFSET $2"
+    )
+    .bind(per_page)
+    .bind(offset)
+    .fetch_all(pool)
+    .await
+    .map_err(|_| StatusError::internal_server_error())?;
     
     Ok(Json(ApiResponse::new(users)))
 }

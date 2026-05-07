@@ -27,14 +27,22 @@ pub struct UpdateChallengeRequest {
 }
 
 #[handler]
-pub async fn list_challenges(depot: &mut Depot) -> Result<Json<ApiResponse<Vec<Challenge>>>, StatusError> {
+pub async fn list_challenges(req: &mut Request, depot: &mut Depot) -> Result<Json<ApiResponse<Vec<Challenge>>>, StatusError> {
     let pool = depot.obtain::<PgPool>()
         .map_err(|_| StatusError::internal_server_error())?;
     
-    let challenges = sqlx::query_as::<_, Challenge>("SELECT * FROM challenges WHERE status = 'published' ORDER BY sort_order")
-        .fetch_all(pool)
-        .await
-        .map_err(|_| StatusError::internal_server_error())?;
+    let page = req.query::<i64>("page").unwrap_or(1).max(1);
+    let per_page = req.query::<i64>("per_page").unwrap_or(20).clamp(1, 100);
+    let offset = (page - 1) * per_page;
+    
+    let challenges = sqlx::query_as::<_, Challenge>(
+        "SELECT * FROM challenges WHERE status = 'published' ORDER BY sort_order LIMIT $1 OFFSET $2"
+    )
+    .bind(per_page)
+    .bind(offset)
+    .fetch_all(pool)
+    .await
+    .map_err(|_| StatusError::internal_server_error())?;
     
     Ok(Json(ApiResponse::new(challenges)))
 }
