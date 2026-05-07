@@ -1,0 +1,4 @@
+server_addr = "0.0.0.0:8080"
+database_url = "postgres://your_username:your_password@localhost/learning_app_dev"
+jwt_secret = "dev-secret-key-minimum-32-characters-long"
+jwt_expiration = 86400

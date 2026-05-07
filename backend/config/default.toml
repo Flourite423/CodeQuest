@@ -1,0 +1,8 @@
+server_addr = "0.0.0.0:8080"
+database_url = "postgres://postgres:postgres@localhost/learning_app"
+jwt_secret = "your-secret-key-change-in-production"
+jwt_expiration = 86400
+
+[ai]
+provider = "mock"
+mock_response = "This is a mock AI response for development. Configure a real provider in production."

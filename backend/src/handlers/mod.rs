@@ -1,11 +1,19 @@
 use salvo::prelude::*;
-use salvo::affix_state;
-use sqlx::PgPool;
-use crate::models::{ApiResponse, ApiError};
+use crate::models::ApiResponse;
 
 pub mod auth;
+pub mod admin;
+pub mod ai_help;
+pub mod chapter;
 pub mod course;
 pub mod challenge;
+pub mod daily_challenge;
+pub mod exercise;
+pub mod leaderboard;
+pub mod progress;
+pub mod reward;
+pub mod social;
+pub mod submission;
 pub mod user;
 
 #[handler]

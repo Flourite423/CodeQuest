@@ -1,5 +1,40 @@
 use salvo::prelude::*;
 use crate::handlers;
+use crate::config::AppConfig;
+
+fn jwt_auth() -> impl Handler {
+    #[handler]
+    async fn auth_middleware(req: &mut Request, depot: &mut Depot, res: &mut Response, ctrl: &mut FlowCtrl) {
+        let cfg = match depot.obtain::<AppConfig>() {
+            Ok(c) => c.clone(),
+            Err(_) => {
+                res.status_code(StatusCode::INTERNAL_SERVER_ERROR);
+                return;
+            }
+        };
+        
+        let auth = handlers::auth::jwt_auth_middleware(cfg.jwt_secret);
+        auth.handle(req, depot, res, ctrl).await;
+    }
+    auth_middleware
+}
+
+fn require_admin() -> impl Handler {
+    #[handler]
+    async fn check_admin(req: &mut Request, depot: &mut Depot, res: &mut Response, ctrl: &mut FlowCtrl) {
+        match handlers::auth::get_current_role(depot) {
+            Ok(role) if role == "admin" => {
+                ctrl.call_next(req, depot, res).await;
+            }
+            _ => {
+                res.status_code(StatusCode::FORBIDDEN);
+                res.render(Json(serde_json::json!({"error": "Admin access required"})));
+                ctrl.skip_rest();
+            }
+        }
+    }
+    check_admin
+}
 
 pub fn create_router() -> Router {
     Router::new()
@@ -11,50 +46,245 @@ pub fn create_router() -> Router {
                 )
                 .push(
                     Router::with_path("auth")
-                        .post(handlers::auth::login)
                         .push(
-                            Router::with_path("logout")
-                                .post(handlers::auth::logout),
+                            Router::with_path("register")
+                                .post(handlers::auth::register),
+                        )
+                        .push(
+                            Router::with_path("learner/login")
+                                .post(handlers::auth::learner_login),
+                        )
+                        .push(
+                            Router::with_path("admin/login")
+                                .post(handlers::auth::admin_login),
                         )
                         .push(
                             Router::with_path("refresh")
                                 .post(handlers::auth::refresh_token),
+                        )
+                        .push(
+                            Router::with_path("logout")
+                                .post(handlers::auth::logout),
                         ),
                 )
                 .push(
-                    Router::with_path("courses")
-                        .get(handlers::course::list_courses)
-                        .post(handlers::course::create_course)
+                    Router::with_path("learner")
+                        .hoop(jwt_auth())
                         .push(
-                            Router::with_path("{id}")
-                                .get(handlers::course::get_course)
-                                .put(handlers::course::update_course)
-                                .delete(handlers::course::delete_course),
+                            Router::with_path("courses")
+                                .get(handlers::course::list_courses)
+                                .push(
+                                    Router::with_path("{course_id}")
+                                        .get(handlers::course::get_course),
+                                ),
+                        )
+                        .push(
+                            Router::with_path("profile")
+                                .get(handlers::user::get_profile)
+                                .put(handlers::user::update_profile),
+                        )
+                        .push(
+                            Router::with_path("friends")
+                                .get(handlers::social::list_friends)
+                                .push(
+                                    Router::with_path("requests")
+                                        .get(handlers::social::list_friend_requests)
+                                        .post(handlers::social::create_friend_request)
+                                        .push(
+                                            Router::with_path("{request_id}")
+                                                .put(handlers::social::update_friend_request),
+                                        ),
+                                ),
+                        )
+                        .push(
+                            Router::with_path("activities")
+                                .get(handlers::social::list_social_activities),
+                        )
+                        .push(
+                            Router::with_path("leaderboards")
+                                .get(handlers::leaderboard::get_global_leaderboard)
+                                .push(
+                                    Router::with_path("friends")
+                                        .get(handlers::leaderboard::get_friends_leaderboard),
+                                )
+                                .push(
+                                    Router::with_path("courses/{course_id}")
+                                        .get(handlers::leaderboard::get_course_leaderboard),
+                                ),
+                        )
+                        .push(
+                            Router::with_path("stats/personal")
+                                .get(handlers::user::get_personal_stats),
+                        )
+                        .push(
+                            Router::with_path("challenges")
+                                .get(handlers::challenge::list_challenges)
+                                .push(
+                                    Router::with_path("{challenge_id}/attempts")
+                                        .post(handlers::challenge::attempt_challenge),
+                                ),
+                        )
+                        .push(
+                            Router::with_path("daily-challenges")
+                                .push(
+                                    Router::with_path("today")
+                                        .get(handlers::daily_challenge::get_today_challenge),
+                                )
+                                .push(
+                                    Router::with_path("{daily_challenge_id}/submit")
+                                        .post(handlers::daily_challenge::submit_daily_challenge),
+                                ),
+                        )
+                        .push(
+                            Router::with_path("rewards")
+                                .get(handlers::reward::get_rewards),
+                        )
+                        .push(
+                            Router::with_path("exercises/{exercise_id}")
+                                .get(handlers::exercise::get_exercise),
+                        )
+                        .push(
+                            Router::with_path("submissions")
+                                .post(handlers::submission::create_submission)
+                                .push(
+                                    Router::with_path("{submission_id}")
+                                        .get(handlers::submission::get_submission),
+                                ),
+                        )
+                        .push(
+                            Router::with_path("ai/help")
+                                .post(handlers::ai_help::create_ai_help),
+                        )
+                        .push(
+                            Router::with_path("progress")
+                                .get(handlers::progress::list_progress)
+                                .post(handlers::progress::create_progress)
+                                .push(
+                                    Router::with_path("courses/{course_id}")
+                                        .get(handlers::progress::get_course_progress)
+                                        .put(handlers::progress::update_progress)
+                                        .delete(handlers::progress::delete_progress)
+                                        .push(
+                                            Router::with_path("chapters/{chapter_id}/complete")
+                                                .post(handlers::progress::complete_chapter),
+                                        ),
+                                ),
                         ),
                 )
                 .push(
-                    Router::with_path("challenges")
-                        .get(handlers::challenge::list_challenges)
-                        .post(handlers::challenge::create_challenge)
+                    Router::with_path("admin")
+                        .hoop(jwt_auth())
+                        .hoop(require_admin())
                         .push(
-                            Router::with_path("{id}")
-                                .get(handlers::challenge::get_challenge)
-                                .put(handlers::challenge::update_challenge)
-                                .delete(handlers::challenge::delete_challenge),
+                            Router::with_path("stats")
+                                .push(
+                                    Router::with_path("dashboard")
+                                        .get(handlers::admin::get_dashboard_stats),
+                                )
+                                .push(
+                                    Router::with_path("courses")
+                                        .get(handlers::admin::get_course_stats),
+                                )
+                                .push(
+                                    Router::with_path("users")
+                                        .get(handlers::admin::get_user_stats),
+                                ),
+                        )
+                        .push(
+                            Router::with_path("courses")
+                                .get(handlers::admin::list_admin_courses)
+                                .post(handlers::admin::create_course)
+                                .push(
+                                    Router::with_path("{course_id}")
+                                        .get(handlers::admin::get_admin_course)
+                                        .put(handlers::admin::update_course)
+                                        .delete(handlers::admin::delete_course),
+                                ),
+                        )
+                        .push(
+                            Router::with_path("challenges")
+                                .get(handlers::admin::list_admin_challenges)
+                                .post(handlers::admin::create_challenge)
+                                .push(
+                                    Router::with_path("{challenge_id}")
+                                        .get(handlers::admin::get_admin_challenge)
+                                        .put(handlers::admin::update_challenge)
+                                        .delete(handlers::admin::delete_challenge),
+                                ),
+                        )
+                        .push(
+                            Router::with_path("exercises")
+                                .get(handlers::admin::list_admin_exercises)
+                                .post(handlers::admin::create_exercise)
+                                .push(
+                                    Router::with_path("{exercise_id}")
+                                        .get(handlers::admin::get_admin_exercise)
+                                        .put(handlers::admin::update_exercise)
+                                        .delete(handlers::admin::delete_exercise),
+                                ),
+                        )
+                        .push(
+                            Router::with_path("users")
+                                .get(handlers::admin::list_admin_users)
+                                .push(
+                                    Router::with_path("{user_id}")
+                                        .get(handlers::admin::get_admin_user)
+                                        .put(handlers::admin::update_user)
+                                        .push(
+                                            Router::with_path("status")
+                                                .put(handlers::admin::update_user_status),
+                                        ),
+                                ),
+                        )
+                        .push(
+                            Router::with_path("feedback")
+                                .get(handlers::admin::list_feedback)
+                                .push(
+                                    Router::with_path("{ticket_id}")
+                                        .get(handlers::admin::get_feedback)
+                                        .put(handlers::admin::update_feedback),
+                                ),
+                        )
+                        .push(
+                            Router::with_path("moderation")
+                                .get(handlers::admin::list_moderation_cases)
+                                .push(
+                                    Router::with_path("{case_id}")
+                                        .get(handlers::admin::get_moderation_case)
+                                        .put(handlers::admin::update_moderation_case),
+                                ),
+                        )
+                        .push(
+                            Router::with_path("announcements")
+                                .get(handlers::admin::list_announcements)
+                                .post(handlers::admin::create_announcement)
+                                .push(
+                                    Router::with_path("{announcement_id}")
+                                        .get(handlers::admin::get_announcement)
+                                        .put(handlers::admin::update_announcement)
+                                        .delete(handlers::admin::delete_announcement),
+                                ),
+                        )
+                        .push(
+                            Router::with_path("configs")
+                                .get(handlers::admin::list_system_configs)
+                                .post(handlers::admin::create_config)
+                                .push(
+                                    Router::with_path("{config_key}")
+                                        .get(handlers::admin::get_config)
+                                        .put(handlers::admin::update_config)
+                                        .delete(handlers::admin::delete_config),
+                                ),
                         ),
                 )
                 .push(
-                    Router::with_path("users")
-                        .get(handlers::user::list_users)
-                        .push(
-                            Router::with_path("{id}")
-                                .get(handlers::user::get_user)
-                                .put(handlers::user::update_user),
-                        ),
-                ),
+                    Router::with_path("me")
+                        .hoop(jwt_auth())
+                        .get(handlers::auth::get_current_user),
+                )
         )
         .push(
             Router::with_path("{**path}")
-                .all(handlers::not_found),
+                .goal(handlers::not_found),
         )
 }
