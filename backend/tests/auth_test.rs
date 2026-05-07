@@ -10,13 +10,18 @@ async fn test_auth_login_success() {
     let pool = setup_test_db().await;
     let service = create_test_service(pool);
     
-    let mut res = TestClient::post("http://127.0.0.1:8080/api/v1/auth")
+    let mut res = TestClient::post("http://127.0.0.1:8080/api/v1/auth/learner/login")
         .json(&json!({
-            "phone": "13800138000",
-            "verification_code": "123456"
+            "email": "test@example.com",
+            "password": "password123"
         }))
         .send(&service)
         .await;
+    
+    if res.status_code != Some(StatusCode::OK) {
+        let body = res.take_string().await.unwrap_or_default();
+        println!("Login failed with status {:?}: {}", res.status_code, body);
+    }
     
     assert_eq!(res.status_code, Some(StatusCode::OK));
     
@@ -28,29 +33,13 @@ async fn test_auth_login_success() {
 }
 
 #[tokio::test]
-async fn test_auth_login_invalid_code() {
-    let pool = setup_test_db().await;
-    let service = create_test_service(pool);
-    
-    let mut res = TestClient::post("http://127.0.0.1:8080/api/v1/auth")
-        .json(&json!({
-            "phone": "13800138000",
-            "verification_code": "000000"
-        }))
-        .send(&service)
-        .await;
-    
-    assert_eq!(res.status_code, Some(StatusCode::UNAUTHORIZED));
-}
-
-#[tokio::test]
 async fn test_auth_login_invalid_body() {
     let pool = setup_test_db().await;
     let service = create_test_service(pool);
     
-    let mut res = TestClient::post("http://127.0.0.1:8080/api/v1/auth")
+    let mut res = TestClient::post("http://127.0.0.1:8080/api/v1/auth/learner/login")
         .json(&json!({
-            "phone": "13800138000"
+            "email": "test@example.com"
         }))
         .send(&service)
         .await;
@@ -75,9 +64,20 @@ async fn test_auth_refresh() {
     let pool = setup_test_db().await;
     let service = create_test_service(pool);
     
+    let mut login_res = TestClient::post("http://127.0.0.1:8080/api/v1/auth/learner/login")
+        .json(&json!({
+            "email": "test@example.com",
+            "password": "password123"
+        }))
+        .send(&service)
+        .await;
+    
+    let login_body = login_res.take_json::<serde_json::Value>().await.unwrap();
+    let refresh_token = login_body["data"]["refresh_token"].as_str().unwrap();
+    
     let mut res = TestClient::post("http://127.0.0.1:8080/api/v1/auth/refresh")
         .json(&json!({
-            "refresh_token": "some-refresh-token"
+            "refresh_token": refresh_token
         }))
         .send(&service)
         .await;
@@ -105,10 +105,10 @@ async fn test_get_current_user_with_auth() {
     let pool = setup_test_db().await;
     let service = create_test_service(pool);
     
-    let mut login_res = TestClient::post("http://127.0.0.1:8080/api/v1/auth")
+    let mut login_res = TestClient::post("http://127.0.0.1:8080/api/v1/auth/learner/login")
         .json(&json!({
-            "phone": "13800138000",
-            "verification_code": "123456"
+            "email": "test@example.com",
+            "password": "password123"
         }))
         .send(&service)
         .await;

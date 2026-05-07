@@ -1,4 +1,4 @@
-use learning_app_backend::routes;
+use learning_app_backend::{config::AppConfig, routes};
 use salvo::affix_state;
 use salvo::prelude::*;
 use sqlx::{postgres::PgPoolOptions, PgPool};
@@ -24,6 +24,19 @@ pub async fn setup_test_db() -> PgPool {
 }
 
 pub fn create_test_service(pool: PgPool) -> Service {
-    let router = routes::create_router().hoop(affix_state::inject(pool));
+    let cfg = AppConfig {
+        server_addr: "127.0.0.1:8080".to_string(),
+        database_url: "postgres://postgres:postgres@localhost/learning_app_test".to_string(),
+        jwt_secret: "test-secret-key-at-least-32-bytes-long!!".to_string(),
+        jwt_expiration: 86400,
+        ai: learning_app_backend::config::AiConfig {
+            provider: "mock".to_string(),
+            mock_response: "Test response".to_string(),
+        },
+    };
+    
+    let router = routes::create_router()
+        .hoop(affix_state::inject(pool))
+        .hoop(affix_state::inject(cfg));
     Service::new(router)
 }

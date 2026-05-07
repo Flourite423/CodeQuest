@@ -3,13 +3,28 @@ use serde::{Deserialize, Serialize};
 use chrono::{DateTime, Utc};
 use uuid::Uuid;
 
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type)]
+#[sqlx(type_name = "role_type", rename_all = "snake_case")]
+pub enum RoleType {
+    Learner,
+    Admin,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type)]
+#[sqlx(type_name = "account_status", rename_all = "snake_case")]
+pub enum AccountStatus {
+    Active,
+    Inactive,
+    Suspended,
+}
+
 #[derive(Debug, Serialize, Deserialize, sqlx::FromRow)]
 pub struct Account {
     pub id: Uuid,
     pub email: String,
     pub password_hash: String,
-    pub default_role: String,
-    pub account_status: String,
+    pub default_role: RoleType,
+    pub account_status: AccountStatus,
     pub last_login_at: Option<DateTime<Utc>>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,

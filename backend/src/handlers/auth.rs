@@ -55,12 +55,16 @@ pub struct RefreshRequest {
     pub refresh_token: String,
 }
 
-fn create_access_token(account_id: &str, role: &str, secret: &str, expiration: i64) -> Result<String, jsonwebtoken::errors::Error> {
+fn create_access_token(account_id: &str, role: &crate::models::RoleType, secret: &str, expiration: i64) -> Result<String, jsonwebtoken::errors::Error> {
+    let role_str = match role {
+        crate::models::RoleType::Admin => "admin",
+        crate::models::RoleType::Learner => "learner",
+    };
     let now = Utc::now();
     let claims = JwtClaims {
         sub: account_id.to_string(),
         account_id: account_id.to_string(),
-        role: role.to_string(),
+        role: role_str.to_string(),
         exp: (now + Duration::seconds(expiration)).timestamp(),
         iat: now.timestamp(),
     };
@@ -87,37 +91,48 @@ async fn authenticate_user(
     role: &str,
 ) -> Result<LoginResponse, StatusError> {
     let account = sqlx::query_as::<_, Account>(
-        "SELECT * FROM accounts WHERE email = $1 OR phone = $1"
+        "SELECT * FROM accounts WHERE email = $1"
     )
     .bind(email_or_phone)
     .fetch_optional(pool)
     .await
-    .map_err(|_| StatusError::internal_server_error())?;
+    .map_err(|e| {
+        eprintln!("Database error when fetching account: {:?}", e);
+        StatusError::internal_server_error()
+    })?;
     
     let account = match account {
         Some(acc) => acc,
         None => {
             let new_id = Uuid::new_v4();
+            let role_enum = if role == "admin" {
+                crate::models::RoleType::Admin
+            } else {
+                crate::models::RoleType::Learner
+            };
+            
             sqlx::query(
-                "INSERT INTO accounts (id, phone, email, password_hash, default_role, account_status) 
-                 VALUES ($1, $2, $3, $4, $5, $6)"
+                "INSERT INTO accounts (id, email, password_hash, default_role, account_status) 
+                 VALUES ($1, $2, $3, $4, $5)"
             )
             .bind(new_id)
             .bind(email_or_phone)
-            .bind(email_or_phone)
             .bind("")
-            .bind(role)
-            .bind("active")
+            .bind(role_enum)
+            .bind(crate::models::AccountStatus::Active)
             .execute(pool)
             .await
-            .map_err(|_| StatusError::internal_server_error())?;
+            .map_err(|e| {
+                eprintln!("Database error when inserting account: {:?}", e);
+                StatusError::internal_server_error()
+            })?;
             
             Account {
                 id: new_id,
                 email: email_or_phone.to_string(),
                 password_hash: "".to_string(),
-                default_role: role.to_string(),
-                account_status: "active".to_string(),
+                default_role: crate::models::RoleType::Learner,
+                account_status: crate::models::AccountStatus::Active,
                 last_login_at: None,
                 created_at: Utc::now(),
                 updated_at: Utc::now(),
@@ -189,12 +204,21 @@ pub async fn register(req: &mut Request, depot: &mut Depot) -> Result<Json<ApiRe
 #[handler]
 pub async fn learner_login(req: &mut Request, depot: &mut Depot) -> Result<Json<ApiResponse<LoginResponse>>, StatusError> {
     let body: LearnerLoginRequest = req.parse_json().await
-        .map_err(|_| StatusError::bad_request().brief("Invalid request body"))?;
+        .map_err(|e| {
+            eprintln!("Failed to parse request body: {:?}", e);
+            StatusError::bad_request().brief("Invalid request body")
+        })?;
     
     let pool = depot.obtain::<PgPool>()
-        .map_err(|_| StatusError::internal_server_error())?;
+        .map_err(|e| {
+            eprintln!("Failed to obtain pool: {:?}", e);
+            StatusError::internal_server_error()
+        })?;
     let cfg = depot.obtain::<AppConfig>()
-        .map_err(|_| StatusError::internal_server_error().brief("Config not available"))?;
+        .map_err(|e| {
+            eprintln!("Failed to obtain config: {:?}", e);
+            StatusError::internal_server_error().brief("Config not available")
+        })?;
     
     let response = authenticate_user(pool, cfg, &body.email, "learner").await?;
     Ok(Json(ApiResponse::new(response)))
@@ -248,17 +272,25 @@ pub async fn refresh_token(req: &mut Request, depot: &mut Depot) -> Result<Json<
     let claims = validate_refresh_token(&body.refresh_token, &cfg.jwt_secret)
         .map_err(|_| StatusError::unauthorized().brief("Invalid refresh token"))?;
     
+    let role_enum = match claims.role.as_str() {
+        "admin" => crate::models::RoleType::Admin,
+        _ => crate::models::RoleType::Learner,
+    };
     let access_token = create_access_token(
         &claims.account_id, 
-        &claims.role,
+        &role_enum,
         &cfg.jwt_secret,
         cfg.jwt_expiration
     )
     .map_err(|_| StatusError::internal_server_error())?;
     
+    let role_enum = match claims.role.as_str() {
+        "admin" => crate::models::RoleType::Admin,
+        _ => crate::models::RoleType::Learner,
+    };
     let new_refresh_token = create_access_token(
         &claims.account_id,
-        &claims.role,
+        &role_enum,
         &cfg.jwt_secret,
         cfg.jwt_expiration * 7
     )

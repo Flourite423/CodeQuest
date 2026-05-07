@@ -10,7 +10,7 @@ async fn test_list_challenges() {
     let pool = setup_test_db().await;
     let service = create_test_service(pool);
     
-    let mut res = TestClient::get("http://127.0.0.1:8080/api/v1/challenges")
+    let mut res = TestClient::get("http://127.0.0.1:8080/api/v1/learner/challenges")
         .send(&service)
         .await;
     
@@ -25,7 +25,7 @@ async fn test_create_and_get_challenge() {
     let pool = setup_test_db().await;
     let service = create_test_service(pool);
     
-    let mut create_res = TestClient::post("http://127.0.0.1:8080/api/v1/challenges")
+    let mut create_res = TestClient::post("http://127.0.0.1:8080/api/v1/admin/challenges")
         .json(&json!({
             "challenge_code": "CHAL-001",
             "title": "Test Challenge",
@@ -38,7 +38,7 @@ async fn test_create_and_get_challenge() {
     
     assert_eq!(create_res.status_code, Some(StatusCode::CREATED));
     
-    let mut list_res = TestClient::get("http://127.0.0.1:8080/api/v1/challenges")
+    let mut list_res = TestClient::get("http://127.0.0.1:8080/api/v1/learner/challenges")
         .send(&service)
         .await;
     
@@ -48,7 +48,7 @@ async fn test_create_and_get_challenge() {
     if !challenges.is_empty() {
         let challenge_id = challenges[0]["id"].as_str().unwrap();
         
-        let mut get_res = TestClient::get(&format!("http://127.0.0.1:8080/api/v1/challenges/{}", challenge_id))
+        let mut get_res = TestClient::get(&format!("http://127.0.0.1:8080/api/v1/learner/challenges/{}", challenge_id))
             .send(&service)
             .await;
         
@@ -64,7 +64,7 @@ async fn test_get_challenge_not_found() {
     let pool = setup_test_db().await;
     let service = create_test_service(pool);
     
-    let mut res = TestClient::get("http://127.0.0.1:8080/api/v1/challenges/550e8400-e29b-41d4-a716-446655440000")
+    let mut res = TestClient::get("http://127.0.0.1:8080/api/v1/learner/challenges/550e8400-e29b-41d4-a716-446655440000")
         .send(&service)
         .await;
     
@@ -76,14 +76,20 @@ async fn test_update_challenge() {
     let pool = setup_test_db().await;
     let service = create_test_service(pool);
     
-    let mut create_res = TestClient::post("http://127.0.0.1:8080/api/v1/challenges")
+    let mut create_res = TestClient::post("http://127.0.0.1:8080/api/v1/admin/challenges")
         .json(&json!({
             "challenge_code": "CHAL-002",
-            "title": "Original Challenge",
+            "title": "Original Title",
             "summary": "A test challenge",
             "difficulty": "easy",
             "reward_xp": 100
         }))
+        .send(&service)
+        .await;
+    
+    assert_eq!(create_res.status_code, Some(StatusCode::CREATED));
+    
+    let mut list_res = TestClient::get("http://127.0.0.1:8080/api/v1/learner/challenges")
         .send(&service)
         .await;
     
@@ -99,7 +105,7 @@ async fn test_update_challenge() {
     if !challenges.is_empty() {
         let challenge_id = challenges[0]["id"].as_str().unwrap();
         
-        let mut update_res = TestClient::put(&format!("http://127.0.0.1:8080/api/v1/challenges/{}", challenge_id))
+        let mut update_res = TestClient::put(&format!("http://127.0.0.1:8080/api/v1/admin/challenges/{}", challenge_id))
             .json(&json!({
                 "title": "Updated Challenge"
             }))
@@ -138,7 +144,7 @@ async fn test_delete_challenge() {
     if !challenges.is_empty() {
         let challenge_id = challenges[0]["id"].as_str().unwrap();
         
-        let mut delete_res = TestClient::delete(&format!("http://127.0.0.1:8080/api/v1/challenges/{}", challenge_id))
+        let mut delete_res = TestClient::delete(&format!("http://127.0.0.1:8080/api/v1/admin/challenges/{}", challenge_id))
             .send(&service)
             .await;
         
@@ -151,7 +157,7 @@ async fn test_create_challenge_with_course() {
     let pool = setup_test_db().await;
     let service = create_test_service(pool);
     
-    let mut course_res = TestClient::post("http://127.0.0.1:8080/api/v1/courses")
+    let mut course_res = TestClient::post("http://127.0.0.1:8080/api/v1/admin/courses")
         .json(&json!({
             "course_code": "COURSE-FOR-CHAL",
             "title": "Course for Challenge",
@@ -174,7 +180,7 @@ async fn test_create_challenge_with_course() {
     if !courses.is_empty() {
         let course_id = courses[0]["id"].as_str().unwrap();
         
-        let mut challenge_res = TestClient::post("http://127.0.0.1:8080/api/v1/challenges")
+            let mut challenge_res = TestClient::post("http://127.0.0.1:8080/api/v1/admin/challenges")
             .json(&json!({
                 "challenge_code": "CHAL-WITH-COURSE",
                 "title": "Challenge with Course",
