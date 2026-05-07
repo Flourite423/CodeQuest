@@ -8,6 +8,14 @@ use sqlx::PgPool;
 use crate::models::{ApiResponse, Account};
 use crate::config::AppConfig;
 
+fn hash_password(password: &str) -> Result<String, bcrypt::BcryptError> {
+    bcrypt::hash(password, bcrypt::DEFAULT_COST)
+}
+
+fn verify_password(password: &str, hash: &str) -> Result<bool, bcrypt::BcryptError> {
+    bcrypt::verify(password, hash)
+}
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct JwtClaims {
     pub sub: String,
@@ -88,6 +96,7 @@ async fn authenticate_user(
     pool: &PgPool,
     cfg: &AppConfig,
     email_or_phone: &str,
+    password: &str,
     role: &str,
 ) -> Result<LoginResponse, StatusError> {
     let account = sqlx::query_as::<_, Account>(
@@ -102,7 +111,19 @@ async fn authenticate_user(
     })?;
     
     let account = match account {
-        Some(acc) => acc,
+        Some(acc) => {
+            if !acc.password_hash.is_empty() {
+                let valid = verify_password(password, &acc.password_hash)
+                    .map_err(|e| {
+                        eprintln!("Password verification error: {:?}", e);
+                        StatusError::internal_server_error()
+                    })?;
+                if !valid {
+                    return Err(StatusError::unauthorized().brief("Invalid email or password"));
+                }
+            }
+            acc
+        }
         None => {
             let new_id = Uuid::new_v4();
             let role_enum = if role == "admin" {
@@ -111,13 +132,19 @@ async fn authenticate_user(
                 crate::models::RoleType::Learner
             };
             
+            let password_hash = hash_password(password)
+                .map_err(|e| {
+                    eprintln!("Password hashing error: {:?}", e);
+                    StatusError::internal_server_error()
+                })?;
+            
             sqlx::query(
                 "INSERT INTO accounts (id, email, password_hash, default_role, account_status) 
                  VALUES ($1, $2, $3, $4, $5)"
             )
             .bind(new_id)
             .bind(email_or_phone)
-            .bind("")
+            .bind(password_hash)
             .bind(role_enum)
             .bind(crate::models::AccountStatus::Active)
             .execute(pool)
@@ -184,7 +211,7 @@ pub async fn register(req: &mut Request, depot: &mut Depot) -> Result<Json<ApiRe
     let cfg = depot.obtain::<AppConfig>()
         .map_err(|_| StatusError::internal_server_error().brief("Config not available"))?;
     
-    let response = authenticate_user(pool, cfg, &body.phone, "learner").await?;
+    let response = authenticate_user(pool, cfg, &body.phone, "", "learner").await?;
     
     if let Some(nickname) = body.nickname {
         let account_id = Uuid::parse_str(
@@ -220,7 +247,7 @@ pub async fn learner_login(req: &mut Request, depot: &mut Depot) -> Result<Json<
             StatusError::internal_server_error().brief("Config not available")
         })?;
     
-    let response = authenticate_user(pool, cfg, &body.email, "learner").await?;
+    let response = authenticate_user(pool, cfg, &body.email, &body.password, "learner").await?;
     Ok(Json(ApiResponse::new(response)))
 }
 
@@ -234,7 +261,7 @@ pub async fn admin_login(req: &mut Request, depot: &mut Depot) -> Result<Json<Ap
     let cfg = depot.obtain::<AppConfig>()
         .map_err(|_| StatusError::internal_server_error().brief("Config not available"))?;
     
-    let response = authenticate_user(pool, cfg, &body.email, "admin").await?;
+    let response = authenticate_user(pool, cfg, &body.email, &body.password, "admin").await?;
     Ok(Json(ApiResponse::new(response)))
 }
 
@@ -252,7 +279,7 @@ pub async fn login(req: &mut Request, depot: &mut Depot) -> Result<Json<ApiRespo
     let cfg = depot.obtain::<AppConfig>()
         .map_err(|_| StatusError::internal_server_error().brief("Config not available"))?;
     
-    let response = authenticate_user(pool, cfg, &body.phone, "learner").await?;
+    let response = authenticate_user(pool, cfg, &body.phone, "", "learner").await?;
     Ok(Json(ApiResponse::new(response)))
 }
 
