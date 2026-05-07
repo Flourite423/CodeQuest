@@ -1,0 +1,1 @@
+- 2026-05-07: JWT Claims are documented in plan/dictionary but not materialized as a dedicated OpenAPI schema, which weakens machine-checkability for auth contract review.

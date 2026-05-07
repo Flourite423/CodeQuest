@@ -1,0 +1,23 @@
+- 2026-05-07：OpenAPI 契约基线固定为 `contracts/openapi/openapi.yaml`，三端共用同一份真源，不拆 learner/admin 双份定义。
+- 2026-05-07：path 与 schema 统一要求携带 `x-audience`、`x-permission`、`x-idempotent` 扩展字段，便于代码生成和权限审计。
+- 2026-05-07：版本策略固定为 `/api/v1`，v1 仅允许向后兼容追加；删除字段、破坏旧语义或重定义枚举只能进入 v2。
+- 2026-05-07：认证契约新增 `Account`、`AccountRole`、`LearnerProfile`、`AdminProfile`、`Session` 与 auth path，保持 profile DTO 按角色分离，并统一 JWT Claims 与全局字段命名规则。
+- 2026-05-07：挑战与奖励域契约要求保留 `ChallengeStage.rule_version` 与 `ChallengeAttempt.reward_claimed_at`，并明确 `XpLedger`、`LearnerBadge` 才是奖励真相源，`LeaderboardSnapshot` 仅作为派生读模型展示。
+- 2026-05-07：Course / Chapter 采用 canonical entity + role-specific DTO 分层；`Course`/`Chapter` 保留 `content_version`、审计字段与全量状态，learner 只读取 published 内容的裁剪视图。
+- 2026-05-07：课程状态机固定为 `draft -> published -> archived`，learner 列表/详情接口禁止暴露 `draft` 或 `archived` 课程与章节。
+- 2026-05-07：Chapter 解锁规则先统一为 `free` / `after_previous_completed`，并在 learner DTO 中只暴露学习展示所需字段，不混入后台内部配置。
+- 2026-05-07：练习契约需显式拆分 `LearnerExerciseDetail` 与 `AdminExerciseDetail`，同一题目在 learner 侧必须隐藏 `is_correct`、`expected_payload_json` 与 `is_hidden=true` 的用例。
+- 2026-05-07：评测状态 `judge_status` 固定为 `pending -> running -> passed/failed/error`，其中 `error` 仅表示系统评测故障，不能与答题失败 `failed` 混用。
+- 2026-05-07：社交与个人中心契约延续同一 OpenAPI 真源，新增 `FriendRelation`、`SocialActivity`、`LeaderboardSnapshot` 及 learner profile/friend/activity/leaderboard paths，继续要求所有枚举为 lower_snake_case、社交边界仅限平台内能力。
+- 2026-05-07：后台运营域新增 `FeedbackTicket`、`ModerationCase`、`Announcement`、`SystemConfig` 及 admin user/feedback/moderation/announcement/config paths；审核必须保留 `target_snapshot_json` 与 `reviewed_by`，系统配置 `value_json` 仅限 admin audience，所有运营接口继续强制声明 `x-audience`、`x-permission`、`x-idempotent`。
+- 2026-05-07：统计与排行契约延续真相源/派生分层，新增 `AdminDashboardStats`、`AdminCourseStats`、`AdminUserActivityStats`、`LearnerRankItem`、`LearnerPersonalStats` 读模型，并要求 `/admin/stats/*`、`/learner/stats/personal`、`/learner/leaderboards` 全部显式携带 `x-audience`、`x-permission`、`x-idempotent`。
+- 2026-05-07：`LeaderboardSnapshot` 仅作为排行展示快照；奖励与关键统计继续以 `XpLedger`、`LearnerBadge`、`Submission`、`AIHelpRequest`、`Session` 为真相源，客户端不得自行推导课程完成率、挑战完成率、AI 使用次数与 DAU。
+- 2026-05-07：三端联调顺序固定为 OpenAPI → mock/examples → backend impl → frontend adapters → contract tests → end-to-end verify，禁止跳过任何阶段。
+- 2026-05-07：example 命名规范固定为 {audience}-{resource}-{action}.json，audience 取值 learner/admin/shared，resource 为领域资源名，action 为操作语义。
+- 2026-05-07：mock 资产目录结构固定为 contracts/mocks/{learner,admin,shared}/，禁止移动端或后台维护私有 mock 字段，所有字段必须来自 OpenAPI 定义。
+- 2026-05-07：breaking change 审核流程固定为 标记 → 影响评估 → 契约更新 → 回归确认，禁止跳过 contract diff 审查直接改接口，禁止在 v1 内删除字段、修改字段语义或重定义枚举值。
+- 2026-05-07：三端协作 checklist 包含 7 项：OpenAPI schema 校验、mock/example 同步、后端 contract tests、Flutter example 校验、后台 example 校验、end-to-end 联调、breaking change 回归确认。
+- 2026-05-07: Plan Compliance Audit Round 2 shows the main risk is cross-asset drift: OpenAPI tags/x-fields/core entities are largely present, but examples and mock docs still use outdated field names and envelope shapes.
+
+- 本轮验证确认：OpenAPI 计数满足 69 schemas / 43 paths / 19 tags，且全部 path/schema 都已声明 `x-audience`、`x-permission`、`x-idempotent`。
+- 平台边界已符合要求：`LearnerRegisterRequest` 与 `LearnerLoginRequest` 仅允许 `ios/android`，`AdminLoginRequest` 仅允许 `web`。

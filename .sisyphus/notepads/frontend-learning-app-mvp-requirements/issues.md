@@ -1,0 +1,4 @@
+- 本次审计发现需求文档存在范围冲突：支付/直播字样出现、JavaScript范围前后不一致、组队挑战前后不一致、后台模块疑似超出MVP。
+- Markdown 文件无法执行 LSP 诊断，原因是当前环境未配置 .md 的 LSP。
+- 已定位并收敛最后一轮一致性问题：章节解锁规则、AI MVP范围、JavaScript基础单元命名需要全文统一。
+- Scope Fidelity Check Round 3: REJECT。仍存在范围残留：contracts/state-machines/account.md 保留 payment 字样；doc/软件需求规格说明书.md 仍出现 AI能力增强、组队挑战、社区功能等超出当前固定范围的规划。

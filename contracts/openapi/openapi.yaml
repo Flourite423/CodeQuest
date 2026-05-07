@@ -1,0 +1,5812 @@
+openapi: 3.0.3
+info:
+  title: 前端学习APP API
+  version: 1.0.0
+  description: >-
+    三端共享的 OpenAPI 单一真源骨架。统一服务于后端 API、学习者移动端与运营管理后台。
+    所有正式接口统一挂载在 /api/v1 下，新增字段只允许向后兼容追加；删除字段、重定义语义或破坏既有枚举含义只能在 v2 进行。
+servers:
+  - url: /api/v1
+    description: Stable v1 base path
+tags:
+  - name: auth
+    description: Shared authentication and session workflows
+  - name: learner-account
+    description: Learner account lifecycle capabilities
+  - name: learner-course
+    description: Learner course discovery and enrollment capabilities
+  - name: learner-practice
+    description: Learner practice task workflows
+  - name: learner-challenge
+    description: Learner challenge participation workflows
+  - name: learner-daily
+    description: Learner daily goal and streak workflows
+  - name: learner-ai
+    description: Learner AI assistance and feedback workflows
+  - name: learner-social
+    description: Learner social interactions and community workflows
+  - name: learner-reward
+    description: Learner reward, badge, and workflows
+  - name: learner-profile
+    description: Learner profile and preferences workflows
+  - name: admin-course
+    description: Admin course management capabilities
+  - name: admin-practice
+    description: Admin practice content management capabilities
+  - name: admin-challenge
+    description: Admin challenge operations capabilities
+  - name: admin-user
+    description: Admin user management capabilities
+  - name: admin-moderation
+    description: Admin moderation and reporting capabilities
+  - name: admin-announcement
+    description: Admin announcement publishing capabilities
+  - name: admin-stats
+    description: Admin analytics and reporting capabilities
+  - name: admin-config
+    description: Admin configuration management capabilities
+  - name: internal
+    description: Internal-only platform integrations and system workflows
+paths:
+  /auth/register:
+    post:
+      tags:
+        - auth
+      summary: Register a new learner account
+      description: >-
+        注册新学习者账号，创建 Account、LearnerProfile 与默认 learner 角色授权，返回登录响应。
+      operationId: registerLearnerAccount
+      x-audience: shared
+      x-permission: auth.register
+      x-idempotent: false
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LearnerRegisterRequest'
+      responses:
+        '201':
+          description: Learner registered and authenticated successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/LoginResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /auth/learner/login:
+    post:
+      tags:
+        - auth
+      summary: Learner login with device binding
+      description: >-
+        学习者使用邮箱和密码登录，并绑定当前设备上下文，返回访问令牌、刷新令牌与学习者档案。
+      operationId: learnerLogin
+      x-audience: shared
+      x-permission: auth.learner.login
+      x-idempotent: false
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LearnerLoginRequest'
+      responses:
+        '200':
+          description: Learner authenticated successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/LoginResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /auth/admin/login:
+    post:
+      tags:
+        - auth
+      summary: Admin login with device binding
+      description: >-
+        管理端用户使用邮箱和密码登录，并绑定当前设备上下文，返回访问令牌、刷新令牌与管理档案。
+      operationId: adminLogin
+      x-audience: shared
+      x-permission: auth.admin.login
+      x-idempotent: false
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminLoginRequest'
+      responses:
+        '200':
+          description: Admin authenticated successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/LoginResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /auth/refresh:
+    post:
+      tags:
+        - auth
+      summary: Refresh access token
+      description: >-
+        使用有效刷新令牌续发访问令牌，并返回当前活跃会话与角色上下文。
+      operationId: refreshAuthToken
+      x-audience: shared
+      x-permission: auth.refresh
+      x-idempotent: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshRequest'
+      responses:
+        '200':
+          description: Access token refreshed successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/LoginResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /auth/logout:
+    post:
+      tags:
+        - auth
+      summary: Logout current session
+      description: >-
+        根据会话标识注销刷新令牌与设备会话，供 learner 与 admin 共享使用。
+      operationId: logoutAuthSession
+      x-audience: shared
+      x-permission: auth.logout
+      x-idempotent: false
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LogoutRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/Ok'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /learner/courses:
+    get:
+      tags:
+        - learner-course
+      summary: List learner-visible courses
+      description: >-
+        返回 learner 可见的已发布课程列表。draft 与 archived 课程不得出现在 learner 列表中。
+      operationId: listLearnerCourses
+      x-audience: learner
+      x-permission: learner.course.read
+      x-idempotent: true
+      parameters:
+        - $ref: '#/components/parameters/page'
+        - $ref: '#/components/parameters/page_size'
+        - $ref: '#/components/parameters/sort_by'
+        - $ref: '#/components/parameters/sort_order'
+      responses:
+        '200':
+          description: Learner course list loaded successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        required:
+                          - items
+                          - meta
+                        properties:
+                          items:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/LearnerCourseListItem'
+                          meta:
+                            type: object
+                            required:
+                              - page
+                              - page_size
+                              - total
+                              - has_more
+                            properties:
+                              page:
+                                type: integer
+                                minimum: 1
+                              page_size:
+                                type: integer
+                                minimum: 1
+                                maximum: 100
+                              total:
+                                type: integer
+                                minimum: 0
+                              has_more:
+                                type: boolean
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /learner/courses/{course_id}:
+    get:
+      tags:
+        - learner-course
+      summary: Get learner-visible course detail
+      description: >-
+        返回 learner 可见的课程详情与章节列表，仅允许读取 published 状态课程及其 published 章节。
+      operationId: getLearnerCourseDetail
+      x-audience: learner
+      x-permission: learner.course.read
+      x-idempotent: true
+      parameters:
+        - name: course_id
+          in: path
+          required: true
+          description: UUID course identifier
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Learner course detail loaded successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/LearnerCourseDetail'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /learner/profile:
+    get:
+      tags:
+        - learner-profile
+      summary: Get learner profile and preferences
+      description: >-
+        返回学习者个人资料与应用内偏好设置，仅包含 learner 可见字段，不下发 admin 配置内容。
+      operationId: getLearnerProfile
+      x-audience: learner
+      x-permission: learner.profile.read
+      x-idempotent: true
+      responses:
+        '200':
+          description: Learner profile returned successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/LearnerProfile'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    patch:
+      tags:
+        - learner-profile
+      summary: Update learner profile and preferences
+      description: >-
+        更新学习者昵称、头像、简介、每日目标和主题设置，不允许写入后台管理专用配置。
+      operationId: updateLearnerProfile
+      x-audience: learner
+      x-permission: learner.profile.write
+      x-idempotent: false
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LearnerProfileUpdateInput'
+      responses:
+        '200':
+          description: Learner profile updated successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/LearnerProfile'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /learner/friends:
+    get:
+      tags:
+        - learner-social
+      summary: List learner friends
+      description: >-
+        返回学习者在平台内的好友关系列表，可按状态筛选，仅覆盖站内好友能力。
+      operationId: listLearnerFriends
+      x-audience: learner
+      x-permission: learner.friend.read
+      x-idempotent: true
+      parameters:
+        - $ref: '#/components/parameters/page'
+        - $ref: '#/components/parameters/page_size'
+        - name: status
+          in: query
+          description: Optional friend relation status filter
+          required: false
+          schema:
+            type: string
+            enum:
+              - pending
+              - accepted
+              - rejected
+              - blocked
+      responses:
+        '200':
+          description: Learner friends returned successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        required:
+                          - items
+                        properties:
+                          items:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/LearnerFriendListItem'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /learner/friends/requests:
+    post:
+      tags:
+        - learner-social
+      summary: Send learner friend request
+      description: >-
+        向另一位学习者发起站内好友申请，不包含站外分享、私信或实时聊天能力。
+      operationId: createLearnerFriendRequest
+      x-audience: learner
+      x-permission: learner.friend.write
+      x-idempotent: false
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FriendRequestInput'
+      responses:
+        '200':
+          description: Friend request created successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/FriendRelation'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /learner/friends/requests/{request_id}:
+    patch:
+      tags:
+        - learner-social
+      summary: Respond to learner friend request
+      description: >-
+        接受、拒绝或拉黑收到的好友申请，维持平台内好友关系状态机。
+      operationId: updateLearnerFriendRequest
+      x-audience: learner
+      x-permission: learner.friend.write
+      x-idempotent: false
+      parameters:
+        - name: request_id
+          in: path
+          description: Friend request identifier
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: Learner friend request response payload
+              x-audience: learner
+              x-permission: learner.friend.write
+              x-idempotent: false
+              required:
+                - status
+              properties:
+                status:
+                  type: string
+                  enum:
+                    - accepted
+                    - rejected
+                    - blocked
+      responses:
+        '200':
+          description: Friend request updated successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/FriendRelation'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /learner/activities:
+    get:
+      tags:
+        - learner-social
+      summary: List learner activity feed
+      description: >-
+        返回平台内动态流，基于动态可见性规则过滤，仅展示站内学习行为动态。
+      operationId: listLearnerActivities
+      x-audience: learner
+      x-permission: learner.activity.read
+      x-idempotent: true
+      parameters:
+        - $ref: '#/components/parameters/page'
+        - $ref: '#/components/parameters/page_size'
+        - name: visibility
+          in: query
+          description: Optional activity visibility filter
+          required: false
+          schema:
+            type: string
+            enum:
+              - friends_only
+              - public_in_app
+              - private
+      responses:
+        '200':
+          description: Learner activity feed returned successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        required:
+                          - items
+                        properties:
+                          items:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/LearnerActivityFeedItem'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /learner/leaderboards:
+    get:
+      tags:
+        - learner-social
+      summary: List learner leaderboard rankings
+      description: >-
+        返回学习者可见的排行榜读模型，服务端基于排行榜快照与奖励真相源派生排行展示字段，客户端不得自行推导关键统计值。
+      operationId: listLearnerLeaderboards
+      x-audience: learner
+      x-permission: learner.leaderboard.read
+      x-idempotent: true
+      parameters:
+        - $ref: '#/components/parameters/page'
+        - $ref: '#/components/parameters/page_size'
+        - name: board_type
+          in: query
+          description: Optional leaderboard type filter
+          required: false
+          schema:
+            type: string
+            enum:
+              - daily
+              - weekly
+              - total
+        - name: period_key
+          in: query
+          description: Optional leaderboard period key such as 2026-W19
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Learner leaderboard rankings returned successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        required:
+                          - items
+                          - generated_at
+                        properties:
+                          items:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/LearnerRankItem'
+                          generated_at:
+                            type: string
+                            format: date-time
+
+    LearnerChallengeAttemptRequest:
+      type: object
+      description: Learner challenge attempt submission payload
+      x-audience: learner
+      x-permission: learner.challenge.write
+      x-idempotent: false
+      required:
+        - stage_results
+      properties:
+        stage_results:
+          type: array
+          description: Ordered stage attempt results
+          items:
+            type: object
+            required:
+              - stage_id
+              - passed
+              - score
+            properties:
+              stage_id:
+                type: string
+                format: uuid
+              passed:
+                type: boolean
+              score:
+                type: integer
+                minimum: 0
+                maximum: 100
+              source_code:
+                type: string
+                nullable: true
+              elapsed_seconds:
+                type: integer
+                minimum: 0
+                nullable: true
+    LearnerDailyChallengeSubmitRequest:
+      type: object
+      description: Learner daily challenge submission payload
+      x-audience: learner
+      x-permission: learner.daily.write
+      x-idempotent: false
+      required:
+        - source_code
+      properties:
+        source_code:
+          type: string
+        elapsed_seconds:
+          type: integer
+          minimum: 0
+          nullable: true
+    AdminChallengeUpdateInput:
+      type: object
+      description: Admin payload for partial challenge updates and state transitions
+      x-audience: admin
+      x-permission: admin.challenge.write
+      x-idempotent: false
+      required:
+        - content_version
+      properties:
+        title:
+          type: string
+          minLength: 1
+        summary:
+          type: string
+        related_course_id:
+          type: string
+          format: uuid
+          nullable: true
+        difficulty:
+          type: string
+          enum:
+            - easy
+            - medium
+            - hard
+        reward_xp:
+          type: integer
+          minimum: 0
+        status:
+          type: string
+          description: Allowed transitions are draft -> published -> archived
+          enum:
+            - draft
+            - published
+            - archived
+        sort_order:
+          type: integer
+        content_version:
+          type: integer
+          minimum: 1
+        stages:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                format: uuid
+              exercise_id:
+                type: string
+                format: uuid
+              order_index:
+                type: integer
+                minimum: 1
+              star_rule_json:
+                type: object
+                additionalProperties: true
+              unlock_rule_json:
+                type: object
+                additionalProperties: true
+              rule_version:
+                type: integer
+                minimum: 1
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /learner/stats/personal:
+    get:
+      tags:
+        - learner-profile
+      summary: Get learner personal stats snapshot
+      description: >-
+        返回学习者个人统计读模型，聚合学习时长、完成进度、AI 使用与当前排行等服务端派生指标。
+      operationId: getLearnerPersonalStats
+      x-audience: learner
+      x-permission: learner.stats.read
+      x-idempotent: true
+      parameters:
+        - name: board_type
+          in: query
+          description: Optional board type context for rank projection
+          required: false
+          schema:
+            type: string
+            enum:
+              - daily
+              - weekly
+              - total
+      responses:
+        '200':
+          description: Learner personal stats returned successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/LearnerPersonalStats'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /admin/stats/dashboard:
+    get:
+      tags:
+        - admin-stats
+      summary: Get admin dashboard stats snapshot
+      description: >-
+        返回后台看板统计读模型，聚合平台级课程完成率、挑战完成率、日活学习者数与 AI 使用趋势等指标。
+      operationId: getAdminDashboardStats
+      x-audience: admin
+      x-permission: admin.stats.read
+      x-idempotent: true
+      responses:
+        '200':
+          description: Admin dashboard stats returned successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/AdminDashboardStats'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /admin/stats/courses:
+    get:
+      tags:
+        - admin-stats
+      summary: List admin course stats
+      description: >-
+        返回按课程聚合的统计读模型，供后台查看课程报名、活跃、学习时长与完成情况；关键统计值由服务端统一派生。
+      operationId: listAdminCourseStats
+      x-audience: admin
+      x-permission: admin.stats.read
+      x-idempotent: true
+      parameters:
+        - $ref: '#/components/parameters/page'
+        - $ref: '#/components/parameters/page_size'
+        - $ref: '#/components/parameters/sort_by'
+        - $ref: '#/components/parameters/sort_order'
+      responses:
+        '200':
+          description: Admin course stats returned successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        required:
+                          - items
+                          - meta
+                        properties:
+                          items:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/AdminCourseStats'
+                          meta:
+                            type: object
+                            required:
+                              - page
+                              - page_size
+                              - total
+                              - has_more
+                            properties:
+                              page:
+                                type: integer
+                                minimum: 1
+                              page_size:
+                                type: integer
+                                minimum: 1
+                                maximum: 100
+                              total:
+                                type: integer
+                                minimum: 0
+                              has_more:
+                                type: boolean
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /admin/stats/users:
+    get:
+      tags:
+        - admin-stats
+      summary: Get admin user activity stats snapshot
+      description: >-
+        返回后台用户活跃度统计读模型，聚合日活、周活、会话数与 AI 使用次数等用户活跃指标。
+      operationId: getAdminUserActivityStats
+      x-audience: admin
+      x-permission: admin.stats.read
+      x-idempotent: true
+      responses:
+        '200':
+          description: Admin user activity stats returned successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/AdminUserActivityStats'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /admin/courses:
+    get:
+      tags:
+        - admin-course
+      summary: List admin course records
+      description: >-
+        返回 admin 可见的课程列表，包含 draft、published、archived 全量状态以及审计字段。
+      operationId: listAdminCourses
+      x-audience: admin
+      x-permission: admin.course.read
+      x-idempotent: true
+      parameters:
+        - $ref: '#/components/parameters/page'
+        - $ref: '#/components/parameters/page_size'
+        - $ref: '#/components/parameters/sort_by'
+        - $ref: '#/components/parameters/sort_order'
+      responses:
+        '200':
+          description: Admin course list loaded successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        required:
+                          - items
+                          - meta
+                        properties:
+                          items:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/AdminCourseListItem'
+                          meta:
+                            type: object
+                            required:
+                              - page
+                              - page_size
+                              - total
+                              - has_more
+                            properties:
+                              page:
+                                type: integer
+                                minimum: 1
+                              page_size:
+                                type: integer
+                                minimum: 1
+                                maximum: 100
+                              total:
+                                type: integer
+                                minimum: 0
+                              has_more:
+                                type: boolean
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    post:
+      tags:
+        - admin-course
+      summary: Create a course record
+      description: >-
+        创建课程及其基础元数据。新建课程通常从 draft 状态开始，后续可发布为 published，再归档为 archived。
+      operationId: createAdminCourse
+      x-audience: admin
+      x-permission: admin.course.write
+      x-idempotent: false
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminCourseCreateInput'
+      responses:
+        '200':
+          description: Admin course created successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/AdminCourseDetail'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /admin/courses/{course_id}:
+    patch:
+      tags:
+        - admin-course
+      summary: Update a course record
+      description: >-
+        更新课程元数据与发布状态。状态机仅允许按 draft -> published -> archived 的顺序推进，不支持从 archived 回退。
+      operationId: updateAdminCourse
+      x-audience: admin
+      x-permission: admin.course.write
+      x-idempotent: false
+      parameters:
+        - name: course_id
+          in: path
+          required: true
+          description: UUID course identifier
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminCourseUpdateInput'
+      responses:
+        '200':
+          description: Admin course updated successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/AdminCourseDetail'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /learner/challenges:
+    get:
+      tags:
+        - learner-challenge
+      summary: List learner challenge map
+      description: >-
+        返回学习者可见的关卡地图，包含每个关卡的 learner 状态、最佳星级与进度。
+      operationId: listLearnerChallenges
+      x-audience: learner
+      x-permission: learner.challenge.read
+      x-idempotent: true
+      parameters:
+        - $ref: '#/components/parameters/page'
+        - $ref: '#/components/parameters/page_size'
+        - $ref: '#/components/parameters/sort_by'
+        - $ref: '#/components/parameters/sort_order'
+      responses:
+        '200':
+          description: Learner challenge map returned successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        required:
+                          - items
+                          - meta
+                        properties:
+                          items:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/LearnerChallengeMapItem'
+                          meta:
+                            type: object
+                            required:
+                              - page
+                              - page_size
+                              - total
+                              - has_more
+                            properties:
+                              page:
+                                type: integer
+                                minimum: 1
+                              page_size:
+                                type: integer
+                                minimum: 1
+                                maximum: 100
+                              total:
+                                type: integer
+                                minimum: 0
+                              has_more:
+                                type: boolean
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /learner/challenges/{challenge_id}/attempts:
+    post:
+      tags:
+        - learner-challenge
+      summary: Start or submit a challenge attempt
+      description: >-
+        学习者对指定关卡发起挑战尝试，记录尝试结果并更新最佳星级与状态。
+      operationId: createLearnerChallengeAttempt
+      x-audience: learner
+      x-permission: learner.challenge.write
+      x-idempotent: false
+      parameters:
+        - name: challenge_id
+          in: path
+          required: true
+          description: UUID challenge identifier
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LearnerChallengeAttemptRequest'
+      responses:
+        '201':
+          description: Challenge attempt recorded successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/ChallengeAttempt'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /learner/daily-challenges/today:
+    get:
+      tags:
+        - learner-daily
+      summary: Get today's daily challenge
+      description: >-
+        返回今日生效的每日挑战详情与学习者当前参与状态。
+      operationId: getLearnerDailyChallengeToday
+      x-audience: learner
+      x-permission: learner.daily.read
+      x-idempotent: true
+      responses:
+        '200':
+          description: Today's daily challenge returned successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        required:
+                          - daily_challenge
+                          - learner_record
+                        properties:
+                          daily_challenge:
+                            $ref: '#/components/schemas/DailyChallenge'
+                          learner_record:
+                            $ref: '#/components/schemas/DailyChallengeRecord'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /learner/daily-challenges/{daily_challenge_id}/submit:
+    post:
+      tags:
+        - learner-daily
+      summary: Submit a daily challenge attempt
+      description: >-
+        学习者提交每日挑战答案，记录结果、得分与用时。
+      operationId: submitLearnerDailyChallenge
+      x-audience: learner
+      x-permission: learner.daily.write
+      x-idempotent: false
+      parameters:
+        - name: daily_challenge_id
+          in: path
+          required: true
+          description: UUID daily challenge identifier
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LearnerDailyChallengeSubmitRequest'
+      responses:
+        '201':
+          description: Daily challenge submitted successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/DailyChallengeRecord'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /learner/rewards:
+    get:
+      tags:
+        - learner-reward
+      summary: Get learner rewards summary
+      description: >-
+        返回学习者当前奖励汇总，包括 XP 余额、已获得徽章列表与最近流水。
+      operationId: getLearnerRewards
+      x-audience: learner
+      x-permission: learner.reward.read
+      x-idempotent: true
+      parameters:
+        - $ref: '#/components/parameters/page'
+        - $ref: '#/components/parameters/page_size'
+      responses:
+        '200':
+          description: Learner rewards returned successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        required:
+                          - summary
+                          - badges
+                          - xp_ledger
+                          - meta
+                        properties:
+                          summary:
+                            $ref: '#/components/schemas/LearnerRewardSummary'
+                          badges:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/LearnerBadge'
+                          xp_ledger:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/XpLedger'
+                          meta:
+                            type: object
+                            required:
+                              - page
+                              - page_size
+                              - total
+                              - has_more
+                            properties:
+                              page:
+                                type: integer
+                                minimum: 1
+                              page_size:
+                                type: integer
+                                minimum: 1
+                                maximum: 100
+                              total:
+                                type: integer
+                                minimum: 0
+                              has_more:
+                                type: boolean
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /learner/exercises/{exercise_id}:
+    get:
+      tags:
+        - learner-practice
+      summary: Get learner-visible exercise detail
+      description: >-
+        返回学习者可见的题目详情。正确答案、隐藏用例与预期断言不会下发给 learner。
+      operationId: getLearnerExerciseDetail
+      x-audience: learner
+      x-permission: learner.exercise.read
+      x-idempotent: true
+      parameters:
+        - name: exercise_id
+          in: path
+          required: true
+          description: Exercise identifier
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Learner exercise detail returned successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/LearnerExerciseDetail'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /learner/submissions:
+    post:
+      tags:
+        - learner-practice
+      summary: Submit learner exercise code
+      description: >-
+        学习者提交代码后进入评测流程。`error` 仅表示系统评测故障，不等同于答题失败。
+      operationId: createLearnerSubmission
+      x-audience: learner
+      x-permission: learner.submission.write
+      x-idempotent: false
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LearnerSubmissionRequest'
+      responses:
+        '201':
+          description: Submission accepted for judging
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Submission'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /learner/submissions/{submission_id}:
+    get:
+      tags:
+        - learner-practice
+      summary: Get learner submission detail
+      description: >-
+        返回当前学习者自己的提交记录与评测结果摘要，不包含任何隐藏断言明细。
+      operationId: getLearnerSubmissionDetail
+      x-audience: learner
+      x-permission: learner.submission.read
+      x-idempotent: true
+      parameters:
+        - name: submission_id
+          in: path
+          required: true
+          description: Submission identifier
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Learner submission detail returned successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Submission'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /learner/ai/help:
+    post:
+      tags:
+        - learner-ai
+      summary: Request learner AI help
+      description: >-
+        学习者为当前练习或提交请求 AI 辅助，支持错误解释与提示两种类型。
+      operationId: createLearnerAIHelpRequest
+      x-audience: learner
+      x-permission: learner.ai.request
+      x-idempotent: false
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LearnerAIHelpRequest'
+      responses:
+        '201':
+          description: AI help request accepted successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/AIHelpRequest'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /admin/challenges:
+    get:
+      tags:
+        - admin-challenge
+      summary: List admin challenge records
+      description: >-
+        返回 admin 可见的关卡列表，包含 draft、published、archived 全量状态以及审计字段。
+      operationId: listAdminChallenges
+      x-audience: admin
+      x-permission: admin.challenge.read
+      x-idempotent: true
+      parameters:
+        - $ref: '#/components/parameters/page'
+        - $ref: '#/components/parameters/page_size'
+        - $ref: '#/components/parameters/sort_by'
+        - $ref: '#/components/parameters/sort_order'
+      responses:
+        '200':
+          description: Admin challenge list returned successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        required:
+                          - items
+                          - meta
+                        properties:
+                          items:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/Challenge'
+                          meta:
+                            type: object
+                            required:
+                              - page
+                              - page_size
+                              - total
+                              - has_more
+                            properties:
+                              page:
+                                type: integer
+                                minimum: 1
+                              page_size:
+                                type: integer
+                                minimum: 1
+                                maximum: 100
+                              total:
+                                type: integer
+                                minimum: 0
+                              has_more:
+                                type: boolean
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    post:
+      tags:
+        - admin-challenge
+      summary: Create a challenge record
+      description: >-
+        创建关卡及其子关卡规则配置。新建关卡通常从 draft 状态开始，后续可发布为 published，再归档为 archived。
+      operationId: createAdminChallenge
+      x-audience: admin
+      x-permission: admin.challenge.write
+      x-idempotent: false
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminChallengeCreateInput'
+      responses:
+        '201':
+          description: Admin challenge created successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Challenge'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /admin/challenges/{challenge_id}:
+    patch:
+      tags:
+        - admin-challenge
+      summary: Update a challenge record
+      description: >-
+        更新关卡元数据、子关卡规则与发布状态。状态机仅允许按 draft -> published -> archived 的顺序推进，不支持从 archived 回退。
+      operationId: updateAdminChallenge
+      x-audience: admin
+      x-permission: admin.challenge.write
+      x-idempotent: false
+      parameters:
+        - name: challenge_id
+          in: path
+          required: true
+          description: UUID challenge identifier
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminChallengeUpdateInput'
+      responses:
+        '200':
+          description: Admin challenge updated successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Challenge'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /admin/exercises:
+    get:
+      tags:
+        - admin-practice
+      summary: List admin exercise details
+      description: >-
+        返回管理端可见的练习详情列表，包含正确答案与隐藏用例，供题目维护与审校使用。
+      operationId: listAdminExercises
+      x-audience: admin
+      x-permission: admin.exercise.read
+      x-idempotent: true
+      parameters:
+        - $ref: '#/components/parameters/page'
+        - $ref: '#/components/parameters/page_size'
+        - $ref: '#/components/parameters/sort_by'
+        - $ref: '#/components/parameters/sort_order'
+      responses:
+        '200':
+          description: Admin exercise list returned successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        required:
+                          - items
+                          - meta
+                        properties:
+                          items:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/AdminExerciseDetail'
+                          meta:
+                            type: object
+                            required:
+                              - page
+                              - page_size
+                              - total
+                              - has_more
+                            properties:
+                              page:
+                                type: integer
+                                minimum: 1
+                              page_size:
+                                type: integer
+                                minimum: 1
+                              total:
+                                type: integer
+                                minimum: 0
+                              has_more:
+                                type: boolean
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    post:
+      tags:
+        - admin-practice
+      summary: Create an exercise draft
+      description: >-
+        管理端创建或录入练习题，提交内容可包含正确答案与隐藏用例配置。
+      operationId: createAdminExercise
+      x-audience: admin
+      x-permission: admin.exercise.write
+      x-idempotent: false
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - chapter_id
+                - exercise_code
+                - title
+                - prompt
+                - exercise_type
+                - language
+                - difficulty
+                - pass_score
+                - status
+                - content_version
+              properties:
+                chapter_id:
+                  type: string
+                  format: uuid
+                exercise_code:
+                  type: string
+                title:
+                  type: string
+                prompt:
+                  type: string
+                exercise_type:
+                  type: string
+                  enum:
+                    - single_choice
+                    - coding
+                starter_code:
+                  type: string
+                  nullable: true
+                language:
+                  type: string
+                  enum:
+                    - html_css
+                difficulty:
+                  type: string
+                  enum:
+                    - easy
+                    - medium
+                    - hard
+                pass_score:
+                  type: integer
+                  minimum: 0
+                  maximum: 100
+                max_attempts_per_day:
+                  type: integer
+                  minimum: 1
+                  nullable: true
+                status:
+                  type: string
+                  enum:
+                    - draft
+                    - published
+                    - archived
+                content_version:
+                  type: integer
+                  minimum: 1
+                options:
+                  type: array
+                  items:
+                    type: object
+                    required:
+                      - option_key
+                      - option_text
+                      - is_correct
+                      - order_index
+                    properties:
+                      option_key:
+                        type: string
+                      option_text:
+                        type: string
+                      is_correct:
+                        type: boolean
+                      order_index:
+                        type: integer
+                        minimum: 0
+                test_cases:
+                  type: array
+                  items:
+                    type: object
+                    required:
+                      - case_name
+                      - case_type
+                      - expected_payload_json
+                      - weight
+                      - is_hidden
+                      - order_index
+                      - rule_version
+                    properties:
+                      case_name:
+                        type: string
+                      case_type:
+                        type: string
+                        enum:
+                          - dom_snapshot
+                          - css_assert
+                          - text_match
+                      input_payload_json:
+                        type: object
+                        additionalProperties: true
+                        nullable: true
+                      expected_payload_json:
+                        type: object
+                        additionalProperties: true
+                      weight:
+                        type: integer
+                        minimum: 0
+                      is_hidden:
+                        type: boolean
+                      order_index:
+                        type: integer
+                        minimum: 0
+                      rule_version:
+                        type: integer
+                        minimum: 1
+      responses:
+        '201':
+          description: Admin exercise created successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/AdminExerciseDetail'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /admin/exercises/{exercise_id}:
+    patch:
+      tags:
+        - admin-practice
+      summary: Update an existing exercise
+      description: >-
+        管理端更新练习内容、选项与测试用例。隐藏用例与正确答案仅在 admin 侧可读写。
+      operationId: patchAdminExercise
+      x-audience: admin
+      x-permission: admin.exercise.write
+      x-idempotent: false
+      parameters:
+        - name: exercise_id
+          in: path
+          required: true
+          description: Exercise identifier
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                chapter_id:
+                  type: string
+                  format: uuid
+                exercise_code:
+                  type: string
+                title:
+                  type: string
+                prompt:
+                  type: string
+                exercise_type:
+                  type: string
+                  enum:
+                    - single_choice
+                    - coding
+                starter_code:
+                  type: string
+                  nullable: true
+                language:
+                  type: string
+                  enum:
+                    - html_css
+                difficulty:
+                  type: string
+                  enum:
+                    - easy
+                    - medium
+                    - hard
+                pass_score:
+                  type: integer
+                  minimum: 0
+                  maximum: 100
+                max_attempts_per_day:
+                  type: integer
+                  minimum: 1
+                  nullable: true
+                status:
+                  type: string
+                  enum:
+                    - draft
+                    - published
+                    - archived
+                content_version:
+                  type: integer
+                  minimum: 1
+                options:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                      option_key:
+                        type: string
+                      option_text:
+                        type: string
+                      is_correct:
+                        type: boolean
+                      order_index:
+                        type: integer
+                        minimum: 0
+                test_cases:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                      case_name:
+                        type: string
+                      case_type:
+                        type: string
+                        enum:
+                          - dom_snapshot
+                          - css_assert
+                          - text_match
+                      input_payload_json:
+                        type: object
+                        additionalProperties: true
+                        nullable: true
+                      expected_payload_json:
+                        type: object
+                        additionalProperties: true
+                      weight:
+                        type: integer
+                        minimum: 0
+                      is_hidden:
+                        type: boolean
+                      order_index:
+                        type: integer
+                        minimum: 0
+                      rule_version:
+                        type: integer
+                        minimum: 1
+      responses:
+        '200':
+          description: Admin exercise updated successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/AdminExerciseDetail'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /admin/users:
+    get:
+      tags:
+        - admin-user
+      summary: List admin-visible user records
+      description: >-
+        返回后台用户列表，支持查看账户状态、角色信息与基础资料摘要，供运营封禁、人工核验与客服跟进使用。
+      operationId: listAdminUsers
+      x-audience: admin
+      x-permission: admin.user.read
+      x-idempotent: true
+      parameters:
+        - $ref: '#/components/parameters/page'
+        - $ref: '#/components/parameters/page_size'
+        - $ref: '#/components/parameters/sort_by'
+        - $ref: '#/components/parameters/sort_order'
+      responses:
+        '200':
+          description: Admin user list returned successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        required:
+                          - items
+                          - meta
+                        properties:
+                          items:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/AdminUserListItem'
+                          meta:
+                            type: object
+                            required:
+                              - page
+                              - page_size
+                              - total
+                              - has_more
+                            properties:
+                              page:
+                                type: integer
+                                minimum: 1
+                              page_size:
+                                type: integer
+                                minimum: 1
+                                maximum: 100
+                              total:
+                                type: integer
+                                minimum: 0
+                              has_more:
+                                type: boolean
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /admin/users/{user_id}:
+    get:
+      tags:
+        - admin-user
+      summary: Get admin-visible user detail
+      description: >-
+        返回指定用户的账户详情、角色授予和角色侧资料，供后台执行核验、封禁与问题排查。
+      operationId: getAdminUserDetail
+      x-audience: admin
+      x-permission: admin.user.read
+      x-idempotent: true
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          description: UUID user identifier
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Admin user detail returned successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/AdminUserDetail'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /admin/users/{user_id}/status:
+    patch:
+      tags:
+        - admin-user
+      summary: Update admin-managed user status
+      description: >-
+        更新用户账户状态或后台身份状态，用于封禁、恢复、停用管理员等运营动作。操作会写入审计日志。
+      operationId: updateAdminUserStatus
+      x-audience: admin
+      x-permission: admin.user.write
+      x-idempotent: false
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          description: UUID user identifier
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              x-audience: admin
+              x-permission: admin.user.write
+              x-idempotent: false
+              required:
+                - account_status
+              properties:
+                account_status:
+                  type: string
+                  enum:
+                    - active
+                    - suspended
+                    - closed
+                admin_status:
+                  type: string
+                  enum:
+                    - active
+                    - disabled
+                  nullable: true
+                reason:
+                  type: string
+                  nullable: true
+      responses:
+        '200':
+          description: Admin user status updated successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/AdminUserDetail'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /admin/feedback:
+    get:
+      tags:
+        - admin-moderation
+      summary: List admin-visible feedback tickets
+      description: >-
+        返回用户反馈工单列表，包含处理状态、回复信息与提交者摘要，供客服和运营统一跟进。
+      operationId: listAdminFeedbackTickets
+      x-audience: admin
+      x-permission: admin.feedback.read
+      x-idempotent: true
+      parameters:
+        - $ref: '#/components/parameters/page'
+        - $ref: '#/components/parameters/page_size'
+        - $ref: '#/components/parameters/sort_by'
+        - $ref: '#/components/parameters/sort_order'
+      responses:
+        '200':
+          description: Admin feedback ticket list returned successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        required:
+                          - items
+                          - meta
+                        properties:
+                          items:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/AdminFeedbackListItem'
+                          meta:
+                            type: object
+                            required:
+                              - page
+                              - page_size
+                              - total
+                              - has_more
+                            properties:
+                              page:
+                                type: integer
+                                minimum: 1
+                              page_size:
+                                type: integer
+                                minimum: 1
+                                maximum: 100
+                              total:
+                                type: integer
+                                minimum: 0
+                              has_more:
+                                type: boolean
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /admin/feedback/{ticket_id}:
+    patch:
+      tags:
+        - admin-moderation
+      summary: Update admin feedback ticket workflow
+      description: >-
+        更新反馈工单状态与管理员回复。状态机按 open -> in_progress -> resolved -> closed 推进，回复信息仅对后台运营流程可见。
+      operationId: updateAdminFeedbackTicket
+      x-audience: admin
+      x-permission: admin.feedback.write
+      x-idempotent: false
+      parameters:
+        - name: ticket_id
+          in: path
+          required: true
+          description: UUID feedback ticket identifier
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              x-audience: admin
+              x-permission: admin.feedback.write
+              x-idempotent: false
+              required:
+                - status
+              properties:
+                status:
+                  type: string
+                  enum:
+                    - open
+                    - in_progress
+                    - resolved
+                    - closed
+                admin_reply:
+                  type: string
+                  nullable: true
+      responses:
+        '200':
+          description: Admin feedback ticket updated successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/FeedbackTicket'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /admin/moderation:
+    get:
+      tags:
+        - admin-moderation
+      summary: List admin moderation cases
+      description: >-
+        返回待审与已审记录，包含目标快照、决策状态与审核人信息，供风控与内容审核使用。
+      operationId: listAdminModerationCases
+      x-audience: admin
+      x-permission: admin.moderation.read
+      x-idempotent: true
+      parameters:
+        - $ref: '#/components/parameters/page'
+        - $ref: '#/components/parameters/page_size'
+        - $ref: '#/components/parameters/sort_by'
+        - $ref: '#/components/parameters/sort_order'
+      responses:
+        '200':
+          description: Admin moderation case list returned successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        required:
+                          - items
+                          - meta
+                        properties:
+                          items:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/AdminModerationListItem'
+                          meta:
+                            type: object
+                            required:
+                              - page
+                              - page_size
+                              - total
+                              - has_more
+                            properties:
+                              page:
+                                type: integer
+                                minimum: 1
+                              page_size:
+                                type: integer
+                                minimum: 1
+                                maximum: 100
+                              total:
+                                type: integer
+                                minimum: 0
+                              has_more:
+                                type: boolean
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /admin/moderation/{case_id}:
+    patch:
+      tags:
+        - admin-moderation
+      summary: Review an admin moderation case
+      description: >-
+        对审核单做通过或拒绝决策，并记录决策原因。接口返回带审核审计字段的最新审核单。
+      operationId: updateAdminModerationCase
+      x-audience: admin
+      x-permission: admin.moderation.write
+      x-idempotent: false
+      parameters:
+        - name: case_id
+          in: path
+          required: true
+          description: UUID moderation case identifier
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              x-audience: admin
+              x-permission: admin.moderation.write
+              x-idempotent: false
+              required:
+                - status
+              properties:
+                status:
+                  type: string
+                  enum:
+                    - pending
+                    - approved
+                    - rejected
+                decision_reason:
+                  type: string
+                  nullable: true
+      responses:
+        '200':
+          description: Admin moderation case updated successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/ModerationCase'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /admin/announcements:
+    get:
+      tags:
+        - admin-announcement
+      summary: List admin announcement records
+      description: >-
+        返回公告列表，包含草稿、已发布与已过期状态，供运营排期、回收与追踪发布结果。
+      operationId: listAdminAnnouncements
+      x-audience: admin
+      x-permission: admin.announcement.read
+      x-idempotent: true
+      parameters:
+        - $ref: '#/components/parameters/page'
+        - $ref: '#/components/parameters/page_size'
+        - $ref: '#/components/parameters/sort_by'
+        - $ref: '#/components/parameters/sort_order'
+      responses:
+        '200':
+          description: Admin announcement list returned successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        required:
+                          - items
+                          - meta
+                        properties:
+                          items:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/Announcement'
+                          meta:
+                            type: object
+                            required:
+                              - page
+                              - page_size
+                              - total
+                              - has_more
+                            properties:
+                              page:
+                                type: integer
+                                minimum: 1
+                              page_size:
+                                type: integer
+                                minimum: 1
+                                maximum: 100
+                              total:
+                                type: integer
+                                minimum: 0
+                              has_more:
+                                type: boolean
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    post:
+      tags:
+        - admin-announcement
+      summary: Create an admin announcement
+      description: >-
+        创建后台公告草稿或直接发布的公告记录。公告正文使用 Markdown，发布时间与过期时间均使用 UTC RFC3339。
+      operationId: createAdminAnnouncement
+      x-audience: admin
+      x-permission: admin.announcement.write
+      x-idempotent: false
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminAnnouncementCreateInput'
+      responses:
+        '201':
+          description: Admin announcement created successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Announcement'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /admin/announcements/{announcement_id}:
+    patch:
+      tags:
+        - admin-announcement
+      summary: Update an admin announcement
+      description: >-
+        部分更新公告标题、正文、受众、状态或排期字段。状态机按 draft -> published -> expired 管理，不对 learner 暴露后台排期细节。
+      operationId: updateAdminAnnouncement
+      x-audience: admin
+      x-permission: admin.announcement.write
+      x-idempotent: false
+      parameters:
+        - name: announcement_id
+          in: path
+          required: true
+          description: UUID announcement identifier
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              x-audience: admin
+              x-permission: admin.announcement.write
+              x-idempotent: false
+              properties:
+                title:
+                  type: string
+                  minLength: 1
+                  maxLength: 120
+                body_markdown:
+                  type: string
+                audience:
+                  type: string
+                  enum:
+                    - all_learners
+                    - all_admins
+                    - all
+                status:
+                  type: string
+                  enum:
+                    - draft
+                    - published
+                    - expired
+                published_at:
+                  type: string
+                  format: date-time
+                  nullable: true
+                expires_at:
+                  type: string
+                  format: date-time
+                  nullable: true
+      responses:
+        '200':
+          description: Admin announcement updated successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Announcement'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /admin/configs:
+    get:
+      tags:
+        - admin-config
+      summary: List admin system configs
+      description: >-
+        返回后台系统配置列表，支持按配置键、范围和启用状态管理。配置 JSON 仅允许 admin 读取。
+      operationId: listAdminSystemConfigs
+      x-audience: admin
+      x-permission: admin.config.read
+      x-idempotent: true
+      parameters:
+        - $ref: '#/components/parameters/page'
+        - $ref: '#/components/parameters/page_size'
+        - $ref: '#/components/parameters/sort_by'
+        - $ref: '#/components/parameters/sort_order'
+      responses:
+        '200':
+          description: Admin system config list returned successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        required:
+                          - items
+                          - meta
+                        properties:
+                          items:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/SystemConfig'
+                          meta:
+                            type: object
+                            required:
+                              - page
+                              - page_size
+                              - total
+                              - has_more
+                            properties:
+                              page:
+                                type: integer
+                                minimum: 1
+                              page_size:
+                                type: integer
+                                minimum: 1
+                                maximum: 100
+                              total:
+                                type: integer
+                                minimum: 0
+                              has_more:
+                                type: boolean
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /admin/configs/{config_key}:
+    patch:
+      tags:
+        - admin-config
+      summary: Update admin system config
+      description: >-
+        更新指定配置键的配置范围、值和启用状态。内部配置 JSON 仅允许在 admin audience 下读取和写入。
+      operationId: updateAdminSystemConfig
+      x-audience: admin
+      x-permission: admin.config.write
+      x-idempotent: false
+      parameters:
+        - name: config_key
+          in: path
+          required: true
+          description: Stable config key identifier
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminSystemConfigUpdateInput'
+      responses:
+        '200':
+          description: Admin system config updated successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/SystemConfig'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+components:
+  parameters:
+    page:
+      name: page
+      in: query
+      description: 1-based page index
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+    page_size:
+      name: page_size
+      in: query
+      description: Requested page size
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+    sort_by:
+      name: sort_by
+      in: query
+      description: Lower snake case sort field name
+      required: false
+      schema:
+        type: string
+        default: created_at
+    sort_order:
+      name: sort_order
+      in: query
+      description: Sort order enum in lower snake case
+      required: false
+      schema:
+        type: string
+        enum:
+          - asc
+          - desc
+        default: desc
+    keyword:
+      name: keyword
+      in: query
+      description: Fuzzy search keyword
+      required: false
+      schema:
+        type: string
+    status:
+      name: status
+      in: query
+      description: Status filter
+      required: false
+      schema:
+        type: string
+    date_from:
+      name: date_from
+      in: query
+      description: Date range start (inclusive)
+      required: false
+      schema:
+        type: string
+        format: date
+    date_to:
+      name: date_to
+      in: query
+      description: Date range end (inclusive)
+      required: false
+      schema:
+        type: string
+        format: date
+  responses:
+    Ok:
+      description: Successful request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/SuccessEnvelope'
+    BadRequest:
+      description: Invalid request parameters or payload
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+    Unauthorized:
+      description: Missing or invalid authentication credentials
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+    Forbidden:
+      description: Authenticated but missing required permission
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+    NotFound:
+      description: Requested resource was not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+    Conflict:
+      description: Resource conflict (e.g., duplicate email)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+    InternalServerError:
+      description: Unexpected server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+  schemas:
+    SuccessEnvelope:
+      type: object
+      description: Shared success response wrapper for v1 endpoints
+      x-audience: shared
+      x-permission: shared.response.read
+      x-idempotent: true
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          type: object
+          additionalProperties: true
+          description: Endpoint-specific payload
+        meta:
+          type: object
+          required:
+            - request_id
+            - server_time
+          properties:
+            request_id:
+              type: string
+              format: uuid
+              description: UUID request identifier for tracing
+            server_time:
+              type: string
+              format: date-time
+              description: UTC RFC3339 timestamp
+            page:
+              type: integer
+              description: Current page number (for list responses)
+            page_size:
+              type: integer
+              description: Items per page (for list responses)
+            total:
+              type: integer
+              description: Total number of items (for list responses)
+            has_more:
+              type: boolean
+              description: Whether more items are available (for list responses)
+    ErrorEnvelope:
+      type: object
+      description: Shared error response wrapper for v1 endpoints
+      x-audience: shared
+      x-permission: shared.response.read
+      x-idempotent: true
+      required:
+        - error
+        - meta
+      properties:
+        error:
+          type: object
+          required:
+            - code
+            - message
+          properties:
+            code:
+              type: string
+              description: Stable lower_snake_case error code
+            message:
+              type: string
+              description: Human-readable error summary
+            field_errors:
+              type: array
+              items:
+                type: object
+                required:
+                  - field
+                  - code
+                  - message
+                properties:
+                  field:
+                    type: string
+                  code:
+                    type: string
+                  message:
+                    type: string
+              description: Per-field validation errors
+            details:
+              type: object
+              additionalProperties: true
+              description: Optional structured debug details
+            retryable:
+              type: boolean
+              description: Whether the request can be retried
+        meta:
+          type: object
+          required:
+            - request_id
+            - server_time
+          properties:
+            request_id:
+              type: string
+              format: uuid
+              description: UUID request identifier for tracing
+            server_time:
+              type: string
+              format: date-time
+              description: UTC RFC3339 timestamp
+    Course:
+      type: object
+      description: >-
+        Canonical course entity schema. Admin may view draft, published, and archived records; learner-facing DTOs must only project published content.
+      x-audience: admin
+      x-permission: admin.course.read
+      x-idempotent: true
+      required:
+        - id
+        - course_code
+        - title
+        - summary
+        - difficulty
+        - estimated_minutes
+        - status
+        - sort_order
+        - content_version
+        - created_by
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        course_code:
+          type: string
+          description: Stable business code for course identity
+        title:
+          type: string
+          minLength: 1
+          maxLength: 100
+        summary:
+          type: string
+          maxLength: 300
+        description:
+          type: string
+          nullable: true
+        cover_image_url:
+          type: string
+          format: uri
+          nullable: true
+        difficulty:
+          type: string
+          enum:
+            - beginner
+            - intermediate
+        estimated_minutes:
+          type: integer
+          minimum: 0
+        status:
+          type: string
+          description: Course state machine is draft -> published -> archived
+          enum:
+            - draft
+            - published
+            - archived
+        sort_order:
+          type: integer
+        content_version:
+          type: integer
+          minimum: 1
+          description: Monotonic content version for compatibility-safe content updates
+        created_by:
+          type: string
+          format: uuid
+        published_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    CourseProgress:
+      type: object
+      description: Learner course progress tracking
+      x-audience: learner
+      x-permission: learner.progress.read
+      x-idempotent: true
+      required:
+        - id
+        - learner_id
+        - course_id
+        - completed_chapter_count
+        - total_chapter_count
+        - completed_exercise_count
+        - progress_percent
+        - status
+        - updated_at
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Progress record ID
+        learner_id:
+          type: string
+          format: uuid
+          description: Learner account ID
+        course_id:
+          type: string
+          format: uuid
+          description: Course ID
+        completed_chapter_count:
+          type: integer
+          description: Number of completed chapters
+        total_chapter_count:
+          type: integer
+          description: Total number of chapters
+        completed_exercise_count:
+          type: integer
+          description: Number of completed exercises
+        progress_percent:
+          type: integer
+          minimum: 0
+          maximum: 100
+          description: Progress percentage 0..100
+        last_studied_chapter_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: Most recently studied chapter
+        status:
+          type: string
+          description: Progress status
+          enum:
+            - not_started
+            - in_progress
+            - completed
+        started_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: When the learner started the course
+        completed_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: When the learner completed the course
+        updated_at:
+          type: string
+          format: date-time
+          description: Last update time
+    Chapter:
+      type: object
+      description: >-
+        Canonical chapter entity schema. Learner-facing DTOs must only expose published chapters from published courses.
+      x-audience: admin
+      x-permission: admin.course.read
+      x-idempotent: true
+      required:
+        - id
+        - course_id
+        - chapter_code
+        - title
+        - summary
+        - learning_content_markdown
+        - estimated_minutes
+        - order_index
+        - unlock_rule
+        - status
+        - content_version
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        course_id:
+          type: string
+          format: uuid
+        chapter_code:
+          type: string
+          description: Stable business code for chapter identity
+        title:
+          type: string
+        summary:
+          type: string
+        learning_content_markdown:
+          type: string
+          description: Rich learning content in markdown format
+        sample_code:
+          type: string
+          nullable: true
+        estimated_minutes:
+          type: integer
+          minimum: 0
+        order_index:
+          type: integer
+          minimum: 0
+        unlock_rule:
+          type: string
+          description: free means immediately visible; after_previous_completed requires previous chapter completion
+          enum:
+            - free
+            - after_previous_completed
+        status:
+          type: string
+          description: Chapter state machine follows draft -> published -> archived
+          enum:
+            - draft
+            - published
+            - archived
+        content_version:
+          type: integer
+          minimum: 1
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    LearnerCourseListItem:
+      type: object
+      description: Learner-visible course list item; only published courses may be returned
+      x-audience: learner
+      x-permission: learner.course.read
+      x-idempotent: true
+      required:
+        - id
+        - title
+        - summary
+        - difficulty
+        - estimated_minutes
+        - sort_order
+        - published_at
+        - updated_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        summary:
+          type: string
+        cover_image_url:
+          type: string
+          format: uri
+          nullable: true
+        difficulty:
+          type: string
+          enum:
+            - beginner
+            - intermediate
+        estimated_minutes:
+          type: integer
+          minimum: 0
+        sort_order:
+          type: integer
+        published_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    LearnerCourseDetail:
+      type: object
+      description: Learner-visible published course detail with learner-safe published chapter content
+      x-audience: learner
+      x-permission: learner.course.read
+      x-idempotent: true
+      required:
+        - id
+        - title
+        - summary
+        - difficulty
+        - estimated_minutes
+        - published_at
+        - updated_at
+        - chapters
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        summary:
+          type: string
+        description:
+          type: string
+          nullable: true
+        cover_image_url:
+          type: string
+          format: uri
+          nullable: true
+        difficulty:
+          type: string
+          enum:
+            - beginner
+            - intermediate
+        estimated_minutes:
+          type: integer
+          minimum: 0
+        published_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        chapters:
+          type: array
+          items:
+            type: object
+            description: Published chapter projection for learner consumption
+            required:
+              - id
+              - title
+              - summary
+              - learning_content_markdown
+              - estimated_minutes
+              - order_index
+              - unlock_rule
+              - updated_at
+            properties:
+              id:
+                type: string
+                format: uuid
+              title:
+                type: string
+              summary:
+                type: string
+              learning_content_markdown:
+                type: string
+              sample_code:
+                type: string
+                nullable: true
+              estimated_minutes:
+                type: integer
+                minimum: 0
+              order_index:
+                type: integer
+                minimum: 0
+              unlock_rule:
+                type: string
+                enum:
+                  - free
+                  - after_previous_completed
+              updated_at:
+                type: string
+                format: date-time
+    AdminCourseListItem:
+      type: object
+      description: Admin-visible course list item with audit and version fields
+      x-audience: admin
+      x-permission: admin.course.read
+      x-idempotent: true
+      required:
+        - id
+        - course_code
+        - title
+        - status
+        - difficulty
+        - estimated_minutes
+        - sort_order
+        - content_version
+        - created_by
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        course_code:
+          type: string
+        title:
+          type: string
+        summary:
+          type: string
+        difficulty:
+          type: string
+          enum:
+            - beginner
+            - intermediate
+        estimated_minutes:
+          type: integer
+          minimum: 0
+        status:
+          type: string
+          enum:
+            - draft
+            - published
+            - archived
+        sort_order:
+          type: integer
+        content_version:
+          type: integer
+          minimum: 1
+        created_by:
+          type: string
+          format: uuid
+        published_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    AdminCourseDetail:
+      type: object
+      description: Admin-visible course detail with full chapter records
+      x-audience: admin
+      x-permission: admin.course.read
+      x-idempotent: true
+      allOf:
+        - $ref: '#/components/schemas/Course'
+        - type: object
+          required:
+            - chapters
+          properties:
+            chapters:
+              type: array
+              items:
+                $ref: '#/components/schemas/Chapter'
+    AdminCourseCreateInput:
+      type: object
+      description: Admin payload for creating course metadata
+      x-audience: admin
+      x-permission: admin.course.write
+      x-idempotent: false
+      required:
+        - course_code
+        - title
+        - summary
+        - difficulty
+        - estimated_minutes
+        - status
+        - sort_order
+        - content_version
+      properties:
+        course_code:
+          type: string
+        title:
+          type: string
+          minLength: 1
+          maxLength: 100
+        summary:
+          type: string
+          maxLength: 300
+        description:
+          type: string
+          nullable: true
+        cover_image_url:
+          type: string
+          format: uri
+          nullable: true
+        difficulty:
+          type: string
+          enum:
+            - beginner
+            - intermediate
+        estimated_minutes:
+          type: integer
+          minimum: 0
+        status:
+          type: string
+          description: New courses should typically start as draft
+          enum:
+            - draft
+            - published
+            - archived
+        sort_order:
+          type: integer
+        content_version:
+          type: integer
+          minimum: 1
+        published_at:
+          type: string
+          format: date-time
+          nullable: true
+    AdminCourseUpdateInput:
+      type: object
+      description: Admin payload for partial course updates and state transitions
+      x-audience: admin
+      x-permission: admin.course.write
+      x-idempotent: false
+      required:
+        - content_version
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 100
+        summary:
+          type: string
+          maxLength: 300
+        description:
+          type: string
+          nullable: true
+        cover_image_url:
+          type: string
+          format: uri
+          nullable: true
+        difficulty:
+          type: string
+          enum:
+            - beginner
+            - intermediate
+        estimated_minutes:
+          type: integer
+          minimum: 0
+        status:
+          type: string
+          description: Allowed transitions are draft -> published -> archived
+          enum:
+            - draft
+            - published
+            - archived
+        sort_order:
+          type: integer
+        content_version:
+          type: integer
+          minimum: 1
+        published_at:
+          type: string
+          format: date-time
+          nullable: true
+    Account:
+      type: object
+      description: Shared account identity visible to authenticated clients
+      x-audience: shared
+      x-permission: auth.account.read
+      x-idempotent: true
+      required:
+        - id
+        - email
+        - default_role
+        - account_status
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        default_role:
+          type: string
+          enum:
+            - learner
+            - admin
+        account_status:
+          type: string
+          enum:
+            - active
+            - suspended
+            - closed
+        last_login_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    AccountRole:
+      type: object
+      description: Role grant record for an account
+      x-audience: shared
+      x-permission: auth.role.read
+      x-idempotent: true
+      required:
+        - id
+        - account_id
+        - role
+        - role_status
+        - granted_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        account_id:
+          type: string
+          format: uuid
+        role:
+          type: string
+          enum:
+            - learner
+            - admin
+        role_status:
+          type: string
+          enum:
+            - enabled
+            - disabled
+        granted_at:
+          type: string
+          format: date-time
+        revoked_at:
+          type: string
+          format: date-time
+          nullable: true
+    LearnerProfile:
+      type: object
+      description: Learner-facing profile DTO for app and auth bootstrap
+      x-audience: learner
+      x-permission: learner.profile.read
+      x-idempotent: true
+      required:
+        - account_id
+        - nickname
+        - theme_mode
+        - daily_goal_minutes
+        - streak_days
+        - total_xp
+        - current_level
+        - friend_count
+        - ai_daily_limit
+        - created_at
+        - updated_at
+      properties:
+        account_id:
+          type: string
+          format: uuid
+        nickname:
+          type: string
+        avatar_url:
+          type: string
+          format: uri
+          nullable: true
+        bio:
+          type: string
+          nullable: true
+        theme_mode:
+          type: string
+          enum:
+            - light
+            - dark
+            - system
+        daily_goal_minutes:
+          type: integer
+          minimum: 0
+        streak_days:
+          type: integer
+          minimum: 0
+        total_xp:
+          type: integer
+          minimum: 0
+        current_level:
+          type: integer
+          minimum: 1
+        friend_count:
+          type: integer
+          minimum: 0
+        ai_daily_limit:
+          type: integer
+          minimum: 0
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    AdminProfile:
+      type: object
+      description: Admin-facing profile DTO for console auth bootstrap
+      x-audience: admin
+      x-permission: admin.profile.read
+      x-idempotent: true
+      required:
+        - account_id
+        - display_name
+        - admin_status
+        - created_at
+        - updated_at
+      properties:
+        account_id:
+          type: string
+          format: uuid
+        display_name:
+          type: string
+        avatar_url:
+          type: string
+          format: uri
+          nullable: true
+        admin_status:
+          type: string
+          enum:
+            - active
+            - disabled
+        last_active_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    Session:
+      type: object
+      description: Shared authenticated session record for refresh token lifecycle
+      x-audience: shared
+      x-permission: auth.session.read
+      x-idempotent: true
+      required:
+        - id
+        - account_id
+        - role
+        - device_id
+        - platform
+        - refresh_expires_at
+        - last_seen_at
+        - created_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        account_id:
+          type: string
+          format: uuid
+        role:
+          type: string
+          enum:
+            - learner
+            - admin
+        device_id:
+          type: string
+        device_name:
+          type: string
+          nullable: true
+        platform:
+          type: string
+          enum:
+            - ios
+            - android
+            - web
+        ip_address:
+          type: string
+          nullable: true
+        user_agent:
+          type: string
+          nullable: true
+        refresh_expires_at:
+          type: string
+          format: date-time
+        revoked_at:
+          type: string
+          format: date-time
+          nullable: true
+        last_seen_at:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+    LearnerRegisterRequest:
+      type: object
+      description: Learner registration payload
+      x-audience: shared
+      x-permission: auth.register
+      x-idempotent: false
+      required:
+        - email
+        - password
+        - nickname
+        - device_id
+        - platform
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          format: password
+          minLength: 8
+        nickname:
+          type: string
+          minLength: 2
+          maxLength: 24
+        device_id:
+          type: string
+        device_name:
+          type: string
+          nullable: true
+        platform:
+          type: string
+          enum:
+            - ios
+            - android
+    LearnerLoginRequest:
+      type: object
+      description: Learner login payload
+      x-audience: shared
+      x-permission: auth.learner.login
+      x-idempotent: false
+      required:
+        - email
+        - password
+        - device_id
+        - platform
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          format: password
+          minLength: 8
+        device_id:
+          type: string
+        device_name:
+          type: string
+          nullable: true
+        platform:
+          type: string
+          enum:
+            - ios
+            - android
+    AdminLoginRequest:
+      type: object
+      description: Admin login payload
+      x-audience: shared
+      x-permission: auth.admin.login
+      x-idempotent: false
+      required:
+        - email
+        - password
+        - device_id
+        - platform
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          format: password
+          minLength: 8
+        device_id:
+          type: string
+        device_name:
+          type: string
+          nullable: true
+        platform:
+          type: string
+          enum:
+            - web
+    LoginResponse:
+      type: object
+      description: Auth bootstrap payload returned after login or refresh
+      x-audience: shared
+      x-permission: auth.session.read
+      x-idempotent: true
+      required:
+        - account_id
+        - active_role
+        - access_token
+        - refresh_token
+        - expires_in
+        - session_id
+        - profile
+      properties:
+        account_id:
+          type: string
+          format: uuid
+        active_role:
+          type: string
+          enum:
+            - learner
+            - admin
+        access_token:
+          type: string
+        refresh_token:
+          type: string
+        expires_in:
+          type: integer
+          minimum: 1
+          description: Access token TTL in seconds
+        session_id:
+          type: string
+          format: uuid
+        profile:
+          oneOf:
+            - $ref: '#/components/schemas/LearnerProfile'
+            - $ref: '#/components/schemas/AdminProfile'
+    RefreshRequest:
+      type: object
+      description: Refresh token request payload
+      x-audience: shared
+      x-permission: auth.refresh
+      x-idempotent: true
+      required:
+        - refresh_token
+      properties:
+        refresh_token:
+          type: string
+    LogoutRequest:
+      type: object
+      description: Logout request payload by session identifier
+      x-audience: shared
+      x-permission: auth.logout
+      x-idempotent: false
+      required:
+        - session_id
+      properties:
+        session_id:
+          type: string
+          format: uuid
+    Exercise:
+      type: object
+      description: Shared exercise entity contract
+      x-audience: shared
+      x-permission: practice.exercise.read
+      x-idempotent: true
+      required:
+        - id
+        - chapter_id
+        - exercise_code
+        - title
+        - prompt
+        - exercise_type
+        - language
+        - difficulty
+        - pass_score
+        - status
+        - content_version
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        chapter_id:
+          type: string
+          format: uuid
+        exercise_code:
+          type: string
+        title:
+          type: string
+        prompt:
+          type: string
+        exercise_type:
+          type: string
+          enum:
+            - single_choice
+            - coding
+        starter_code:
+          type: string
+          nullable: true
+        language:
+          type: string
+          enum:
+            - html_css
+        difficulty:
+          type: string
+          enum:
+            - easy
+            - medium
+            - hard
+        pass_score:
+          type: integer
+          minimum: 0
+          maximum: 100
+        max_attempts_per_day:
+          type: integer
+          minimum: 1
+          nullable: true
+        status:
+          type: string
+          enum:
+            - draft
+            - published
+            - archived
+        content_version:
+          type: integer
+          minimum: 1
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    ExerciseOption:
+      type: object
+      description: Exercise option contract for single choice exercises
+      x-audience: admin
+      x-permission: admin.exercise.read
+      x-idempotent: true
+      required:
+        - id
+        - exercise_id
+        - option_key
+        - option_text
+        - is_correct
+        - order_index
+      properties:
+        id:
+          type: string
+          format: uuid
+        exercise_id:
+          type: string
+          format: uuid
+        option_key:
+          type: string
+        option_text:
+          type: string
+        is_correct:
+          type: boolean
+          description: Correct answer flag, admin-visible only
+        order_index:
+          type: integer
+          minimum: 0
+    ExerciseTestCase:
+      type: object
+      description: Exercise judge test case contract
+      x-audience: admin
+      x-permission: admin.exercise.read
+      x-idempotent: true
+      required:
+        - id
+        - exercise_id
+        - case_name
+        - case_type
+        - expected_payload_json
+        - weight
+        - is_hidden
+        - order_index
+        - rule_version
+      properties:
+        id:
+          type: string
+          format: uuid
+        exercise_id:
+          type: string
+          format: uuid
+        case_name:
+          type: string
+        case_type:
+          type: string
+          enum:
+            - dom_snapshot
+            - css_assert
+            - text_match
+        input_payload_json:
+          type: object
+          additionalProperties: true
+          nullable: true
+        expected_payload_json:
+          type: object
+          additionalProperties: true
+        weight:
+          type: integer
+          minimum: 0
+        is_hidden:
+          type: boolean
+        order_index:
+          type: integer
+          minimum: 0
+        rule_version:
+          type: integer
+          minimum: 1
+    Submission:
+      type: object
+      description: Learner exercise submission and judge result
+      x-audience: learner
+      x-permission: learner.submission.read
+      x-idempotent: true
+      required:
+        - id
+        - exercise_id
+        - learner_id
+        - chapter_id
+        - attempt_no
+        - source_code
+        - judge_status
+        - score
+        - passed_case_count
+        - total_case_count
+        - content_version
+        - rule_version
+        - submitted_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        exercise_id:
+          type: string
+          format: uuid
+        learner_id:
+          type: string
+          format: uuid
+        chapter_id:
+          type: string
+          format: uuid
+        attempt_no:
+          type: integer
+          minimum: 1
+        source_code:
+          type: string
+        judge_status:
+          type: string
+          description: Judge state machine pending -> running -> passed/failed/error; error means system failure only
+          enum:
+            - pending
+            - running
+            - passed
+            - failed
+            - error
+        score:
+          type: integer
+          minimum: 0
+          maximum: 100
+        passed_case_count:
+          type: integer
+          minimum: 0
+        total_case_count:
+          type: integer
+          minimum: 0
+        error_summary:
+          type: string
+          nullable: true
+        runtime_ms:
+          type: integer
+          minimum: 0
+          nullable: true
+        content_version:
+          type: integer
+          minimum: 1
+        rule_version:
+          type: integer
+          minimum: 1
+        submitted_at:
+          type: string
+          format: date-time
+        completed_at:
+          type: string
+          format: date-time
+          nullable: true
+    AIHelpRequest:
+      type: object
+      description: Persisted AI help request and response contract
+      x-audience: learner
+      x-permission: learner.ai.read
+      x-idempotent: true
+      required:
+        - id
+        - learner_id
+        - request_type
+        - provider_name
+        - status
+        - created_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        learner_id:
+          type: string
+          format: uuid
+        exercise_id:
+          type: string
+          format: uuid
+          nullable: true
+        submission_id:
+          type: string
+          format: uuid
+          nullable: true
+        request_type:
+          type: string
+          enum:
+            - error_explanation
+            - hint
+        source_code:
+          type: string
+          nullable: true
+        error_context_json:
+          type: object
+          additionalProperties: true
+          nullable: true
+        response_text:
+          type: string
+          nullable: true
+        response_structured_json:
+          type: object
+          additionalProperties: true
+          nullable: true
+        provider_name:
+          type: string
+        token_usage:
+          type: integer
+          minimum: 0
+          nullable: true
+        latency_ms:
+          type: integer
+          minimum: 0
+          nullable: true
+        status:
+          type: string
+          enum:
+            - pending
+            - succeeded
+            - failed
+            - rate_limited
+        created_at:
+          type: string
+          format: date-time
+    LearnerExerciseDetail:
+      type: object
+      description: Learner-visible exercise detail without correct answers or hidden cases
+      x-audience: learner
+      x-permission: learner.exercise.read
+      x-idempotent: true
+      required:
+        - exercise
+        - options
+        - visible_test_cases
+      properties:
+        exercise:
+          $ref: '#/components/schemas/Exercise'
+        options:
+          type: array
+          description: Choice options without is_correct exposure
+          items:
+            type: object
+            required:
+              - id
+              - exercise_id
+              - option_key
+              - option_text
+              - order_index
+            properties:
+              id:
+                type: string
+                format: uuid
+              exercise_id:
+                type: string
+                format: uuid
+              option_key:
+                type: string
+              option_text:
+                type: string
+              order_index:
+                type: integer
+                minimum: 0
+        visible_test_cases:
+          type: array
+          description: Public test case hints only; hidden cases and expected payloads are excluded
+          items:
+            type: object
+            required:
+              - id
+              - exercise_id
+              - case_name
+              - case_type
+              - weight
+              - order_index
+              - rule_version
+            properties:
+              id:
+                type: string
+                format: uuid
+              exercise_id:
+                type: string
+                format: uuid
+              case_name:
+                type: string
+              case_type:
+                type: string
+                enum:
+                  - dom_snapshot
+                  - css_assert
+                  - text_match
+              input_payload_json:
+                type: object
+                additionalProperties: true
+                nullable: true
+              weight:
+                type: integer
+                minimum: 0
+              order_index:
+                type: integer
+                minimum: 0
+              rule_version:
+                type: integer
+                minimum: 1
+    AdminExerciseDetail:
+      type: object
+      description: Admin-visible exercise detail including correct answers and hidden test cases
+      x-audience: admin
+      x-permission: admin.exercise.read
+      x-idempotent: true
+      required:
+        - exercise
+        - options
+        - test_cases
+      properties:
+        exercise:
+          $ref: '#/components/schemas/Exercise'
+        options:
+          type: array
+          items:
+            $ref: '#/components/schemas/ExerciseOption'
+        test_cases:
+          type: array
+          items:
+            $ref: '#/components/schemas/ExerciseTestCase'
+    LearnerSubmissionRequest:
+      type: object
+      description: Learner submission payload for coding exercises
+      x-audience: learner
+      x-permission: learner.submission.write
+      x-idempotent: false
+      required:
+        - exercise_id
+        - source_code
+      properties:
+        exercise_id:
+          type: string
+          format: uuid
+        source_code:
+          type: string
+        content_version:
+          type: integer
+          minimum: 1
+          description: Optional optimistic guard against stale exercise content
+        rule_version:
+          type: integer
+          minimum: 1
+          description: Optional optimistic guard against stale judge rules
+    LearnerAIHelpRequest:
+      type: object
+      description: Learner AI assistance request payload
+      x-audience: learner
+      x-permission: learner.ai.request
+      x-idempotent: false
+      required:
+        - exercise_id
+        - request_type
+      properties:
+        exercise_id:
+          type: string
+          format: uuid
+        submission_id:
+          type: string
+          format: uuid
+          nullable: true
+        request_type:
+          type: string
+          enum:
+            - error_explanation
+            - hint
+        source_code:
+          type: string
+          nullable: true
+        error_context_json:
+          type: object
+          additionalProperties: true
+          nullable: true
+    FriendRelation:
+      type: object
+      description: Platform-internal learner friend relation record
+      x-audience: learner
+      x-permission: learner.friend.read
+      x-idempotent: true
+      required:
+        - id
+        - requester_id
+        - addressee_id
+        - status
+        - created_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        requester_id:
+          type: string
+          format: uuid
+        addressee_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum:
+            - pending
+            - accepted
+            - rejected
+            - blocked
+        created_at:
+          type: string
+          format: date-time
+        responded_at:
+          type: string
+          format: date-time
+          nullable: true
+    SocialActivity:
+      type: object
+      description: Platform-internal learner social activity record
+      x-audience: learner
+      x-permission: learner.activity.read
+      x-idempotent: true
+      required:
+        - id
+        - learner_id
+        - activity_type
+        - visibility
+        - payload_json
+        - created_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        learner_id:
+          type: string
+          format: uuid
+        activity_type:
+          type: string
+          enum:
+            - challenge_completed
+            - badge_earned
+            - streak_reached
+            - course_completed
+        visibility:
+          type: string
+          enum:
+            - friends_only
+            - public_in_app
+            - private
+        payload_json:
+          type: object
+          additionalProperties: true
+        created_at:
+          type: string
+          format: date-time
+    LeaderboardSnapshot:
+      type: object
+      description: Immutable leaderboard snapshot item for learner ranking views
+      x-audience: learner
+      x-permission: learner.leaderboard.read
+      x-idempotent: true
+      required:
+        - id
+        - board_type
+        - period_key
+        - learner_id
+        - score
+        - rank_position
+        - generated_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        board_type:
+          type: string
+          enum:
+            - daily
+            - weekly
+            - total
+        period_key:
+          type: string
+        learner_id:
+          type: string
+          format: uuid
+        score:
+          type: integer
+          minimum: 0
+        rank_position:
+          type: integer
+          minimum: 1
+        generated_at:
+          type: string
+          format: date-time
+    LearnerProfileUpdateInput:
+      type: object
+      description: Learner profile update payload for self-service profile center
+      x-audience: learner
+      x-permission: learner.profile.write
+      x-idempotent: false
+      properties:
+        nickname:
+          type: string
+          minLength: 1
+        avatar_url:
+          type: string
+          format: uri
+          nullable: true
+        bio:
+          type: string
+          nullable: true
+        theme_mode:
+          type: string
+          enum:
+            - light
+            - dark
+            - system
+        daily_goal_minutes:
+          type: integer
+          minimum: 0
+    FriendRequestInput:
+      type: object
+      description: Learner friend request creation payload
+      x-audience: learner
+      x-permission: learner.friend.write
+      x-idempotent: false
+      required:
+        - addressee_id
+      properties:
+        addressee_id:
+          type: string
+          format: uuid
+    LearnerFriendListItem:
+      type: object
+      description: Learner-facing friend list item with peer profile summary
+      x-audience: learner
+      x-permission: learner.friend.read
+      x-idempotent: true
+      allOf:
+        - $ref: '#/components/schemas/FriendRelation'
+        - type: object
+          required:
+            - friend_profile
+          properties:
+            friend_profile:
+              type: object
+              required:
+                - account_id
+                - nickname
+              properties:
+                account_id:
+                  type: string
+                  format: uuid
+                nickname:
+                  type: string
+                avatar_url:
+                  type: string
+                  format: uri
+                  nullable: true
+                bio:
+                  type: string
+                  nullable: true
+    LearnerActivityFeedItem:
+      type: object
+      description: Learner-facing activity feed item with actor profile summary
+      x-audience: learner
+      x-permission: learner.activity.read
+      x-idempotent: true
+      allOf:
+        - $ref: '#/components/schemas/SocialActivity'
+        - type: object
+          required:
+            - actor_profile
+          properties:
+            actor_profile:
+              type: object
+              required:
+                - account_id
+                - nickname
+              properties:
+                account_id:
+                  type: string
+                  format: uuid
+                nickname:
+                  type: string
+                avatar_url:
+                  type: string
+                  format: uri
+                  nullable: true
+    LearnerLeaderboardItem:
+      type: object
+      description: Learner-facing leaderboard item with profile summary
+      x-audience: learner
+      x-permission: learner.leaderboard.read
+      x-idempotent: true
+      allOf:
+        - $ref: '#/components/schemas/LeaderboardSnapshot'
+        - type: object
+          required:
+            - learner_profile
+          properties:
+            learner_profile:
+              type: object
+              required:
+                - account_id
+                - nickname
+              properties:
+                account_id:
+                  type: string
+                  format: uuid
+                nickname:
+                  type: string
+                avatar_url:
+                  type: string
+                  format: uri
+                  nullable: true
+    Challenge:
+      type: object
+      description: Challenge definition shared by learner map and admin management workflows
+      x-audience: shared
+      x-permission: shared.response.read
+      x-idempotent: true
+      required:
+        - id
+        - challenge_code
+        - title
+        - summary
+        - difficulty
+        - reward_xp
+        - status
+        - sort_order
+        - content_version
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        challenge_code:
+          type: string
+        title:
+          type: string
+        summary:
+          type: string
+        related_course_id:
+          type: string
+          format: uuid
+          nullable: true
+        difficulty:
+          type: string
+          enum:
+            - easy
+            - medium
+            - hard
+        reward_xp:
+          type: integer
+          minimum: 0
+        status:
+          type: string
+          enum:
+            - draft
+            - published
+            - archived
+        sort_order:
+          type: integer
+        content_version:
+          type: integer
+          minimum: 1
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    ChallengeStage:
+      type: object
+      description: Ordered stage definition inside a challenge
+      x-audience: shared
+      x-permission: shared.response.read
+      x-idempotent: true
+      required:
+        - id
+        - challenge_id
+        - exercise_id
+        - order_index
+        - star_rule_json
+        - unlock_rule_json
+        - rule_version
+      properties:
+        id:
+          type: string
+          format: uuid
+        challenge_id:
+          type: string
+          format: uuid
+        exercise_id:
+          type: string
+          format: uuid
+        order_index:
+          type: integer
+          minimum: 1
+        star_rule_json:
+          type: object
+          additionalProperties: true
+        unlock_rule_json:
+          type: object
+          additionalProperties: true
+        rule_version:
+          type: integer
+          minimum: 1
+    ChallengeAttempt:
+      type: object
+      description: Learner attempt aggregate for a challenge reward settlement lifecycle
+      x-audience: shared
+      x-permission: shared.response.read
+      x-idempotent: true
+      required:
+        - id
+        - challenge_id
+        - learner_id
+        - best_star
+        - status
+        - updated_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        challenge_id:
+          type: string
+          format: uuid
+        learner_id:
+          type: string
+          format: uuid
+        best_star:
+          type: integer
+          minimum: 0
+          maximum: 3
+        status:
+          type: string
+          enum:
+            - locked
+            - unlocked
+            - in_progress
+            - completed
+        started_at:
+          type: string
+          format: date-time
+          nullable: true
+        completed_at:
+          type: string
+          format: date-time
+          nullable: true
+        reward_claimed_at:
+          type: string
+          format: date-time
+          nullable: true
+        updated_at:
+          type: string
+          format: date-time
+    DailyChallenge:
+      type: object
+      description: Daily challenge definition published for a specific date
+      x-audience: shared
+      x-permission: shared.response.read
+      x-idempotent: true
+      required:
+        - id
+        - challenge_date
+        - title
+        - exercise_id
+        - difficulty
+        - time_limit_seconds
+        - reward_xp
+        - status
+        - published_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        challenge_date:
+          type: string
+          format: date
+        title:
+          type: string
+        exercise_id:
+          type: string
+          format: uuid
+        difficulty:
+          type: string
+          enum:
+            - easy
+            - medium
+            - hard
+        time_limit_seconds:
+          type: integer
+          minimum: 1
+        reward_xp:
+          type: integer
+          minimum: 0
+        status:
+          type: string
+          enum:
+            - scheduled
+            - active
+            - closed
+        published_at:
+          type: string
+          format: date-time
+    DailyChallengeRecord:
+      type: object
+      description: Learner participation record for a daily challenge
+      x-audience: shared
+      x-permission: shared.response.read
+      x-idempotent: true
+      required:
+        - id
+        - daily_challenge_id
+        - learner_id
+        - status
+        - score
+        - streak_after_completion
+      properties:
+        id:
+          type: string
+          format: uuid
+        daily_challenge_id:
+          type: string
+          format: uuid
+        learner_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum:
+            - not_started
+            - passed
+            - failed
+            - expired
+        score:
+          type: integer
+          minimum: 0
+        elapsed_seconds:
+          type: integer
+          minimum: 0
+          nullable: true
+        streak_after_completion:
+          type: integer
+          minimum: 0
+        completed_at:
+          type: string
+          format: date-time
+          nullable: true
+    XpLedger:
+      type: object
+      description: XP ledger entry as the source of truth for reward balance changes
+      x-audience: shared
+      x-permission: shared.response.read
+      x-idempotent: true
+      required:
+        - id
+        - learner_id
+        - source_type
+        - source_id
+        - delta_xp
+        - balance_after
+        - created_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        learner_id:
+          type: string
+          format: uuid
+        source_type:
+          type: string
+          enum:
+            - chapter
+            - exercise
+            - challenge
+            - daily
+            - admin_adjustment
+        source_id:
+          type: string
+          format: uuid
+        delta_xp:
+          type: integer
+        balance_after:
+          type: integer
+          minimum: 0
+        created_at:
+          type: string
+          format: date-time
+    Badge:
+      type: object
+      description: Badge definition and award rule configuration
+      x-audience: shared
+      x-permission: shared.response.read
+      x-idempotent: true
+      required:
+        - id
+        - badge_code
+        - name
+        - description
+        - rule_type
+        - rule_config_json
+        - status
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        badge_code:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        icon_url:
+          type: string
+          format: uri
+          nullable: true
+        rule_type:
+          type: string
+          enum:
+            - streak
+            - course
+            - challenge
+            - manual
+        rule_config_json:
+          type: object
+          additionalProperties: true
+        status:
+          type: string
+          enum:
+            - draft
+            - published
+            - archived
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    LearnerBadge:
+      type: object
+      description: Badge award record as the source of truth for learner badge ownership
+      x-audience: shared
+      x-permission: shared.response.read
+      x-idempotent: true
+      required:
+        - id
+        - learner_id
+        - badge_id
+        - award_source_type
+        - awarded_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        learner_id:
+          type: string
+          format: uuid
+        badge_id:
+          type: string
+          format: uuid
+        award_source_type:
+          type: string
+          enum:
+            - system
+            - manual
+        award_source_id:
+          type: string
+          format: uuid
+          nullable: true
+        awarded_at:
+          type: string
+          format: date-time
+    LearnerChallengeMapItem:
+      type: object
+      description: Learner-visible challenge map item for map and progression screens
+      x-audience: learner
+      x-permission: learner.challenge.read
+      x-idempotent: true
+      required:
+        - challenge_id
+        - challenge_code
+        - title
+        - difficulty
+        - learner_status
+        - best_star
+        - reward_xp
+        - sort_order
+        - stage_count
+        - completed_stage_count
+      properties:
+        challenge_id:
+          type: string
+          format: uuid
+        challenge_code:
+          type: string
+        title:
+          type: string
+        difficulty:
+          type: string
+          enum:
+            - easy
+            - medium
+            - hard
+        learner_status:
+          type: string
+          enum:
+            - locked
+            - unlocked
+            - in_progress
+            - completed
+        best_star:
+          type: integer
+          minimum: 0
+          maximum: 3
+        reward_xp:
+          type: integer
+          minimum: 0
+        sort_order:
+          type: integer
+        stage_count:
+          type: integer
+          minimum: 0
+        completed_stage_count:
+          type: integer
+          minimum: 0
+    LearnerRewardSummary:
+      type: object
+      description: Learner reward summary derived from XP ledger and awarded badges
+      x-audience: learner
+      x-permission: learner.reward.read
+      x-idempotent: true
+      required:
+        - current_xp_balance
+        - lifetime_xp_earned
+        - badge_count
+      properties:
+        current_xp_balance:
+          type: integer
+          minimum: 0
+        lifetime_xp_earned:
+          type: integer
+          minimum: 0
+        badge_count:
+          type: integer
+          minimum: 0
+        latest_reward_at:
+          type: string
+          format: date-time
+          nullable: true
+    AdminChallengeCreateInput:
+      type: object
+      description: Admin payload for creating a challenge with ordered stage rules
+      x-audience: admin
+      x-permission: admin.challenge.write
+      x-idempotent: false
+      required:
+        - challenge_code
+        - title
+        - summary
+        - difficulty
+        - reward_xp
+        - status
+        - sort_order
+        - content_version
+        - stages
+      properties:
+        challenge_code:
+          type: string
+        title:
+          type: string
+        summary:
+          type: string
+        related_course_id:
+          type: string
+          format: uuid
+          nullable: true
+        difficulty:
+          type: string
+          enum:
+            - easy
+            - medium
+            - hard
+        reward_xp:
+          type: integer
+          minimum: 0
+        status:
+          type: string
+          enum:
+            - draft
+            - published
+            - archived
+        sort_order:
+          type: integer
+        content_version:
+          type: integer
+          minimum: 1
+        stages:
+          type: array
+          minItems: 1
+          items:
+            type: object
+            required:
+              - exercise_id
+              - order_index
+              - star_rule_json
+              - unlock_rule_json
+              - rule_version
+            properties:
+              exercise_id:
+                type: string
+                format: uuid
+              order_index:
+                type: integer
+                minimum: 1
+              star_rule_json:
+                type: object
+                additionalProperties: true
+              unlock_rule_json:
+                type: object
+                additionalProperties: true
+              rule_version:
+                type: integer
+                minimum: 1
+    AdminBadgeCreateInput:
+      type: object
+      description: Admin payload for creating a badge rule definition
+      x-audience: admin
+      x-permission: admin.reward.write
+      x-idempotent: false
+      required:
+        - badge_code
+        - name
+        - description
+        - rule_type
+        - rule_config_json
+        - status
+      properties:
+        badge_code:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        icon_url:
+          type: string
+          format: uri
+          nullable: true
+        rule_type:
+          type: string
+          enum:
+            - streak
+            - course
+            - challenge
+            - manual
+        rule_config_json:
+          type: object
+          additionalProperties: true
+        status:
+          type: string
+          enum:
+            - draft
+            - published
+            - archived
+    FeedbackTicket:
+      type: object
+      description: Admin-visible feedback ticket record for customer support and operations workflows
+      x-audience: admin
+      x-permission: admin.feedback.read
+      x-idempotent: true
+      required:
+        - id
+        - learner_id
+        - category
+        - content
+        - status
+        - created_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        learner_id:
+          type: string
+          format: uuid
+        category:
+          type: string
+          enum:
+            - content
+            - problem
+            - bug
+            - account
+            - other
+        content:
+          type: string
+        screenshot_urls:
+          type: array
+          items:
+            type: string
+            format: uri
+        status:
+          type: string
+          enum:
+            - open
+            - in_progress
+            - resolved
+            - closed
+        admin_reply:
+          type: string
+          nullable: true
+        replied_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+    ModerationCase:
+      type: object
+      description: Admin moderation case with immutable review snapshot and audit fields
+      x-audience: admin
+      x-permission: admin.moderation.read
+      x-idempotent: true
+      required:
+        - id
+        - case_type
+        - target_id
+        - target_snapshot_json
+        - status
+        - created_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        case_type:
+          type: string
+          enum:
+            - nickname
+            - avatar
+            - feedback
+        target_id:
+          type: string
+          format: uuid
+        target_snapshot_json:
+          type: object
+          additionalProperties: true
+        status:
+          type: string
+          enum:
+            - pending
+            - approved
+            - rejected
+        decision_reason:
+          type: string
+          nullable: true
+        reviewed_by:
+          type: string
+          format: uuid
+          nullable: true
+        reviewed_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+    Announcement:
+      type: object
+      description: Admin announcement record for publication scheduling and expiry tracking
+      x-audience: admin
+      x-permission: admin.announcement.read
+      x-idempotent: true
+      required:
+        - id
+        - title
+        - body_markdown
+        - audience
+        - status
+        - created_by
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        body_markdown:
+          type: string
+        audience:
+          type: string
+          enum:
+            - all_learners
+            - all_admins
+            - all
+        status:
+          type: string
+          enum:
+            - draft
+            - published
+            - expired
+        published_at:
+          type: string
+          format: date-time
+          nullable: true
+        expires_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_by:
+          type: string
+          format: uuid
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    SystemConfig:
+      type: object
+      description: Admin-only system configuration record with scoped JSON payload and audit fields
+      x-audience: admin
+      x-permission: admin.config.read
+      x-idempotent: true
+      required:
+        - id
+        - config_key
+        - config_scope
+        - value_json
+        - status
+        - updated_by
+        - updated_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        config_key:
+          type: string
+        config_scope:
+          type: string
+          enum:
+            - system
+            - ai
+            - challenge
+            - reward
+        value_json:
+          type: object
+          additionalProperties: true
+        status:
+          type: string
+          enum:
+            - active
+            - inactive
+        updated_by:
+          type: string
+          format: uuid
+        updated_at:
+          type: string
+          format: date-time
+    AdminUserListItem:
+      type: object
+      description: Admin-visible user list item with account status, role summary, and profile preview
+      x-audience: admin
+      x-permission: admin.user.read
+      x-idempotent: true
+      required:
+        - account_id
+        - email
+        - default_role
+        - account_status
+        - roles
+        - created_at
+      properties:
+        account_id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        default_role:
+          type: string
+          enum:
+            - learner
+            - admin
+        account_status:
+          type: string
+          enum:
+            - active
+            - suspended
+            - closed
+        roles:
+          type: array
+          items:
+            type: string
+            enum:
+              - learner
+              - admin
+        profile_summary:
+          type: object
+          required:
+            - display_name
+          properties:
+            display_name:
+              type: string
+            avatar_url:
+              type: string
+              format: uri
+              nullable: true
+        admin_status:
+          type: string
+          enum:
+            - active
+            - disabled
+          nullable: true
+        last_login_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+    AdminUserDetail:
+      type: object
+      description: Admin-visible user detail with account, role grants, and optional role-specific profiles
+      x-audience: admin
+      x-permission: admin.user.read
+      x-idempotent: true
+      required:
+        - account
+        - roles
+      properties:
+        account:
+          $ref: '#/components/schemas/Account'
+        roles:
+          type: array
+          items:
+            $ref: '#/components/schemas/AccountRole'
+        learner_profile:
+          allOf:
+            - $ref: '#/components/schemas/LearnerProfile'
+          nullable: true
+        admin_profile:
+          allOf:
+            - $ref: '#/components/schemas/AdminProfile'
+          nullable: true
+    AdminFeedbackListItem:
+      type: object
+      description: Admin feedback ticket list item enriched with learner profile summary
+      x-audience: admin
+      x-permission: admin.feedback.read
+      x-idempotent: true
+      allOf:
+        - $ref: '#/components/schemas/FeedbackTicket'
+        - type: object
+          required:
+            - learner_profile
+          properties:
+            learner_profile:
+              type: object
+              required:
+                - account_id
+                - nickname
+              properties:
+                account_id:
+                  type: string
+                  format: uuid
+                nickname:
+                  type: string
+                avatar_url:
+                  type: string
+                  format: uri
+                  nullable: true
+    AdminModerationListItem:
+      type: object
+      description: Admin moderation list item enriched with target and reviewer summaries
+      x-audience: admin
+      x-permission: admin.moderation.read
+      x-idempotent: true
+      allOf:
+        - $ref: '#/components/schemas/ModerationCase'
+        - type: object
+          properties:
+            target_summary:
+              type: object
+              required:
+                - target_label
+              properties:
+                target_label:
+                  type: string
+                target_owner_id:
+                  type: string
+                  format: uuid
+                  nullable: true
+            reviewer_profile:
+              type: object
+              required:
+                - account_id
+                - display_name
+              properties:
+                account_id:
+                  type: string
+                  format: uuid
+                display_name:
+                  type: string
+                avatar_url:
+                  type: string
+                  format: uri
+                  nullable: true
+              nullable: true
+    AdminAnnouncementCreateInput:
+      type: object
+      description: Admin payload for creating announcement drafts or directly published announcements
+      x-audience: admin
+      x-permission: admin.announcement.write
+      x-idempotent: false
+      required:
+        - title
+        - body_markdown
+        - audience
+        - status
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 120
+        body_markdown:
+          type: string
+        audience:
+          type: string
+          enum:
+            - all_learners
+            - all_admins
+            - all
+        status:
+          type: string
+          enum:
+            - draft
+            - published
+            - expired
+        published_at:
+          type: string
+          format: date-time
+          nullable: true
+        expires_at:
+          type: string
+          format: date-time
+          nullable: true
+    AdminSystemConfigUpdateInput:
+      type: object
+      description: Admin payload for updating scoped system configuration values and status
+      x-audience: admin
+      x-permission: admin.config.write
+      x-idempotent: false
+      required:
+        - config_scope
+        - value_json
+        - status
+      properties:
+        config_scope:
+          type: string
+          enum:
+            - system
+            - ai
+            - challenge
+            - reward
+        value_json:
+          type: object
+          additionalProperties: true
+        status:
+          type: string
+          enum:
+            - active
+            - inactive
+    AdminDashboardStats:
+      type: object
+      description: Admin dashboard stats read model derived from platform truth sources
+      x-audience: admin
+      x-permission: admin.stats.read
+      x-idempotent: true
+      required:
+        - generated_at
+        - daily_active_learner_count
+        - course_completion_rate
+        - challenge_completion_rate
+        - total_learning_minutes
+        - ai_help_request_count
+        - top_learners
+      properties:
+        generated_at:
+          type: string
+          format: date-time
+        daily_active_learner_count:
+          type: integer
+          minimum: 0
+        course_completion_rate:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 1
+        challenge_completion_rate:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 1
+        total_learning_minutes:
+          type: integer
+          minimum: 0
+        ai_help_request_count:
+          type: integer
+          minimum: 0
+        top_learners:
+          type: array
+          items:
+            $ref: '#/components/schemas/LearnerRankItem'
+    AdminCourseStats:
+      type: object
+      description: Course-level aggregated stats item for admin analytics screens
+      x-audience: admin
+      x-permission: admin.stats.read
+      x-idempotent: true
+      required:
+        - course_id
+        - course_code
+        - title
+        - enrolled_learner_count
+        - active_learner_count
+        - completion_rate
+        - average_learning_minutes
+      properties:
+        course_id:
+          type: string
+          format: uuid
+        course_code:
+          type: string
+        title:
+          type: string
+        enrolled_learner_count:
+          type: integer
+          minimum: 0
+        active_learner_count:
+          type: integer
+          minimum: 0
+        completion_rate:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 1
+        average_learning_minutes:
+          type: integer
+          minimum: 0
+        completed_learner_count:
+          type: integer
+          minimum: 0
+        last_completed_at:
+          type: string
+          format: date-time
+          nullable: true
+    AdminUserActivityStats:
+      type: object
+      description: Admin user activity stats read model for engagement monitoring
+      x-audience: admin
+      x-permission: admin.stats.read
+      x-idempotent: true
+      required:
+        - generated_at
+        - daily_active_learner_count
+        - weekly_active_learner_count
+        - active_session_count
+        - ai_help_request_count
+        - average_session_minutes
+      properties:
+        generated_at:
+          type: string
+          format: date-time
+        daily_active_learner_count:
+          type: integer
+          minimum: 0
+        weekly_active_learner_count:
+          type: integer
+          minimum: 0
+        active_session_count:
+          type: integer
+          minimum: 0
+        ai_help_request_count:
+          type: integer
+          minimum: 0
+        average_session_minutes:
+          type: integer
+          minimum: 0
+        latest_session_seen_at:
+          type: string
+          format: date-time
+          nullable: true
+    LearnerRankItem:
+      type: object
+      description: Learner leaderboard ranking item enriched with reward summary projection
+      x-audience: learner
+      x-permission: learner.leaderboard.read
+      x-idempotent: true
+      allOf:
+        - $ref: '#/components/schemas/LeaderboardSnapshot'
+        - type: object
+          required:
+            - learner_profile
+            - current_xp_balance
+            - badge_count
+            - is_current_user
+          properties:
+            learner_profile:
+              type: object
+              required:
+                - account_id
+                - nickname
+              properties:
+                account_id:
+                  type: string
+                  format: uuid
+                nickname:
+                  type: string
+                avatar_url:
+                  type: string
+                  format: uri
+                  nullable: true
+            current_xp_balance:
+              type: integer
+              minimum: 0
+            badge_count:
+              type: integer
+              minimum: 0
+            is_current_user:
+              type: boolean
+    LearnerPersonalStats:
+      type: object
+      description: Learner personal stats read model for profile and progress views
+      x-audience: learner
+      x-permission: learner.stats.read
+      x-idempotent: true
+      required:
+        - learner_id
+        - board_type
+        - period_key
+        - current_xp_balance
+        - lifetime_xp_earned
+        - completed_course_count
+        - completed_challenge_count
+        - ai_help_request_count
+        - total_learning_minutes
+        - streak_days
+        - generated_at
+      properties:
+        learner_id:
+          type: string
+          format: uuid
+        board_type:
+          type: string
+          enum:
+            - daily
+            - weekly
+            - total
+        period_key:
+          type: string
+        current_rank:
+          type: integer
+          minimum: 1
+          nullable: true
+        current_xp_balance:
+          type: integer
+          minimum: 0
+        lifetime_xp_earned:
+          type: integer
+          minimum: 0
+        completed_course_count:
+          type: integer
+          minimum: 0
+        completed_challenge_count:
+          type: integer
+          minimum: 0
+        ai_help_request_count:
+          type: integer
+          minimum: 0
+        total_learning_minutes:
+          type: integer
+          minimum: 0
+        streak_days:
+          type: integer
+          minimum: 0
+        generated_at:
+          type: string
+          format: date-time
+    LearnerChallengeAttemptRequest:
+      type: object
+      description: Learner challenge attempt submission payload
+      x-audience: learner
+      x-permission: learner.challenge.write
+      x-idempotent: false
+      required:
+        - stage_results
+      properties:
+        stage_results:
+          type: array
+          description: Ordered stage attempt results
+          items:
+            type: object
+            required:
+              - stage_id
+              - passed
+              - score
+            properties:
+              stage_id:
+                type: string
+                format: uuid
+              passed:
+                type: boolean
+              score:
+                type: integer
+                minimum: 0
+                maximum: 100
+              source_code:
+                type: string
+                nullable: true
+              elapsed_seconds:
+                type: integer
+                minimum: 0
+                nullable: true
+    LearnerDailyChallengeSubmitRequest:
+      type: object
+      description: Learner daily challenge submission payload
+      x-audience: learner
+      x-permission: learner.daily.write
+      x-idempotent: false
+      required:
+        - source_code
+      properties:
+        source_code:
+          type: string
+        elapsed_seconds:
+          type: integer
+          minimum: 0
+          nullable: true
+    AdminChallengeUpdateInput:
+      type: object
+      description: Admin payload for partial challenge updates and state transitions
+      x-audience: admin
+      x-permission: admin.challenge.write
+      x-idempotent: false
+      required:
+        - content_version
+      properties:
+        title:
+          type: string
+          minLength: 1
+        summary:
+          type: string
+        related_course_id:
+          type: string
+          format: uuid
+          nullable: true
+        difficulty:
+          type: string
+          enum:
+            - easy
+            - medium
+            - hard
+        reward_xp:
+          type: integer
+          minimum: 0
+        status:
+          type: string
+          description: Allowed transitions are draft -> published -> archived
+          enum:
+            - draft
+            - published
+            - archived
+        sort_order:
+          type: integer
+        content_version:
+          type: integer
+          minimum: 1
+        stages:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                format: uuid
+              exercise_id:
+                type: string
+                format: uuid
+              order_index:
+                type: integer
+                minimum: 1
+              star_rule_json:
+                type: object
+                additionalProperties: true
+              unlock_rule_json:
+                type: object
+                additionalProperties: true
+              rule_version:
+                type: integer
+                minimum: 1
