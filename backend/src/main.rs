@@ -1,5 +1,6 @@
 use salvo::prelude::*;
 use salvo::affix_state;
+use salvo::oapi::{OpenApi, Info, Contact, License};
 use tracing::info;
 
 mod config;
@@ -32,6 +33,19 @@ async fn main() {
         .hoop(affix_state::inject(pool))
         .hoop(affix_state::inject(cfg))
         .hoop(middleware::logging::request_logger);
+
+    let doc = OpenApi::new("Learning App API", "1.0.0")
+        .info(
+            Info::new("Learning App API", "1.0.0")
+                .description("A comprehensive learning application API with courses, challenges, exercises, and gamification features")
+                .contact(Contact::new().name("API Support").email("support@learningapp.com"))
+                .license(License::new("MIT")),
+        )
+        .merge_router(&router);
+
+    let router = router
+        .unshift(doc.into_router("/api-doc/openapi.json"))
+        .unshift(SwaggerUi::new("/api-doc/openapi.json").into_router("/swagger-ui"));
 
     let acceptor = TcpListener::new(server_addr).bind().await;
     info!("Server listening");
