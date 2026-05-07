@@ -75,7 +75,23 @@ pub fn create_router() -> Router {
                                 .get(handlers::course::list_courses)
                                 .push(
                                     Router::with_path("{course_id}")
-                                        .get(handlers::course::get_course),
+                                        .get(handlers::course::get_course)
+                                        .push(
+                                            Router::with_path("chapters")
+                                                .get(handlers::chapter::list_chapters)
+                                                .push(
+                                                    Router::with_path("{chapter_id}")
+                                                        .get(handlers::chapter::get_chapter)
+                                                        .push(
+                                                            Router::with_path("exercises")
+                                                                .get(handlers::exercise::list_exercises)
+                                                                .push(
+                                                                    Router::with_path("{exercise_id}")
+                                                                        .get(handlers::exercise::get_exercise),
+                                                                ),
+                                                        ),
+                                                ),
+                                        ),
                                 ),
                         )
                         .push(
@@ -138,10 +154,6 @@ pub fn create_router() -> Router {
                         .push(
                             Router::with_path("rewards")
                                 .get(handlers::reward::get_rewards),
-                        )
-                        .push(
-                            Router::with_path("exercises/{exercise_id}")
-                                .get(handlers::exercise::get_exercise),
                         )
                         .push(
                             Router::with_path("submissions")
@@ -213,14 +225,25 @@ pub fn create_router() -> Router {
                                 ),
                         )
                         .push(
-                            Router::with_path("exercises")
-                                .get(handlers::admin::list_admin_exercises)
-                                .post(handlers::admin::create_exercise)
+                            Router::with_path("chapters")
+                                .get(handlers::chapter::list_chapters)
+                                .post(handlers::chapter::create_chapter)
                                 .push(
-                                    Router::with_path("{exercise_id}")
-                                        .get(handlers::admin::get_admin_exercise)
-                                        .put(handlers::admin::update_exercise)
-                                        .delete(handlers::admin::delete_exercise),
+                                    Router::with_path("{chapter_id}")
+                                        .get(handlers::chapter::get_chapter)
+                                        .put(handlers::chapter::update_chapter)
+                                        .delete(handlers::chapter::delete_chapter)
+                                        .push(
+                                            Router::with_path("exercises")
+                                                .get(handlers::exercise::list_exercises)
+                                                .post(handlers::exercise::create_exercise)
+                                                .push(
+                                                    Router::with_path("{exercise_id}")
+                                                        .get(handlers::exercise::get_exercise)
+                                                        .put(handlers::exercise::update_exercise)
+                                                        .delete(handlers::exercise::delete_exercise),
+                                                ),
+                                        ),
                                 ),
                         )
                         .push(
@@ -275,6 +298,17 @@ pub fn create_router() -> Router {
                                         .get(handlers::admin::get_config)
                                         .put(handlers::admin::update_config)
                                         .delete(handlers::admin::delete_config),
+                                ),
+                        )
+                        .push(
+                            Router::with_path("daily-challenges")
+                                .get(handlers::daily_challenge::list_daily_challenges)
+                                .post(handlers::daily_challenge::create_daily_challenge)
+                                .push(
+                                    Router::with_path("{daily_challenge_id}")
+                                        .get(handlers::daily_challenge::get_today_challenge)
+                                        .put(handlers::daily_challenge::update_daily_challenge)
+                                        .delete(handlers::daily_challenge::delete_daily_challenge),
                                 ),
                         ),
                 )

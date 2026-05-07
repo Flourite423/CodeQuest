@@ -145,6 +145,93 @@ pub async fn get_daily_challenge_records(req: &mut Request, depot: &mut Depot) -
 }
 
 #[derive(Debug, Deserialize)]
+pub struct UpdateDailyChallengeRequest {
+    pub title: Option<String>,
+    pub difficulty: Option<String>,
+    pub time_limit_seconds: Option<i32>,
+    pub reward_xp: Option<i32>,
+    pub status: Option<String>,
+}
+
+#[handler]
+pub async fn get_daily_challenge(req: &mut Request, depot: &mut Depot) -> Result<Json<ApiResponse<DailyChallenge>>, StatusError> {
+    let pool = depot.obtain::<PgPool>()
+        .map_err(|_| StatusError::internal_server_error())?;
+    
+    let challenge_id = req.param::<String>("daily_challenge_id")
+        .ok_or_else(StatusError::bad_request)?;
+    
+    let challenge_uuid = Uuid::parse_str(&challenge_id)
+        .map_err(|_| StatusError::bad_request().brief("Invalid challenge_id"))?;
+    
+    let challenge = sqlx::query_as::<_, DailyChallenge>("SELECT * FROM daily_challenges WHERE id = $1")
+        .bind(challenge_uuid)
+        .fetch_optional(pool)
+        .await
+        .map_err(|_| StatusError::internal_server_error())?
+        .ok_or_else(StatusError::not_found)?;
+    
+    Ok(Json(ApiResponse::new(challenge)))
+}
+
+#[handler]
+pub async fn update_daily_challenge(req: &mut Request, depot: &mut Depot) -> Result<StatusCode, StatusError> {
+    let pool = depot.obtain::<PgPool>()
+        .map_err(|_| StatusError::internal_server_error())?;
+    
+    let challenge_id = req.param::<String>("daily_challenge_id")
+        .ok_or_else(StatusError::bad_request)?;
+    
+    let body: UpdateDailyChallengeRequest = req.parse_json().await
+        .map_err(|_| StatusError::bad_request().brief("Invalid request body"))?;
+    
+    let challenge_uuid = Uuid::parse_str(&challenge_id)
+        .map_err(|_| StatusError::bad_request().brief("Invalid challenge_id"))?;
+    
+    sqlx::query(
+        "UPDATE daily_challenges SET 
+         title = COALESCE($2, title),
+         difficulty = COALESCE($3, difficulty),
+         time_limit_seconds = COALESCE($4, time_limit_seconds),
+         reward_xp = COALESCE($5, reward_xp),
+         status = COALESCE($6, status),
+         updated_at = NOW()
+         WHERE id = $1"
+    )
+    .bind(challenge_uuid)
+    .bind(&body.title)
+    .bind(&body.difficulty)
+    .bind(body.time_limit_seconds)
+    .bind(body.reward_xp)
+    .bind(&body.status)
+    .execute(pool)
+    .await
+    .map_err(|_| StatusError::internal_server_error())?;
+    
+    Ok(StatusCode::OK)
+}
+
+#[handler]
+pub async fn delete_daily_challenge(req: &mut Request, depot: &mut Depot) -> Result<StatusCode, StatusError> {
+    let pool = depot.obtain::<PgPool>()
+        .map_err(|_| StatusError::internal_server_error())?;
+    
+    let challenge_id = req.param::<String>("daily_challenge_id")
+        .ok_or_else(StatusError::bad_request)?;
+    
+    let challenge_uuid = Uuid::parse_str(&challenge_id)
+        .map_err(|_| StatusError::bad_request().brief("Invalid challenge_id"))?;
+    
+    sqlx::query("DELETE FROM daily_challenges WHERE id = $1")
+        .bind(challenge_uuid)
+        .execute(pool)
+        .await
+        .map_err(|_| StatusError::internal_server_error())?;
+    
+    Ok(StatusCode::NO_CONTENT)
+}
+
+#[derive(Debug, Deserialize)]
 pub struct SubmitDailyChallengeRequest {
     pub score: i32,
     pub elapsed_seconds: Option<i32>,

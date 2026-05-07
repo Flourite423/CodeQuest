@@ -38,10 +38,13 @@ pub async fn list_exercises(req: &mut Request, depot: &mut Depot) -> Result<Json
     let chapter_id = req.param::<String>("chapter_id")
         .ok_or_else(StatusError::bad_request)?;
     
+    let status_filter = req.query::<String>("status").unwrap_or_else(|| "published".to_string());
+    
     let exercises = sqlx::query_as::<_, Exercise>(
-        "SELECT * FROM exercises WHERE chapter_id = $1 AND status = 'published' ORDER BY created_at"
+        "SELECT * FROM exercises WHERE chapter_id = $1 AND status = $2 ORDER BY created_at"
     )
     .bind(&chapter_id)
+    .bind(&status_filter)
     .fetch_all(pool)
     .await
     .map_err(|_| StatusError::internal_server_error())?;

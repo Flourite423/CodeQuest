@@ -34,10 +34,13 @@ pub async fn list_chapters(req: &mut Request, depot: &mut Depot) -> Result<Json<
     let course_id = req.param::<String>("course_id")
         .ok_or_else(StatusError::bad_request)?;
     
+    let status_filter = req.query::<String>("status").unwrap_or_else(|| "published".to_string());
+    
     let chapters = sqlx::query_as::<_, Chapter>(
-        "SELECT * FROM chapters WHERE course_id = $1 AND status = 'published' ORDER BY order_index"
+        "SELECT * FROM chapters WHERE course_id = $1 AND status = $2 ORDER BY order_index"
     )
     .bind(&course_id)
+    .bind(&status_filter)
     .fetch_all(pool)
     .await
     .map_err(|_| StatusError::internal_server_error())?;
