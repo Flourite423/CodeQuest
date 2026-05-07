@@ -14,16 +14,16 @@ pub struct CreateAnnouncementRequest {
 }
 
 #[handler]
-pub async fn list_admin_users(depot: &mut Depot) -> Result<Json<ApiResponse<serde_json::Value>>, StatusError> {
+pub async fn list_admin_users(depot: &mut Depot) -> Result<Json<ApiResponse<Vec<crate::models::Account>>>, StatusError> {
     let pool = depot.obtain::<PgPool>()
         .map_err(|_| StatusError::internal_server_error())?;
 
-    let count: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM accounts")
-        .fetch_one(pool)
+    let users = sqlx::query_as::<_, crate::models::Account>("SELECT * FROM accounts ORDER BY created_at DESC LIMIT 100")
+        .fetch_all(pool)
         .await
         .map_err(|_| StatusError::internal_server_error())?;
 
-    Ok(Json(ApiResponse::new(serde_json::json!({ "total_users": count.0 }))))
+    Ok(Json(ApiResponse::new(users)))
 }
 
 #[handler]
@@ -170,18 +170,34 @@ pub async fn create_course(req: &mut Request, depot: &mut Depot) -> Result<Statu
         .map_err(|_| StatusError::bad_request().brief("Invalid request body"))?;
     
     let id = Uuid::new_v4();
+    let difficulty = body.get("difficulty").and_then(|v| v.as_str()).unwrap_or("beginner");
+    let difficulty_enum = match difficulty {
+        "beginner" => crate::models::DifficultyLevel::Beginner,
+        "intermediate" => crate::models::DifficultyLevel::Intermediate,
+        "easy" => crate::models::DifficultyLevel::Easy,
+        "medium" => crate::models::DifficultyLevel::Medium,
+        "hard" => crate::models::DifficultyLevel::Hard,
+        _ => crate::models::DifficultyLevel::Beginner,
+    };
+    let estimated_minutes = body.get("estimated_minutes").and_then(|v| v.as_i64()).unwrap_or(0) as i32;
+    
     sqlx::query(
-        "INSERT INTO courses (id, course_code, title, summary, status, created_by) 
-         VALUES ($1, $2, $3, $4, 'draft', $5)"
+        "INSERT INTO courses (id, course_code, title, summary, difficulty, estimated_minutes, status, created_by) 
+         VALUES ($1, $2, $3, $4, $5, $6, 'draft', $7)"
     )
     .bind(id)
     .bind(body.get("course_code").and_then(|v| v.as_str()).unwrap_or(""))
     .bind(body.get("title").and_then(|v| v.as_str()).unwrap_or(""))
     .bind(body.get("summary").and_then(|v| v.as_str()).unwrap_or(""))
+    .bind(difficulty_enum)
+    .bind(estimated_minutes)
     .bind(auth::get_current_account_id(depot)?)
     .execute(pool)
     .await
-    .map_err(|_| StatusError::internal_server_error())?;
+    .map_err(|e| {
+        eprintln!("Database error creating course: {:?}", e);
+        StatusError::internal_server_error()
+    })?;
     
     Ok(StatusCode::CREATED)
 }
@@ -215,21 +231,36 @@ pub async fn update_course(req: &mut Request, depot: &mut Depot) -> Result<Statu
     let body = req.parse_json::<serde_json::Value>().await
         .map_err(|_| StatusError::bad_request().brief("Invalid request body"))?;
     
+    let difficulty = body.get("difficulty").and_then(|v| v.as_str());
+    let difficulty_enum = difficulty.map(|d| match d {
+        "beginner" => crate::models::DifficultyLevel::Beginner,
+        "intermediate" => crate::models::DifficultyLevel::Intermediate,
+        "easy" => crate::models::DifficultyLevel::Easy,
+        "medium" => crate::models::DifficultyLevel::Medium,
+        "hard" => crate::models::DifficultyLevel::Hard,
+        _ => crate::models::DifficultyLevel::Beginner,
+    });
+    
     sqlx::query(
         "UPDATE courses SET 
          title = COALESCE($2, title),
          summary = COALESCE($3, summary),
-         status = COALESCE($4, status),
+         difficulty = COALESCE($4, difficulty),
+         status = COALESCE($5, status),
          updated_at = NOW()
          WHERE id = $1"
     )
     .bind(&id)
     .bind(body.get("title").and_then(|v| v.as_str()))
     .bind(body.get("summary").and_then(|v| v.as_str()))
+    .bind(difficulty_enum)
     .bind(body.get("status").and_then(|v| v.as_str()))
     .execute(pool)
     .await
-    .map_err(|_| StatusError::internal_server_error())?;
+    .map_err(|e| {
+        eprintln!("Database error updating course: {:?}", e);
+        StatusError::internal_server_error()
+    })?;
     
     Ok(StatusCode::OK)
 }
@@ -273,6 +304,16 @@ pub async fn create_challenge(req: &mut Request, depot: &mut Depot) -> Result<St
         .map_err(|_| StatusError::bad_request().brief("Invalid request body"))?;
     
     let id = Uuid::new_v4();
+    let difficulty = body.get("difficulty").and_then(|v| v.as_str()).unwrap_or("easy");
+    let difficulty_enum = match difficulty {
+        "beginner" => crate::models::DifficultyLevel::Beginner,
+        "intermediate" => crate::models::DifficultyLevel::Intermediate,
+        "easy" => crate::models::DifficultyLevel::Easy,
+        "medium" => crate::models::DifficultyLevel::Medium,
+        "hard" => crate::models::DifficultyLevel::Hard,
+        _ => crate::models::DifficultyLevel::Easy,
+    };
+    
     sqlx::query(
         "INSERT INTO challenges (id, challenge_code, title, summary, difficulty, reward_xp, status) 
          VALUES ($1, $2, $3, $4, $5, $6, 'draft')"
@@ -281,11 +322,14 @@ pub async fn create_challenge(req: &mut Request, depot: &mut Depot) -> Result<St
     .bind(body.get("challenge_code").and_then(|v| v.as_str()).unwrap_or(""))
     .bind(body.get("title").and_then(|v| v.as_str()).unwrap_or(""))
     .bind(body.get("summary").and_then(|v| v.as_str()).unwrap_or(""))
-    .bind(body.get("difficulty").and_then(|v| v.as_str()).unwrap_or(""))
+    .bind(difficulty_enum)
     .bind(body.get("reward_xp").and_then(|v| v.as_i64()).unwrap_or(0) as i32)
     .execute(pool)
     .await
-    .map_err(|_| StatusError::internal_server_error())?;
+    .map_err(|e| {
+        eprintln!("Database error creating challenge: {:?}", e);
+        StatusError::internal_server_error()
+    })?;
     
     Ok(StatusCode::CREATED)
 }
@@ -319,6 +363,16 @@ pub async fn update_challenge(req: &mut Request, depot: &mut Depot) -> Result<St
     let body = req.parse_json::<serde_json::Value>().await
         .map_err(|_| StatusError::bad_request().brief("Invalid request body"))?;
     
+    let difficulty = body.get("difficulty").and_then(|v| v.as_str());
+    let difficulty_enum = difficulty.map(|d| match d {
+        "beginner" => crate::models::DifficultyLevel::Beginner,
+        "intermediate" => crate::models::DifficultyLevel::Intermediate,
+        "easy" => crate::models::DifficultyLevel::Easy,
+        "medium" => crate::models::DifficultyLevel::Medium,
+        "hard" => crate::models::DifficultyLevel::Hard,
+        _ => crate::models::DifficultyLevel::Easy,
+    });
+    
     sqlx::query(
         "UPDATE challenges SET 
          title = COALESCE($2, title),
@@ -332,12 +386,15 @@ pub async fn update_challenge(req: &mut Request, depot: &mut Depot) -> Result<St
     .bind(&id)
     .bind(body.get("title").and_then(|v| v.as_str()))
     .bind(body.get("summary").and_then(|v| v.as_str()))
-    .bind(body.get("difficulty").and_then(|v| v.as_str()))
+    .bind(difficulty_enum)
     .bind(body.get("reward_xp").and_then(|v| v.as_i64()).map(|v| v as i32))
     .bind(body.get("status").and_then(|v| v.as_str()))
     .execute(pool)
     .await
-    .map_err(|_| StatusError::internal_server_error())?;
+    .map_err(|e| {
+        eprintln!("Database error updating challenge: {:?}", e);
+        StatusError::internal_server_error()
+    })?;
     
     Ok(StatusCode::OK)
 }
@@ -354,7 +411,10 @@ pub async fn delete_challenge(req: &mut Request, depot: &mut Depot) -> Result<St
         .bind(&id)
         .execute(pool)
         .await
-        .map_err(|_| StatusError::internal_server_error())?;
+        .map_err(|e| {
+            eprintln!("Database error deleting challenge: {:?}", e);
+            StatusError::internal_server_error()
+        })?;
     
     Ok(StatusCode::NO_CONTENT)
 }
@@ -473,6 +533,9 @@ pub async fn get_admin_user(req: &mut Request, depot: &mut Depot) -> Result<Json
     let id = req.param::<String>("user_id")
         .ok_or_else(StatusError::bad_request)?;
     
+    let id = Uuid::parse_str(&id)
+        .map_err(|_| StatusError::bad_request().brief("Invalid user ID"))?;
+    
     let user = sqlx::query_as::<_, crate::models::Account>("SELECT * FROM accounts WHERE id = $1")
         .bind(&id)
         .fetch_optional(pool)
@@ -491,8 +554,24 @@ pub async fn update_user(req: &mut Request, depot: &mut Depot) -> Result<StatusC
     let id = req.param::<String>("user_id")
         .ok_or_else(StatusError::bad_request)?;
     
+    let id = Uuid::parse_str(&id)
+        .map_err(|_| StatusError::bad_request().brief("Invalid user ID"))?;
+    
     let body = req.parse_json::<serde_json::Value>().await
         .map_err(|_| StatusError::bad_request().brief("Invalid request body"))?;
+    
+    let role = body.get("default_role").and_then(|v| v.as_str());
+    let role_enum = role.map(|r| match r {
+        "admin" => crate::models::RoleType::Admin,
+        _ => crate::models::RoleType::Learner,
+    });
+    
+    let status = body.get("account_status").and_then(|v| v.as_str());
+    let status_enum = status.map(|s| match s {
+        "suspended" => crate::models::AccountStatus::Suspended,
+        "closed" => crate::models::AccountStatus::Closed,
+        _ => crate::models::AccountStatus::Active,
+    });
     
     sqlx::query(
         "UPDATE accounts SET 
@@ -504,11 +583,14 @@ pub async fn update_user(req: &mut Request, depot: &mut Depot) -> Result<StatusC
     )
     .bind(&id)
     .bind(body.get("email").and_then(|v| v.as_str()))
-    .bind(body.get("default_role").and_then(|v| v.as_str()))
-    .bind(body.get("account_status").and_then(|v| v.as_str()))
+    .bind(role_enum)
+    .bind(status_enum)
     .execute(pool)
     .await
-    .map_err(|_| StatusError::internal_server_error())?;
+    .map_err(|e| {
+        eprintln!("Database error updating user: {:?}", e);
+        StatusError::internal_server_error()
+    })?;
     
     Ok(StatusCode::OK)
 }

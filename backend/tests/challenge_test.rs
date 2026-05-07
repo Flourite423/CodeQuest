@@ -3,14 +3,16 @@ use salvo::test::{ResponseExt, TestClient};
 use serde_json::json;
 mod common;
 
-use common::{create_test_service, setup_test_db};
+use common::{create_test_service, get_auth_token, get_admin_token, setup_test_db};
 
 #[tokio::test]
 async fn test_list_challenges() {
     let pool = setup_test_db().await;
     let service = create_test_service(pool);
+    let token = get_auth_token(&service).await;
     
     let mut res = TestClient::get("http://127.0.0.1:8080/api/v1/learner/challenges")
+        .bearer_auth(&token)
         .send(&service)
         .await;
     
@@ -24,10 +26,14 @@ async fn test_list_challenges() {
 async fn test_create_and_get_challenge() {
     let pool = setup_test_db().await;
     let service = create_test_service(pool);
+    let admin_token = get_admin_token(&service).await;
+    let learner_token = get_auth_token(&service).await;
     
+    let unique_code = format!("CHAL-{}", uuid::Uuid::new_v4().to_string().split('-').next().unwrap());
     let mut create_res = TestClient::post("http://127.0.0.1:8080/api/v1/admin/challenges")
+        .bearer_auth(&admin_token)
         .json(&json!({
-            "challenge_code": "CHAL-001",
+            "challenge_code": unique_code,
             "title": "Test Challenge",
             "summary": "A test challenge",
             "difficulty": "easy",
@@ -39,6 +45,7 @@ async fn test_create_and_get_challenge() {
     assert_eq!(create_res.status_code, Some(StatusCode::CREATED));
     
     let mut list_res = TestClient::get("http://127.0.0.1:8080/api/v1/learner/challenges")
+        .bearer_auth(&learner_token)
         .send(&service)
         .await;
     
@@ -49,6 +56,7 @@ async fn test_create_and_get_challenge() {
         let challenge_id = challenges[0]["id"].as_str().unwrap();
         
         let mut get_res = TestClient::get(&format!("http://127.0.0.1:8080/api/v1/learner/challenges/{}", challenge_id))
+            .bearer_auth(&learner_token)
             .send(&service)
             .await;
         
@@ -63,8 +71,10 @@ async fn test_create_and_get_challenge() {
 async fn test_get_challenge_not_found() {
     let pool = setup_test_db().await;
     let service = create_test_service(pool);
+    let token = get_auth_token(&service).await;
     
     let mut res = TestClient::get("http://127.0.0.1:8080/api/v1/learner/challenges/550e8400-e29b-41d4-a716-446655440000")
+        .bearer_auth(&token)
         .send(&service)
         .await;
     
@@ -75,10 +85,14 @@ async fn test_get_challenge_not_found() {
 async fn test_update_challenge() {
     let pool = setup_test_db().await;
     let service = create_test_service(pool);
+    let admin_token = get_admin_token(&service).await;
+    let learner_token = get_auth_token(&service).await;
     
+    let unique_code = format!("CHAL-{}", uuid::Uuid::new_v4().to_string().split('-').next().unwrap());
     let mut create_res = TestClient::post("http://127.0.0.1:8080/api/v1/admin/challenges")
+        .bearer_auth(&admin_token)
         .json(&json!({
-            "challenge_code": "CHAL-002",
+            "challenge_code": unique_code,
             "title": "Original Title",
             "summary": "A test challenge",
             "difficulty": "easy",
@@ -90,12 +104,7 @@ async fn test_update_challenge() {
     assert_eq!(create_res.status_code, Some(StatusCode::CREATED));
     
     let mut list_res = TestClient::get("http://127.0.0.1:8080/api/v1/learner/challenges")
-        .send(&service)
-        .await;
-    
-    assert_eq!(create_res.status_code, Some(StatusCode::CREATED));
-    
-    let mut list_res = TestClient::get("http://127.0.0.1:8080/api/v1/challenges")
+        .bearer_auth(&learner_token)
         .send(&service)
         .await;
     
@@ -106,6 +115,7 @@ async fn test_update_challenge() {
         let challenge_id = challenges[0]["id"].as_str().unwrap();
         
         let mut update_res = TestClient::put(&format!("http://127.0.0.1:8080/api/v1/admin/challenges/{}", challenge_id))
+            .bearer_auth(&admin_token)
             .json(&json!({
                 "title": "Updated Challenge"
             }))
@@ -120,10 +130,14 @@ async fn test_update_challenge() {
 async fn test_delete_challenge() {
     let pool = setup_test_db().await;
     let service = create_test_service(pool);
+    let admin_token = get_admin_token(&service).await;
+    let learner_token = get_auth_token(&service).await;
     
-    let mut create_res = TestClient::post("http://127.0.0.1:8080/api/v1/challenges")
+    let unique_code = format!("CHAL-{}", uuid::Uuid::new_v4().to_string().split('-').next().unwrap());
+    let mut create_res = TestClient::post("http://127.0.0.1:8080/api/v1/admin/challenges")
+        .bearer_auth(&admin_token)
         .json(&json!({
-            "challenge_code": "CHAL-003",
+            "challenge_code": unique_code,
             "title": "Challenge to Delete",
             "summary": "A test challenge",
             "difficulty": "easy",
@@ -134,7 +148,8 @@ async fn test_delete_challenge() {
     
     assert_eq!(create_res.status_code, Some(StatusCode::CREATED));
     
-    let mut list_res = TestClient::get("http://127.0.0.1:8080/api/v1/challenges")
+    let mut list_res = TestClient::get("http://127.0.0.1:8080/api/v1/learner/challenges")
+        .bearer_auth(&learner_token)
         .send(&service)
         .await;
     
@@ -145,6 +160,7 @@ async fn test_delete_challenge() {
         let challenge_id = challenges[0]["id"].as_str().unwrap();
         
         let mut delete_res = TestClient::delete(&format!("http://127.0.0.1:8080/api/v1/admin/challenges/{}", challenge_id))
+            .bearer_auth(&admin_token)
             .send(&service)
             .await;
         
@@ -156,10 +172,14 @@ async fn test_delete_challenge() {
 async fn test_create_challenge_with_course() {
     let pool = setup_test_db().await;
     let service = create_test_service(pool);
+    let admin_token = get_admin_token(&service).await;
+    let learner_token = get_auth_token(&service).await;
     
+    let course_code = format!("COURSE-{}", uuid::Uuid::new_v4().to_string().split('-').next().unwrap());
     let mut course_res = TestClient::post("http://127.0.0.1:8080/api/v1/admin/courses")
+        .bearer_auth(&admin_token)
         .json(&json!({
-            "course_code": "COURSE-FOR-CHAL",
+            "course_code": course_code,
             "title": "Course for Challenge",
             "summary": "A test course",
             "difficulty": "beginner",
@@ -170,7 +190,8 @@ async fn test_create_challenge_with_course() {
     
     assert_eq!(course_res.status_code, Some(StatusCode::CREATED));
     
-    let mut list_res = TestClient::get("http://127.0.0.1:8080/api/v1/courses")
+    let mut list_res = TestClient::get("http://127.0.0.1:8080/api/v1/learner/courses")
+        .bearer_auth(&learner_token)
         .send(&service)
         .await;
     
@@ -180,9 +201,11 @@ async fn test_create_challenge_with_course() {
     if !courses.is_empty() {
         let course_id = courses[0]["id"].as_str().unwrap();
         
-            let mut challenge_res = TestClient::post("http://127.0.0.1:8080/api/v1/admin/challenges")
+        let unique_code = format!("CHAL-{}", uuid::Uuid::new_v4().to_string().split('-').next().unwrap());
+        let mut challenge_res = TestClient::post("http://127.0.0.1:8080/api/v1/admin/challenges")
+            .bearer_auth(&admin_token)
             .json(&json!({
-                "challenge_code": "CHAL-WITH-COURSE",
+                "challenge_code": unique_code,
                 "title": "Challenge with Course",
                 "summary": "A test challenge",
                 "related_course_id": course_id,

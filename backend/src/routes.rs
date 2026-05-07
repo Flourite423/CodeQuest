@@ -230,6 +230,7 @@ pub fn create_router() -> Router {
                                     Router::with_path("{user_id}")
                                         .get(handlers::admin::get_admin_user)
                                         .put(handlers::admin::update_user)
+                                        .delete(handlers::user::delete_user)
                                         .push(
                                             Router::with_path("status")
                                                 .put(handlers::admin::update_user_status),

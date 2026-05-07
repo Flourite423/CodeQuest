@@ -1,6 +1,7 @@
 use learning_app_backend::{config::AppConfig, routes};
 use salvo::affix_state;
 use salvo::prelude::*;
+use salvo::test::{ResponseExt, TestClient};
 use sqlx::{postgres::PgPoolOptions, PgPool};
 use std::time::Duration;
 
@@ -39,4 +40,30 @@ pub fn create_test_service(pool: PgPool) -> Service {
         .hoop(affix_state::inject(pool))
         .hoop(affix_state::inject(cfg));
     Service::new(router)
+}
+
+pub async fn get_auth_token(service: &Service) -> String {
+    let mut res = TestClient::post("http://127.0.0.1:8080/api/v1/auth/learner/login")
+        .json(&serde_json::json!({
+            "email": "test@example.com",
+            "password": "password123"
+        }))
+        .send(service)
+        .await;
+    
+    let body = res.take_json::<serde_json::Value>().await.unwrap();
+    body["data"]["access_token"].as_str().unwrap().to_string()
+}
+
+pub async fn get_admin_token(service: &Service) -> String {
+    let mut res = TestClient::post("http://127.0.0.1:8080/api/v1/auth/admin/login")
+        .json(&serde_json::json!({
+            "email": "admin@example.com",
+            "password": "admin123"
+        }))
+        .send(service)
+        .await;
+    
+    let body = res.take_json::<serde_json::Value>().await.unwrap();
+    body["data"]["access_token"].as_str().unwrap().to_string()
 }

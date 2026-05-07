@@ -14,8 +14,18 @@ pub enum RoleType {
 #[sqlx(type_name = "account_status", rename_all = "snake_case")]
 pub enum AccountStatus {
     Active,
-    Inactive,
     Suspended,
+    Closed,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type)]
+#[sqlx(type_name = "difficulty_level", rename_all = "snake_case")]
+pub enum DifficultyLevel {
+    Beginner,
+    Intermediate,
+    Easy,
+    Medium,
+    Hard,
 }
 
 #[derive(Debug, Serialize, Deserialize, sqlx::FromRow)]

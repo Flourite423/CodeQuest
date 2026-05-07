@@ -16,6 +16,10 @@ CREATE TABLE accounts (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+INSERT INTO accounts (id, email, password_hash, default_role, account_status) VALUES
+('00000000-0000-0000-0000-000000000000', 'system@localhost', '$2b$12$dummyhashforlocalhostsystemaccount', 'admin', 'active')
+ON CONFLICT (id) DO NOTHING;
+
 CREATE INDEX idx_accounts_email ON accounts(email);
 CREATE INDEX idx_accounts_status ON accounts(account_status);
 
@@ -565,7 +569,8 @@ BEGIN
         WHERE column_name = 'updated_at' 
         AND table_schema = 'public'
     LOOP
-        EXECUTE format('CREATE TRIGGER IF NOT EXISTS trg_%I_updated_at 
+        EXECUTE format('DROP TRIGGER IF EXISTS trg_%I_updated_at ON %I', t, t);
+        EXECUTE format('CREATE TRIGGER trg_%I_updated_at 
             BEFORE UPDATE ON %I 
             FOR EACH ROW 
             EXECUTE FUNCTION update_updated_at_column()', t, t);

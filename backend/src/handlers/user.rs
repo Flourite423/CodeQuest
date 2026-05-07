@@ -3,6 +3,7 @@ use sqlx::PgPool;
 use crate::handlers::auth;
 use crate::models::{ApiResponse, Account};
 use serde::Deserialize;
+use uuid::Uuid;
 
 #[derive(Debug, Deserialize)]
 pub struct UpdateUserRequest {
@@ -77,14 +78,20 @@ pub async fn delete_user(req: &mut Request, depot: &mut Depot) -> Result<StatusC
     let pool = depot.obtain::<PgPool>()
         .map_err(|_| StatusError::internal_server_error())?;
     
-    let id = req.param::<String>("id")
+    let id = req.param::<String>("user_id")
         .ok_or_else(StatusError::bad_request)?;
+    
+    let id = Uuid::parse_str(&id)
+        .map_err(|_| StatusError::bad_request().brief("Invalid user ID"))?;
     
     sqlx::query("DELETE FROM accounts WHERE id = $1")
         .bind(&id)
         .execute(pool)
         .await
-        .map_err(|_| StatusError::internal_server_error())?;
+        .map_err(|e| {
+            eprintln!("Database error deleting user: {:?}", e);
+            StatusError::internal_server_error()
+        })?;
     
     Ok(StatusCode::NO_CONTENT)
 }
