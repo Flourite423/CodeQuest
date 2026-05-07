@@ -142,6 +142,7 @@ pub fn create_router() -> Router {
                         )
                         .push(
                             Router::with_path("daily-challenges")
+                                .get(handlers::daily_challenge::list_daily_challenges)
                                 .push(
                                     Router::with_path("today")
                                         .get(handlers::daily_challenge::get_today_challenge),
@@ -306,7 +307,7 @@ pub fn create_router() -> Router {
                                 .post(handlers::daily_challenge::create_daily_challenge)
                                 .push(
                                     Router::with_path("{daily_challenge_id}")
-                                        .get(handlers::daily_challenge::get_today_challenge)
+                                        .get(handlers::daily_challenge::get_daily_challenge)
                                         .put(handlers::daily_challenge::update_daily_challenge)
                                         .delete(handlers::daily_challenge::delete_daily_challenge),
                                 ),

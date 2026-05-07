@@ -56,6 +56,7 @@ pub async fn list_daily_challenges(depot: &mut Depot) -> Result<Json<ApiResponse
 }
 
 #[handler]
+#[handler]
 pub async fn create_daily_challenge(req: &mut Request, depot: &mut Depot) -> Result<StatusCode, StatusError> {
     let pool = depot.obtain::<PgPool>()
         .map_err(|_| StatusError::internal_server_error())?;
