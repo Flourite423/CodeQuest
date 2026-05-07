@@ -34,13 +34,17 @@ pub struct RegisterRequest {
 
 #[derive(Debug, Deserialize)]
 pub struct LearnerLoginRequest {
+    #[serde(deserialize_with = "validate_email")]
     pub email: String,
+    #[serde(deserialize_with = "validate_password")]
     pub password: String,
 }
 
 #[derive(Debug, Deserialize)]
 pub struct AdminLoginRequest {
+    #[serde(deserialize_with = "validate_email")]
     pub email: String,
+    #[serde(deserialize_with = "validate_password")]
     pub password: String,
 }
 
@@ -370,4 +374,28 @@ pub fn get_current_role(depot: &Depot) -> Result<String, StatusError> {
         .ok_or_else(StatusError::unauthorized)?;
     
     Ok(jwt_data.claims.role.clone())
+}
+
+fn validate_email<'de, D>(deserializer: D) -> Result<String, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    let email: String = serde::Deserialize::deserialize(deserializer)?;
+    if email.contains('@') && email.len() >= 5 {
+        Ok(email)
+    } else {
+        Err(serde::de::Error::custom("Invalid email format"))
+    }
+}
+
+fn validate_password<'de, D>(deserializer: D) -> Result<String, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    let password: String = serde::Deserialize::deserialize(deserializer)?;
+    if password.len() >= 6 {
+        Ok(password)
+    } else {
+        Err(serde::de::Error::custom("Password must be at least 6 characters"))
+    }
 }
