@@ -154,7 +154,15 @@ pub fn create_router() -> Router {
                         )
                         .push(
                             Router::with_path("rewards")
-                                .get(handlers::reward::get_rewards),
+                                .get(handlers::reward::get_rewards)
+                                .push(
+                                    Router::with_path("xp")
+                                        .get(handlers::reward::get_xp_ledger),
+                                )
+                                .push(
+                                    Router::with_path("badges")
+                                        .get(handlers::reward::get_learner_badges),
+                                ),
                         )
                         .push(
                             Router::with_path("submissions")
@@ -166,7 +174,8 @@ pub fn create_router() -> Router {
                         )
                         .push(
                             Router::with_path("ai/help")
-                                .post(handlers::ai_help::create_ai_help),
+                                .post(handlers::ai_help::create_ai_help)
+                                .get(handlers::ai_help::list_ai_help_history),
                         )
                         .push(
                             Router::with_path("progress")

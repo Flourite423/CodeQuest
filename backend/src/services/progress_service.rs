@@ -36,8 +36,8 @@ pub async fn create_progress(
     let id = Uuid::new_v4();
     sqlx::query(
         "INSERT INTO course_progress (id, learner_id, course_id, completed_chapter_count, 
-         total_chapter_count, completed_exercise_count, progress_percent, status) 
-         VALUES ($1, $2, $3, 0, 0, 0, 0, 'in_progress')"
+         total_chapter_count, completed_exercise_count, progress_percent, status, started_at) 
+         VALUES ($1, $2, $3, 0, 0, 0, 0, 'in_progress', NOW())"
     )
     .bind(id)
     .bind(learner_id)

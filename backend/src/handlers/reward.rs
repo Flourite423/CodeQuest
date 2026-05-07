@@ -11,7 +11,7 @@ pub async fn get_xp_ledger(depot: &mut Depot) -> Result<Json<ApiResponse<Vec<XpL
 
     let learner_id = auth::get_current_account_id(depot)?;
     let records = sqlx::query_as::<_, XpLedger>(
-        "SELECT * FROM xp_ledgers WHERE learner_id = $1 ORDER BY created_at DESC"
+        "SELECT * FROM xp_ledger WHERE learner_id = $1 ORDER BY created_at DESC"
     )
     .bind(learner_id)
     .fetch_all(pool)
@@ -46,7 +46,7 @@ pub async fn get_rewards(depot: &mut Depot) -> Result<Json<ApiResponse<serde_jso
     let learner_id = auth::get_current_account_id(depot)?;
     
     let total_xp: (i64,) = sqlx::query_as(
-        "SELECT COALESCE(SUM(xp_amount), 0) FROM xp_ledgers WHERE learner_id = $1"
+        "SELECT COALESCE(SUM(delta_xp), 0) FROM xp_ledger WHERE learner_id = $1"
     )
     .bind(learner_id)
     .fetch_one(pool)

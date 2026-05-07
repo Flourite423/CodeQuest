@@ -38,17 +38,23 @@ pub async fn create_ai_help(req: &mut Request, depot: &mut Depot) -> Result<Json
         (cfg.ai.mock_response.clone(), serde_json::json!({"message": cfg.ai.mock_response}), cfg.ai.provider.as_str())
     };
     
+    let request_type = match body.request_type.as_str() {
+        "error_explanation" => crate::models::AiRequestType::ErrorExplanation,
+        "hint" => crate::models::AiRequestType::Hint,
+        _ => crate::models::AiRequestType::Hint,
+    };
+
     let record = sqlx::query_as::<_, AiHelpRequest>(
         "INSERT INTO ai_help_requests \
         (id, learner_id, exercise_id, submission_id, request_type, source_code, error_context_json, response_text, response_structured_json, provider_name, token_usage, latency_ms, status) \
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 0, 0, 'completed') \
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 0, 0, 'succeeded') \
         RETURNING *"
     )
     .bind(id)
     .bind(learner_id)
     .bind(exercise_id)
     .bind(submission_id)
-    .bind(&body.request_type)
+    .bind(request_type)
     .bind(&body.source_code)
     .bind(&body.error_context_json)
     .bind(Some(response_text))
@@ -56,7 +62,10 @@ pub async fn create_ai_help(req: &mut Request, depot: &mut Depot) -> Result<Json
     .bind(provider)
     .fetch_one(pool)
     .await
-    .map_err(|_| StatusError::internal_server_error())?;
+    .map_err(|e| {
+        eprintln!("Database error: {:?}", e);
+        StatusError::internal_server_error()
+    })?;
 
     Ok(Json(ApiResponse::new(record)))
 }

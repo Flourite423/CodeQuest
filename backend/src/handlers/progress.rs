@@ -69,7 +69,10 @@ pub async fn create_progress(req: &mut Request, depot: &mut Depot) -> Result<Sta
     
     progress_service::create_progress(pool, learner_id, course_id)
         .await
-        .map_err(|_| StatusError::internal_server_error())?;
+        .map_err(|e| {
+            eprintln!("Progress create error: {:?}", e);
+            StatusError::internal_server_error()
+        })?;
     
     Ok(StatusCode::CREATED)
 }

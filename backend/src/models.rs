@@ -27,6 +27,22 @@ pub enum DifficultyLevel {
     Hard,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type)]
+#[sqlx(type_name = "ai_request_type", rename_all = "snake_case")]
+pub enum AiRequestType {
+    ErrorExplanation,
+    Hint,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type)]
+#[sqlx(type_name = "ai_request_status", rename_all = "snake_case")]
+pub enum AiRequestStatus {
+    Pending,
+    Succeeded,
+    Failed,
+    RateLimited,
+}
+
 #[derive(Debug, Serialize, Deserialize, sqlx::FromRow)]
 pub struct Account {
     pub id: Uuid,
@@ -356,7 +372,7 @@ pub struct AiHelpRequest {
     pub learner_id: Uuid,
     pub exercise_id: Option<Uuid>,
     pub submission_id: Option<Uuid>,
-    pub request_type: String,
+    pub request_type: AiRequestType,
     pub source_code: Option<String>,
     pub error_context_json: Option<serde_json::Value>,
     pub response_text: Option<String>,
@@ -364,7 +380,7 @@ pub struct AiHelpRequest {
     pub provider_name: String,
     pub token_usage: Option<i32>,
     pub latency_ms: Option<i32>,
-    pub status: String,
+    pub status: AiRequestStatus,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }

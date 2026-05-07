@@ -53,7 +53,7 @@ pub async fn get_global_leaderboard(depot: &mut Depot) -> Result<Json<ApiRespons
     
     let entries = sqlx::query_as::<_, LeaderboardSnapshot>(
         "SELECT * FROM leaderboard_snapshots 
-         WHERE board_type = 'global' AND period_key = $1 
+         WHERE board_type = 'total' AND period_key = $1 
          ORDER BY rank_position LIMIT 100"
     )
     .bind(&period_key)
@@ -76,7 +76,7 @@ pub async fn get_friends_leaderboard(depot: &mut Depot) -> Result<Json<ApiRespon
     
     let entries = sqlx::query_as::<_, LeaderboardSnapshot>(
         "SELECT * FROM leaderboard_snapshots 
-         WHERE board_type = 'friends' AND period_key = $1 AND learner_id = $2
+         WHERE board_type = 'total' AND period_key = $1 AND learner_id = $2
          ORDER BY rank_position LIMIT 50"
     )
     .bind(&period_key)
@@ -100,7 +100,7 @@ pub async fn get_course_leaderboard(req: &mut Request, depot: &mut Depot) -> Res
     
     let entries = sqlx::query_as::<_, LeaderboardSnapshot>(
         "SELECT * FROM leaderboard_snapshots 
-         WHERE board_type = 'course' AND period_key = $1 
+         WHERE board_type = 'total' AND period_key = $1 
          ORDER BY rank_position LIMIT 100"
     )
     .bind(&course_id)
