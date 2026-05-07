@@ -6,6 +6,7 @@ use uuid::Uuid;
 use serde::Deserialize;
 
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 pub struct CreateChallengeRequest {
     pub challenge_code: String,
     pub title: String,
@@ -16,6 +17,7 @@ pub struct CreateChallengeRequest {
 }
 
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 pub struct UpdateChallengeRequest {
     pub title: Option<String>,
     pub summary: Option<String>,

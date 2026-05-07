@@ -11,6 +11,7 @@ pub struct CreateSubmissionRequest {
 }
 
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 pub struct UpdateSubmissionRequest {
     pub judge_status: Option<String>,
     pub score: Option<i32>,

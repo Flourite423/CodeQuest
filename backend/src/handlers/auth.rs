@@ -49,6 +49,7 @@ pub struct AdminLoginRequest {
 }
 
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 pub struct LoginRequest {
     pub phone: String,
     pub verification_code: String,

@@ -7,6 +7,7 @@ use uuid::Uuid;
 use serde::Deserialize;
 
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 pub struct CreateCourseRequest {
     pub course_code: String,
     pub title: String,
@@ -18,6 +19,7 @@ pub struct CreateCourseRequest {
 }
 
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 pub struct UpdateCourseRequest {
     pub title: Option<String>,
     pub summary: Option<String>,

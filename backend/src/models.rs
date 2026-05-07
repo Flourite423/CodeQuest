@@ -56,6 +56,7 @@ pub struct Account {
 }
 
 #[derive(Debug, Serialize, Deserialize, sqlx::FromRow)]
+#[allow(dead_code)]
 pub struct AccountRole {
     pub id: Uuid,
     pub account_id: Uuid,
@@ -66,6 +67,7 @@ pub struct AccountRole {
 }
 
 #[derive(Debug, Serialize, Deserialize, sqlx::FromRow)]
+#[allow(dead_code)]
 pub struct Session {
     pub id: Uuid,
     pub account_id: Uuid,
@@ -83,6 +85,7 @@ pub struct Session {
 }
 
 #[derive(Debug, Serialize, Deserialize, sqlx::FromRow)]
+#[allow(dead_code)]
 pub struct LearnerProfile {
     pub account_id: Uuid,
     pub nickname: String,
@@ -101,6 +104,7 @@ pub struct LearnerProfile {
 }
 
 #[derive(Debug, Serialize, Deserialize, sqlx::FromRow)]
+#[allow(dead_code)]
 pub struct AdminProfile {
     pub account_id: Uuid,
     pub display_name: String,
@@ -168,6 +172,7 @@ pub struct Exercise {
 }
 
 #[derive(Debug, Serialize, Deserialize, sqlx::FromRow)]
+#[allow(dead_code)]
 pub struct ExerciseOption {
     pub id: Uuid,
     pub exercise_id: Uuid,
@@ -178,6 +183,7 @@ pub struct ExerciseOption {
 }
 
 #[derive(Debug, Serialize, Deserialize, sqlx::FromRow)]
+#[allow(dead_code)]
 pub struct ExerciseTestCase {
     pub id: Uuid,
     pub exercise_id: Uuid,
@@ -189,6 +195,49 @@ pub struct ExerciseTestCase {
     pub is_hidden: bool,
     pub order_index: i32,
     pub rule_version: i32,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Serialize, Deserialize, sqlx::FromRow)]
+#[allow(dead_code)]
+pub struct ChallengeStage {
+    pub id: Uuid,
+    pub challenge_id: Uuid,
+    pub exercise_id: Uuid,
+    pub order_index: i32,
+    pub star_rule_json: serde_json::Value,
+    pub unlock_rule_json: serde_json::Value,
+    pub rule_version: i32,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Serialize, Deserialize, sqlx::FromRow)]
+#[allow(dead_code)]
+pub struct ChallengeAttempt {
+    pub id: Uuid,
+    pub challenge_id: Uuid,
+    pub learner_id: Uuid,
+    pub best_star: i32,
+    pub status: String,
+    pub started_at: Option<DateTime<Utc>>,
+    pub completed_at: Option<DateTime<Utc>>,
+    pub reward_claimed_at: Option<DateTime<Utc>>,
+    pub updated_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Serialize, Deserialize, sqlx::FromRow)]
+#[allow(dead_code)]
+pub struct DailyChallengeRecord {
+    pub id: Uuid,
+    pub daily_challenge_id: Uuid,
+    pub learner_id: Uuid,
+    pub status: String,
+    pub score: i32,
+    pub elapsed_seconds: Option<i32>,
+    pub streak_after_completion: i32,
+    pub completed_at: Option<DateTime<Utc>>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }
@@ -229,31 +278,7 @@ pub struct Challenge {
     pub updated_at: DateTime<Utc>,
 }
 
-#[derive(Debug, Serialize, Deserialize, sqlx::FromRow)]
-pub struct ChallengeStage {
-    pub id: Uuid,
-    pub challenge_id: Uuid,
-    pub exercise_id: Uuid,
-    pub order_index: i32,
-    pub star_rule_json: serde_json::Value,
-    pub unlock_rule_json: serde_json::Value,
-    pub rule_version: i32,
-    pub created_at: DateTime<Utc>,
-    pub updated_at: DateTime<Utc>,
-}
 
-#[derive(Debug, Serialize, Deserialize, sqlx::FromRow)]
-pub struct ChallengeAttempt {
-    pub id: Uuid,
-    pub challenge_id: Uuid,
-    pub learner_id: Uuid,
-    pub best_star: i32,
-    pub status: String,
-    pub started_at: Option<DateTime<Utc>>,
-    pub completed_at: Option<DateTime<Utc>>,
-    pub reward_claimed_at: Option<DateTime<Utc>>,
-    pub updated_at: DateTime<Utc>,
-}
 
 #[derive(Debug, Serialize, Deserialize, sqlx::FromRow)]
 pub struct DailyChallenge {
@@ -271,20 +296,6 @@ pub struct DailyChallenge {
 }
 
 #[derive(Debug, Serialize, Deserialize, sqlx::FromRow)]
-pub struct DailyChallengeRecord {
-    pub id: Uuid,
-    pub daily_challenge_id: Uuid,
-    pub learner_id: Uuid,
-    pub status: String,
-    pub score: i32,
-    pub elapsed_seconds: Option<i32>,
-    pub streak_after_completion: i32,
-    pub completed_at: Option<DateTime<Utc>>,
-    pub created_at: DateTime<Utc>,
-    pub updated_at: DateTime<Utc>,
-}
-
-#[derive(Debug, Serialize, Deserialize, sqlx::FromRow)]
 pub struct XpLedger {
     pub id: Uuid,
     pub learner_id: Uuid,
@@ -296,6 +307,7 @@ pub struct XpLedger {
 }
 
 #[derive(Debug, Serialize, Deserialize, sqlx::FromRow)]
+#[allow(dead_code)]
 pub struct Badge {
     pub id: Uuid,
     pub badge_code: String,
@@ -386,6 +398,7 @@ pub struct AiHelpRequest {
 }
 
 #[derive(Debug, Serialize, Deserialize, sqlx::FromRow)]
+#[allow(dead_code)]
 pub struct FeedbackTicket {
     pub id: Uuid,
     pub learner_id: Uuid,
@@ -400,6 +413,7 @@ pub struct FeedbackTicket {
 }
 
 #[derive(Debug, Serialize, Deserialize, sqlx::FromRow)]
+#[allow(dead_code)]
 pub struct ModerationCase {
     pub id: Uuid,
     pub case_type: String,
@@ -439,6 +453,7 @@ pub struct SystemConfig {
 }
 
 #[derive(Debug, Serialize, Deserialize, sqlx::FromRow)]
+#[allow(dead_code)]
 pub struct AuditLog {
     pub id: Uuid,
     pub actor_id: Option<Uuid>,
@@ -483,12 +498,14 @@ impl<T> ApiResponse<T> {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+#[allow(dead_code)]
 pub struct ApiError {
     pub error: ErrorDetail,
     pub meta: ResponseMeta,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+#[allow(dead_code)]
 pub struct ErrorDetail {
     pub code: String,
     pub message: String,
@@ -496,6 +513,7 @@ pub struct ErrorDetail {
 }
 
 impl ApiError {
+    #[allow(dead_code)]
     pub fn new(code: &str, message: &str) -> Self {
         Self {
             error: ErrorDetail {

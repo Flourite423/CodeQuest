@@ -16,6 +16,7 @@ pub struct CreateDailyChallengeRequest {
 }
 
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 pub struct AttemptDailyChallengeRequest {
     pub score: i32,
     pub elapsed_seconds: Option<i32>,

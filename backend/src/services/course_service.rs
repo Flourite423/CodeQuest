@@ -15,6 +15,7 @@ pub async fn find_course_by_id(pool: &PgPool, id: Uuid) -> Result<Option<Course>
         .await
 }
 
+#[allow(dead_code)]
 pub async fn create_course(
     pool: &PgPool,
     course_code: &str,
@@ -37,6 +38,7 @@ pub async fn create_course(
     Ok(())
 }
 
+#[allow(dead_code)]
 pub async fn update_course(
     pool: &PgPool,
     id: Uuid,
@@ -61,6 +63,7 @@ pub async fn update_course(
     Ok(())
 }
 
+#[allow(dead_code)]
 pub async fn delete_course(pool: &PgPool, id: Uuid) -> Result<(), sqlx::Error> {
     sqlx::query("DELETE FROM courses WHERE id = $1")
         .bind(id)

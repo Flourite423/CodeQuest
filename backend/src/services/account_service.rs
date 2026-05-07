@@ -2,6 +2,7 @@ use sqlx::PgPool;
 use uuid::Uuid;
 use crate::models::{Account, RoleType, AccountStatus};
 
+#[allow(dead_code)]
 pub async fn find_account_by_id(pool: &PgPool, id: Uuid) -> Result<Option<Account>, sqlx::Error> {
     sqlx::query_as::<_, Account>("SELECT * FROM accounts WHERE id = $1")
         .bind(id)
@@ -9,6 +10,7 @@ pub async fn find_account_by_id(pool: &PgPool, id: Uuid) -> Result<Option<Accoun
         .await
 }
 
+#[allow(dead_code)]
 pub async fn find_account_by_email(pool: &PgPool, email: &str) -> Result<Option<Account>, sqlx::Error> {
     sqlx::query_as::<_, Account>("SELECT * FROM accounts WHERE email = $1")
         .bind(email)
@@ -16,6 +18,7 @@ pub async fn find_account_by_email(pool: &PgPool, email: &str) -> Result<Option<
         .await
 }
 
+#[allow(dead_code)]
 pub async fn create_account(
     pool: &PgPool,
     email: &str,
@@ -46,6 +49,7 @@ pub async fn create_account(
     })
 }
 
+#[allow(dead_code)]
 pub async fn update_last_login(pool: &PgPool, id: Uuid) -> Result<(), sqlx::Error> {
     sqlx::query("UPDATE accounts SET last_login_at = NOW() WHERE id = $1")
         .bind(id)

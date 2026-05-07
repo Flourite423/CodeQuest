@@ -6,6 +6,7 @@ use serde::Deserialize;
 use uuid::Uuid;
 
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 pub struct UpdateUserRequest {
     pub email: Option<String>,
     pub default_role: Option<String>,
