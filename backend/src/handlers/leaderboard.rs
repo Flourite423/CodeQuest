@@ -26,7 +26,7 @@ async fn map_leaderboard_entries(
         .collect();
     
     let profiles = sqlx::query_as::<_, (String, Option<String>, Option<String>)>(
-        "SELECT account_id::text, nickname, avatar_url FROM user_profiles WHERE account_id = ANY($1::uuid[])"
+        "SELECT account_id::text, nickname, avatar_url FROM learner_profiles WHERE account_id = ANY($1::uuid[])"
     )
     .bind(&learner_ids)
     .fetch_all(pool)

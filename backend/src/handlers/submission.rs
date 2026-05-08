@@ -50,7 +50,8 @@ pub async fn get_submission(req: &mut Request, depot: &mut Depot) -> Result<Json
     let pool = depot.obtain::<PgPool>()
         .map_err(|_| StatusError::internal_server_error())?;
     
-    let id = req.param::<String>("id")
+    let id = req.param::<String>("submission_id")
+        .or_else(|| req.param::<String>("id"))
         .ok_or_else(StatusError::bad_request)?;
     
     let submission = sqlx::query_as::<_, Submission>("SELECT * FROM submissions WHERE id = $1")
@@ -69,6 +70,7 @@ pub async fn create_submission(req: &mut Request, depot: &mut Depot) -> Result<S
         .map_err(|_| StatusError::internal_server_error())?;
     
     let exercise_id = req.param::<String>("exercise_id")
+        .or_else(|| req.query::<String>("exercise_id"))
         .ok_or_else(StatusError::bad_request)?;
     
     let body: CreateSubmissionRequest = req.parse_json().await

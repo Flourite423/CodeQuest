@@ -1,4 +1,4 @@
-use chrono::{Duration, Utc};
+use chrono::{DateTime, Duration, Utc};
 use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
 use salvo::jwt_auth::{ConstDecoder, HeaderFinder, JwtAuth, JwtAuthDepotExt};
 use salvo::prelude::*;
@@ -377,34 +377,7 @@ async fn authenticate_user(
             account
         }
         None => {
-            let account_id = Uuid::new_v4();
-            let role_enum = if role == "admin" { RoleType::Admin } else { RoleType::Learner };
-            let password_hash = hash_password(password).map_err(|_| StatusError::internal_server_error())?;
-
-            sqlx::query(
-                "INSERT INTO accounts (id, email, password_hash, default_role, account_status)
-                 VALUES ($1, $2, $3, $4, $5)",
-            )
-            .bind(account_id)
-            .bind(email)
-            .bind(&password_hash)
-            .bind(role_enum.clone())
-            .bind(AccountStatus::Active)
-            .execute(pool)
-            .await
-            .map_err(|_| StatusError::internal_server_error())?;
-
-            if role == "admin" {
-                let _ = ensure_admin_profile(pool, account_id, &preferred_name).await?;
-            } else {
-                let _ = ensure_learner_profile(pool, account_id, &preferred_name).await?;
-            }
-
-            sqlx::query_as::<_, Account>("SELECT * FROM accounts WHERE id = $1")
-                .bind(account_id)
-                .fetch_one(pool)
-                .await
-                .map_err(|_| StatusError::internal_server_error())?
+            return Err(StatusError::unauthorized().brief("Invalid email or password"));
         }
     };
 
@@ -442,6 +415,11 @@ pub async fn register(
         .map_err(|_| StatusError::internal_server_error())?;
     if existing.is_some() {
         return Err(StatusError::bad_request().brief("Account already exists"));
+    }
+    
+    let valid_platforms = ["ios", "android", "web"];
+    if !valid_platforms.contains(&body.platform.as_str()) {
+        return Err(StatusError::bad_request().brief("Invalid platform. Must be one of: ios, android, web"));
     }
 
     let account_id = Uuid::new_v4();
@@ -631,8 +609,19 @@ pub fn jwt_auth_middleware(secret: String) -> JwtAuth<JwtClaims, ConstDecoder> {
         .finders(vec![Box::new(HeaderFinder::new())])
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+pub struct SafeAccount {
+    pub id: String,
+    pub email: String,
+    pub default_role: String,
+    pub account_status: String,
+    pub last_login_at: Option<DateTime<Utc>>,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+}
+
 #[handler]
-pub async fn get_current_user(depot: &mut Depot) -> Result<Json<ApiResponse<Account>>, StatusError> {
+pub async fn get_current_user(depot: &mut Depot) -> Result<Json<ApiResponse<SafeAccount>>, StatusError> {
     let pool = depot.obtain::<PgPool>().map_err(|_| StatusError::internal_server_error())?;
 
     let jwt_data = depot.jwt_auth_data::<JwtClaims>().ok_or_else(StatusError::unauthorized)?;
@@ -646,7 +635,17 @@ pub async fn get_current_user(depot: &mut Depot) -> Result<Json<ApiResponse<Acco
         .map_err(|_| StatusError::internal_server_error())?
         .ok_or_else(StatusError::not_found)?;
 
-    Ok(Json(ApiResponse::new(account)))
+    let safe_account = SafeAccount {
+        id: account.id.to_string(),
+        email: account.email,
+        default_role: format!("{:?}", account.default_role).to_lowercase(),
+        account_status: format!("{:?}", account.account_status).to_lowercase(),
+        last_login_at: account.last_login_at,
+        created_at: account.created_at,
+        updated_at: account.updated_at,
+    };
+
+    Ok(Json(ApiResponse::new(safe_account)))
 }
 
 pub fn get_current_account_id(depot: &Depot) -> Result<Uuid, StatusError> {

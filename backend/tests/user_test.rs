@@ -28,15 +28,18 @@ async fn test_create_user_via_auth() {
     let service = create_test_service(pool);
     let admin_token = get_admin_token(&service).await;
     
-    let login_res = TestClient::post("http://127.0.0.1:8080/api/v1/auth/learner/login")
+    let register_res = TestClient::post("http://127.0.0.1:8080/api/v1/auth/register")
         .json(&json!({
             "email": "test_user@example.com",
-            "password": "password123"
+            "password": "password123",
+            "nickname": "TestUser",
+            "device_id": "test-device",
+            "platform": "web"
         }))
         .send(&service)
         .await;
     
-    assert_eq!(login_res.status_code, Some(StatusCode::OK));
+    assert_eq!(register_res.status_code, Some(StatusCode::CREATED));
     
     let mut list_res = TestClient::get("http://127.0.0.1:8080/api/v1/admin/users")
         .bearer_auth(&admin_token)
@@ -81,15 +84,18 @@ async fn test_update_user() {
     let service = create_test_service(pool);
     let admin_token = get_admin_token(&service).await;
     
-    let login_res = TestClient::post("http://127.0.0.1:8080/api/v1/auth/learner/login")
+    let register_res = TestClient::post("http://127.0.0.1:8080/api/v1/auth/register")
         .json(&json!({
             "email": "test_update@example.com",
-            "password": "password123"
+            "password": "password123",
+            "nickname": "TestUpdate",
+            "device_id": "test-device",
+            "platform": "web"
         }))
         .send(&service)
         .await;
     
-    assert_eq!(login_res.status_code, Some(StatusCode::OK));
+    assert_eq!(register_res.status_code, Some(StatusCode::CREATED));
     
     let mut list_res = TestClient::get("http://127.0.0.1:8080/api/v1/admin/users")
         .bearer_auth(&admin_token)
@@ -120,15 +126,18 @@ async fn test_delete_user() {
     let service = create_test_service(pool);
     let admin_token = get_admin_token(&service).await;
     
-    let login_res = TestClient::post("http://127.0.0.1:8080/api/v1/auth/learner/login")
+    let register_res = TestClient::post("http://127.0.0.1:8080/api/v1/auth/register")
         .json(&json!({
             "email": "test_delete@example.com",
-            "password": "password123"
+            "password": "password123",
+            "nickname": "TestDelete",
+            "device_id": "test-device",
+            "platform": "web"
         }))
         .send(&service)
         .await;
     
-    assert_eq!(login_res.status_code, Some(StatusCode::OK));
+    assert_eq!(register_res.status_code, Some(StatusCode::CREATED));
     
     let mut list_res = TestClient::get("http://127.0.0.1:8080/api/v1/admin/users")
         .bearer_auth(&admin_token)
@@ -163,15 +172,18 @@ async fn test_update_user_invalid_body() {
     let service = create_test_service(pool);
     let admin_token = get_admin_token(&service).await;
     
-    let login_res = TestClient::post("http://127.0.0.1:8080/api/v1/auth/learner/login")
+    let register_res = TestClient::post("http://127.0.0.1:8080/api/v1/auth/register")
         .json(&json!({
             "email": "test_invalid@example.com",
-            "password": "password123"
+            "password": "password123",
+            "nickname": "TestInvalid",
+            "device_id": "test-device",
+            "platform": "web"
         }))
         .send(&service)
         .await;
     
-    assert_eq!(login_res.status_code, Some(StatusCode::OK));
+    assert_eq!(register_res.status_code, Some(StatusCode::CREATED));
     
     let mut list_res = TestClient::get("http://127.0.0.1:8080/api/v1/admin/users")
         .bearer_auth(&admin_token)
@@ -194,4 +206,75 @@ async fn test_update_user_invalid_body() {
         
         assert_eq!(res.status_code, Some(StatusCode::OK));
     }
+}
+
+#[tokio::test]
+async fn test_login_nonexistent_user_returns_401() {
+    let pool = setup_test_db().await;
+    let service = create_test_service(pool);
+    
+    let login_res = TestClient::post("http://127.0.0.1:8080/api/v1/auth/learner/login")
+        .json(&json!({
+            "email": "nonexistent@example.com",
+            "password": "password123"
+        }))
+        .send(&service)
+        .await;
+    
+    assert_eq!(login_res.status_code, Some(StatusCode::UNAUTHORIZED));
+}
+
+#[tokio::test]
+async fn test_admin_login_nonexistent_returns_401() {
+    let pool = setup_test_db().await;
+    let service = create_test_service(pool);
+    
+    let login_res = TestClient::post("http://127.0.0.1:8080/api/v1/auth/admin/login")
+        .json(&json!({
+            "email": "nonexistent@example.com",
+            "password": "password123"
+        }))
+        .send(&service)
+        .await;
+    
+    assert_eq!(login_res.status_code, Some(StatusCode::UNAUTHORIZED));
+}
+
+#[tokio::test]
+async fn test_user_response_excludes_password_hash() {
+    let pool = setup_test_db().await;
+    let service = create_test_service(pool);
+    let admin_token = get_admin_token(&service).await;
+    
+    let mut res = TestClient::get("http://127.0.0.1:8080/api/v1/admin/users")
+        .bearer_auth(&admin_token)
+        .send(&service)
+        .await;
+    
+    assert_eq!(res.status_code, Some(StatusCode::OK));
+    
+    let body = res.take_json::<serde_json::Value>().await.unwrap();
+    let users = body["data"].as_array().unwrap();
+    
+    if !users.is_empty() {
+        let user = &users[0];
+        assert!(user.get("password_hash").is_none(), "password_hash should not be exposed in API response");
+    }
+}
+
+#[tokio::test]
+async fn test_me_endpoint_excludes_password_hash() {
+    let pool = setup_test_db().await;
+    let service = create_test_service(pool);
+    let admin_token = get_admin_token(&service).await;
+    
+    let mut res = TestClient::get("http://127.0.0.1:8080/api/v1/me")
+        .bearer_auth(&admin_token)
+        .send(&service)
+        .await;
+    
+    assert_eq!(res.status_code, Some(StatusCode::OK));
+    
+    let body = res.take_json::<serde_json::Value>().await.unwrap();
+    assert!(body["data"].get("password_hash").is_none(), "password_hash should not be exposed in /me response");
 }

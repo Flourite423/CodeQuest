@@ -30,7 +30,7 @@ pub async fn get_today_challenge(depot: &mut Depot) -> Result<Json<ApiResponse<D
     let today = Utc::now().date_naive();
     
     let challenge = sqlx::query_as::<_, DailyChallenge>(
-        "SELECT * FROM daily_challenges WHERE challenge_date = $1 AND status = 'published'"
+        "SELECT * FROM daily_challenges WHERE challenge_date = $1 AND status = 'active'"
     )
     .bind(today)
     .fetch_optional(pool)
@@ -47,7 +47,7 @@ pub async fn list_daily_challenges(depot: &mut Depot) -> Result<Json<ApiResponse
         .map_err(|_| StatusError::internal_server_error())?;
     
     let challenges = sqlx::query_as::<_, DailyChallenge>(
-        "SELECT * FROM daily_challenges WHERE status = 'published' ORDER BY challenge_date DESC LIMIT 30"
+        "SELECT * FROM daily_challenges WHERE status = 'active' ORDER BY challenge_date DESC LIMIT 30"
     )
     .fetch_all(pool)
     .await
@@ -73,7 +73,7 @@ pub async fn create_daily_challenge(req: &mut Request, depot: &mut Depot) -> Res
     sqlx::query(
         "INSERT INTO daily_challenges (id, challenge_date, title, exercise_id, difficulty, 
          time_limit_seconds, reward_xp, status) 
-         VALUES ($1, $2, $3, $4, $5, $6, $7, 'draft')"
+         VALUES ($1, $2, $3, $4, $5, $6, $7, 'scheduled')"
     )
     .bind(id)
     .bind(today)
@@ -107,8 +107,8 @@ pub async fn attempt_daily_challenge(req: &mut Request, depot: &mut Depot) -> Re
     
     sqlx::query(
         "INSERT INTO daily_challenge_records (id, daily_challenge_id, learner_id, status, 
-         score, elapsed_seconds, streak_after_completion) 
-         VALUES ($1, $2, $3, 'completed', $4, $5, 1)"
+         score, elapsed_seconds, streak_after_completion, completed_at) 
+         VALUES ($1, $2, $3, 'passed', $4, $5, 1, NOW())"
     )
     .bind(id)
     .bind(challenge_uuid)
@@ -257,8 +257,8 @@ pub async fn submit_daily_challenge(req: &mut Request, depot: &mut Depot) -> Res
     
     sqlx::query(
         "INSERT INTO daily_challenge_records (id, daily_challenge_id, learner_id, status, 
-         score, elapsed_seconds, streak_after_completion) 
-         VALUES ($1, $2, $3, 'completed', $4, $5, 1)"
+         score, elapsed_seconds, streak_after_completion, completed_at) 
+         VALUES ($1, $2, $3, 'passed', $4, $5, 1, NOW())"
     )
     .bind(id)
     .bind(challenge_uuid)

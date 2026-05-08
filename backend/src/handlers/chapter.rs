@@ -54,7 +54,8 @@ pub async fn get_chapter(req: &mut Request, depot: &mut Depot) -> Result<Json<Ap
     let pool = depot.obtain::<PgPool>()
         .map_err(|_| StatusError::internal_server_error())?;
     
-    let id = req.param::<String>("id")
+    let id = req.param::<String>("chapter_id")
+        .or_else(|| req.param::<String>("id"))
         .ok_or_else(StatusError::bad_request)?;
     
     let chapter = sqlx::query_as::<_, Chapter>("SELECT * FROM chapters WHERE id = $1")
@@ -106,7 +107,8 @@ pub async fn update_chapter(req: &mut Request, depot: &mut Depot) -> Result<Stat
     let pool = depot.obtain::<PgPool>()
         .map_err(|_| StatusError::internal_server_error())?;
     
-    let id = req.param::<String>("id")
+    let id = req.param::<String>("chapter_id")
+        .or_else(|| req.param::<String>("id"))
         .ok_or_else(StatusError::bad_request)?;
     
     let body: UpdateChapterRequest = req.parse_json().await
@@ -144,7 +146,8 @@ pub async fn delete_chapter(req: &mut Request, depot: &mut Depot) -> Result<Stat
     let pool = depot.obtain::<PgPool>()
         .map_err(|_| StatusError::internal_server_error())?;
     
-    let id = req.param::<String>("id")
+    let id = req.param::<String>("chapter_id")
+        .or_else(|| req.param::<String>("id"))
         .ok_or_else(StatusError::bad_request)?;
     
     sqlx::query("DELETE FROM chapters WHERE id = $1")

@@ -1,7 +1,8 @@
 use salvo::prelude::*;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use uuid::Uuid;
+use chrono::{DateTime, Utc};
 
 use crate::handlers::auth;
 use crate::models::{Announcement, ApiResponse, SystemConfig};
@@ -68,8 +69,19 @@ pub struct CreateAnnouncementRequest {
     pub audience: String,
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+pub struct SafeAccount {
+    pub id: String,
+    pub email: String,
+    pub default_role: String,
+    pub account_status: String,
+    pub last_login_at: Option<DateTime<Utc>>,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+}
+
 #[handler]
-pub async fn list_admin_users(depot: &mut Depot) -> Result<Json<ApiResponse<Vec<crate::models::Account>>>, StatusError> {
+pub async fn list_admin_users(depot: &mut Depot) -> Result<Json<ApiResponse<Vec<SafeAccount>>>, StatusError> {
     let pool = depot.obtain::<PgPool>()
         .map_err(|_| StatusError::internal_server_error())?;
 
@@ -78,7 +90,17 @@ pub async fn list_admin_users(depot: &mut Depot) -> Result<Json<ApiResponse<Vec<
         .await
         .map_err(|_| StatusError::internal_server_error())?;
 
-    Ok(Json(ApiResponse::new(users)))
+    let safe_users: Vec<SafeAccount> = users.into_iter().map(|account| SafeAccount {
+        id: account.id.to_string(),
+        email: account.email,
+        default_role: format!("{:?}", account.default_role).to_lowercase(),
+        account_status: format!("{:?}", account.account_status).to_lowercase(),
+        last_login_at: account.last_login_at,
+        created_at: account.created_at,
+        updated_at: account.updated_at,
+    }).collect();
+
+    Ok(Json(ApiResponse::new(safe_users)))
 }
 
 #[handler]
@@ -602,7 +624,7 @@ pub async fn delete_exercise(req: &mut Request, depot: &mut Depot) -> Result<Sta
 }
 
 #[handler]
-pub async fn get_admin_user(req: &mut Request, depot: &mut Depot) -> Result<Json<ApiResponse<crate::models::Account>>, StatusError> {
+pub async fn get_admin_user(req: &mut Request, depot: &mut Depot) -> Result<Json<ApiResponse<SafeAccount>>, StatusError> {
     let pool = depot.obtain::<PgPool>()
         .map_err(|_| StatusError::internal_server_error())?;
     
@@ -619,7 +641,17 @@ pub async fn get_admin_user(req: &mut Request, depot: &mut Depot) -> Result<Json
         .map_err(|_| StatusError::internal_server_error())?
         .ok_or_else(StatusError::not_found)?;
     
-    Ok(Json(ApiResponse::new(user)))
+    let safe_user = SafeAccount {
+        id: user.id.to_string(),
+        email: user.email,
+        default_role: format!("{:?}", user.default_role).to_lowercase(),
+        account_status: format!("{:?}", user.account_status).to_lowercase(),
+        last_login_at: user.last_login_at,
+        created_at: user.created_at,
+        updated_at: user.updated_at,
+    };
+    
+    Ok(Json(ApiResponse::new(safe_user)))
 }
 
 #[handler]
@@ -830,8 +862,9 @@ pub async fn delete_announcement(req: &mut Request, depot: &mut Depot) -> Result
 #[derive(Debug, Deserialize)]
 pub struct CreateConfigRequest {
     pub config_key: String,
-    pub config_value: String,
-    pub description: Option<String>,
+    pub config_scope: String,
+    pub value_json: serde_json::Value,
+    pub status: Option<String>,
 }
 
 #[handler]
@@ -842,13 +875,18 @@ pub async fn create_config(req: &mut Request, depot: &mut Depot) -> Result<Json<
     let body: CreateConfigRequest = req.parse_json().await
         .map_err(|_| StatusError::bad_request().brief("Invalid request body"))?;
 
+    let admin_id = auth::get_current_account_id(depot)?;
+    let status = body.status.as_deref().unwrap_or("active");
+
     let config = sqlx::query_as::<_, SystemConfig>(
-        "INSERT INTO system_configs (config_key, config_value, description) \
-        VALUES ($1, $2, $3) RETURNING *"
+        "INSERT INTO system_configs (config_key, config_scope, value_json, status, updated_by) \
+        VALUES ($1, $2, $3, $4, $5) RETURNING *"
     )
     .bind(&body.config_key)
-    .bind(&body.config_value)
-    .bind(&body.description)
+    .bind(&body.config_scope)
+    .bind(&body.value_json)
+    .bind(status)
+    .bind(admin_id)
     .fetch_one(pool)
     .await
     .map_err(|_| StatusError::internal_server_error())?;
@@ -876,8 +914,9 @@ pub async fn get_config(req: &mut Request, depot: &mut Depot) -> Result<Json<Api
 
 #[derive(Debug, Deserialize)]
 pub struct UpdateConfigRequest {
-    pub config_value: String,
-    pub description: Option<String>,
+    pub config_scope: Option<String>,
+    pub value_json: Option<serde_json::Value>,
+    pub status: Option<String>,
 }
 
 #[handler]
@@ -890,17 +929,23 @@ pub async fn update_config(req: &mut Request, depot: &mut Depot) -> Result<Statu
     
     let body: UpdateConfigRequest = req.parse_json().await
         .map_err(|_| StatusError::bad_request().brief("Invalid request body"))?;
+    
+    let admin_id = auth::get_current_account_id(depot)?;
 
     sqlx::query(
         "UPDATE system_configs SET 
-         config_value = $2,
-         description = COALESCE($3, description),
+         config_scope = COALESCE($2, config_scope),
+         value_json = COALESCE($3, value_json),
+         status = COALESCE($4, status),
+         updated_by = $5,
          updated_at = NOW()
          WHERE config_key = $1"
     )
     .bind(&config_key)
-    .bind(&body.config_value)
-    .bind(&body.description)
+    .bind(&body.config_scope)
+    .bind(&body.value_json)
+    .bind(&body.status)
+    .bind(admin_id)
     .execute(pool)
     .await
     .map_err(|_| StatusError::internal_server_error())?;

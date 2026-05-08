@@ -52,7 +52,8 @@ pub async fn get_challenge(req: &mut Request, depot: &mut Depot) -> Result<Json<
     let pool = depot.obtain::<PgPool>()
         .map_err(|_| StatusError::internal_server_error())?;
     
-    let id = req.param::<String>("id")
+    let id = req.param::<String>("challenge_id")
+        .or_else(|| req.param::<String>("id"))
         .ok_or_else(StatusError::bad_request)?;
     
     let challenge = sqlx::query_as::<_, Challenge>("SELECT * FROM challenges WHERE id = $1")
@@ -101,7 +102,8 @@ pub async fn update_challenge(req: &mut Request, depot: &mut Depot) -> Result<St
     let pool = depot.obtain::<PgPool>()
         .map_err(|_| StatusError::internal_server_error())?;
     
-    let id = req.param::<String>("id")
+    let id = req.param::<String>("challenge_id")
+        .or_else(|| req.param::<String>("id"))
         .ok_or_else(StatusError::bad_request)?;
     
     let body: UpdateChallengeRequest = req.parse_json().await
@@ -135,7 +137,8 @@ pub async fn delete_challenge(req: &mut Request, depot: &mut Depot) -> Result<St
     let pool = depot.obtain::<PgPool>()
         .map_err(|_| StatusError::internal_server_error())?;
     
-    let id = req.param::<String>("id")
+    let id = req.param::<String>("challenge_id")
+        .or_else(|| req.param::<String>("id"))
         .ok_or_else(StatusError::bad_request)?;
     
     sqlx::query("DELETE FROM challenges WHERE id = $1")
@@ -168,8 +171,8 @@ pub async fn attempt_challenge(req: &mut Request, depot: &mut Depot) -> Result<S
         .map_err(|_| StatusError::bad_request().brief("Invalid challenge_id"))?;
     
     sqlx::query(
-        "INSERT INTO challenge_attempts (id, challenge_id, learner_id, status, score, attempt_no) 
-         VALUES ($1, $2, $3, 'completed', $4, 1)"
+        "INSERT INTO challenge_attempts (id, challenge_id, learner_id, status, best_star, started_at, completed_at) 
+         VALUES ($1, $2, $3, 'completed', $4, NOW(), NOW())"
     )
     .bind(Uuid::new_v4())
     .bind(challenge_uuid)
