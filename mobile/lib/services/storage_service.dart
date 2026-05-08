@@ -4,36 +4,56 @@ import 'package:get_storage/get_storage.dart';
 class StorageService extends GetxService {
   static const String authTokenKey = 'auth_token';
 
-  late final GetStorage _box;
+  GetStorage? _box;
+  bool _initialized = false;
 
   @override
   void onInit() {
     super.onInit();
-    _box = GetStorage();
+    try {
+      _box = GetStorage();
+      _initialized = true;
+    } catch (e) {
+      // GetStorage initialization failed (e.g., headless environment)
+      // Will use fallback behavior
+      _initialized = false;
+    }
   }
 
   Future<void> write(String key, dynamic value) async {
-    await _box.write(key, value);
+    if (_initialized && _box != null) {
+      await _box!.write(key, value);
+    }
   }
 
   T? read<T>(String key) {
-    return _box.read<T>(key);
+    if (_initialized && _box != null) {
+      return _box!.read<T>(key);
+    }
+    return null;
   }
 
   Future<void> remove(String key) async {
-    await _box.remove(key);
+    if (_initialized && _box != null) {
+      await _box!.remove(key);
+    }
   }
 
   Future<void> clear() async {
-    await _box.erase();
+    if (_initialized && _box != null) {
+      await _box!.erase();
+    }
   }
 
   Future<void> clearAuthSession() async {
-    await _box.remove(authTokenKey);
+    await remove(authTokenKey);
   }
 
   bool hasKey(String key) {
-    return _box.hasData(key);
+    if (_initialized && _box != null) {
+      return _box!.hasData(key);
+    }
+    return false;
   }
 
   String? readAuthToken() {

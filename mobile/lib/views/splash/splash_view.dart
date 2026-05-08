@@ -43,9 +43,19 @@ class SplashView extends GetView<SplashController> {
 }
 
 class SplashController extends GetxController {
-  final StorageService _storage = Get.find<StorageService>();
+  StorageService? _storage;
 
   static const String _firstLaunchKey = 'first_launch';
+
+  @override
+  void onInit() {
+    super.onInit();
+    // Ensure StorageService is initialized
+    if (!Get.isRegistered<StorageService>()) {
+      Get.put<StorageService>(StorageService(), permanent: true);
+    }
+    _storage = Get.find<StorageService>();
+  }
 
   @override
   void onReady() {
@@ -57,8 +67,14 @@ class SplashController extends GetxController {
     // Wait for 2 seconds splash animation
     await Future.delayed(const Duration(seconds: 2));
 
-    final isFirstLaunch = !_storage.hasKey(_firstLaunchKey);
-    final authToken = _storage.readAuthToken();
+    // Safety check: if storage is not available, go to login
+    if (_storage == null) {
+      Get.offAllNamed('/login');
+      return;
+    }
+
+    final isFirstLaunch = !_storage!.hasKey(_firstLaunchKey);
+    final authToken = _storage!.readAuthToken();
 
     if (isFirstLaunch) {
       // First time launch -> Onboarding
