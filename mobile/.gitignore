@@ -18,20 +18,23 @@ migrate_working_dir/
 *.iws
 .idea/
 
-# The .vscode folder contains launch configuration and tasks you configure in
-# VS Code which you may wish to be included in version control, so this line
-# is commented out by default.
+# VS Code (uncomment if you want to exclude)
 #.vscode/
 
 # Flutter/Dart/Pub related
 **/doc/api/
 **/ios/Flutter/.last_build_id
 .dart_tool/
+.flutter-plugins
 .flutter-plugins-dependencies
 .pub-cache/
 .pub/
 /build/
 /coverage/
+
+# Generated files
+*.g.dart
+*.freezed.dart
 
 # Symbolication related
 app.*.symbols
@@ -43,3 +46,40 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# iOS build artifacts
+/ios/Pods/
+/ios/.symlinks/
+/ios/Flutter/Flutter.framework
+/ios/Flutter/Flutter.podspec
+
+# macOS build artifacts
+/macos/Pods/
+/macos/Flutter/ephemeral/
+
+# Windows build artifacts
+/windows/flutter/ephemeral/
+
+# Linux build artifacts
+/linux/flutter/ephemeral/
+/linux/flutter/generated_plugins.cmake
+/linux/flutter/generated_plugin_registrant.cc
+/linux/flutter/generated_plugin_registrant.h
+
+# Web build artifacts
+/web/flutter_bootstrap.js
+/web/flutter.js
+/web/flutter_service_worker.js
+/web/index.html
+
+# Test failures and golden diffs
+/test/failures/
+/test/goldens/failures/
+
+# Temporary files
+*.tmp
+*.temp
+*~
+
+# OS generated files
+Thumbs.db
