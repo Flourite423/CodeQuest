@@ -17,7 +17,7 @@ async fn test_get_rewards() {
     
     assert_eq!(res.status_code, Some(StatusCode::OK));
     let body = res.take_json::<serde_json::Value>().await.unwrap();
-    assert!(body["data"]["total_xp"].is_number());
+    assert!(body["data"]["summary"]["total_xp"].is_number());
     assert!(body["data"]["badges"].is_array());
 }
 

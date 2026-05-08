@@ -23,7 +23,7 @@ pub struct AttemptDailyChallengeRequest {
 }
 
 #[handler]
-pub async fn get_today_challenge(depot: &mut Depot) -> Result<Json<ApiResponse<DailyChallenge>>, StatusError> {
+pub async fn get_today_challenge(depot: &mut Depot) -> Result<Json<ApiResponse<serde_json::Value>>, StatusError> {
     let pool = depot.obtain::<PgPool>()
         .map_err(|_| StatusError::internal_server_error())?;
     
@@ -38,7 +38,20 @@ pub async fn get_today_challenge(depot: &mut Depot) -> Result<Json<ApiResponse<D
     .map_err(|_| StatusError::internal_server_error())?
     .ok_or_else(StatusError::not_found)?;
     
-    Ok(Json(ApiResponse::new(challenge)))
+    let learner_id = auth::get_current_account_id(depot)?;
+    let record = sqlx::query_as::<_, DailyChallengeRecord>(
+        "SELECT * FROM daily_challenge_records WHERE daily_challenge_id = $1 AND learner_id = $2"
+    )
+    .bind(challenge.id)
+    .bind(learner_id)
+    .fetch_optional(pool)
+    .await
+    .map_err(|_| StatusError::internal_server_error())?;
+    
+    Ok(Json(ApiResponse::new(serde_json::json!({
+        "daily_challenge": challenge,
+        "learner_record": record
+    }))))
 }
 
 #[handler]

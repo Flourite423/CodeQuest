@@ -19,7 +19,7 @@ pub async fn list_users(req: &mut Request, depot: &mut Depot) -> Result<Json<Api
         .map_err(|_| StatusError::internal_server_error())?;
     
     let page = req.query::<i64>("page").unwrap_or(1).max(1);
-    let per_page = req.query::<i64>("per_page").unwrap_or(20).clamp(1, 100);
+    let per_page = req.query::<i64>("page_size").unwrap_or(20).clamp(1, 100);
     let offset = (page - 1) * per_page;
     
     let users = sqlx::query_as::<_, Account>(

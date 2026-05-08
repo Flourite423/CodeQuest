@@ -414,9 +414,9 @@ pub async fn register(
         .await
         .map_err(|_| StatusError::internal_server_error())?;
     if existing.is_some() {
-        return Err(StatusError::bad_request().brief("Account already exists"));
+        return Err(StatusError::conflict().brief("Account already exists"));
     }
-    
+
     let valid_platforms = ["ios", "android", "web"];
     if !valid_platforms.contains(&body.platform.as_str()) {
         return Err(StatusError::bad_request().brief("Invalid platform. Must be one of: ios, android, web"));

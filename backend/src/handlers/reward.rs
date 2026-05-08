@@ -61,8 +61,23 @@ pub async fn get_rewards(depot: &mut Depot) -> Result<Json<ApiResponse<serde_jso
     .await
     .map_err(|_| StatusError::internal_server_error())?;
     
+    let xp_records = sqlx::query_as::<_, XpLedger>(
+        "SELECT * FROM xp_ledger WHERE learner_id = $1 ORDER BY created_at DESC LIMIT 10"
+    )
+    .bind(learner_id)
+    .fetch_all(pool)
+    .await
+    .map_err(|_| StatusError::internal_server_error())?;
+    
     Ok(Json(ApiResponse::new(serde_json::json!({
-        "total_xp": total_xp.0,
-        "badges": badges
+        "summary": {
+            "total_xp": total_xp.0,
+            "badge_count": badges.len() as i64
+        },
+        "badges": badges,
+        "xp_ledger": xp_records,
+        "meta": {
+            "total": badges.len() as i64
+        }
     }))))
 }

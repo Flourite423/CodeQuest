@@ -225,6 +225,11 @@ pub async fn get_user_stats(depot: &mut Depot) -> Result<Json<ApiResponse<serde_
     }))))
 }
 
+#[derive(Debug, serde::Serialize)]
+pub struct AdminListMeta {
+    pub total: i64,
+}
+
 #[handler]
 pub async fn list_admin_courses(depot: &mut Depot) -> Result<Json<ApiResponse<serde_json::Value>>, StatusError> {
     let pool = depot.obtain::<PgPool>()
@@ -235,8 +240,15 @@ pub async fn list_admin_courses(depot: &mut Depot) -> Result<Json<ApiResponse<se
         .fetch_all(pool)
         .await
         .map_err(|_| StatusError::internal_server_error())?;
+    
+    let total = courses.len() as i64;
 
-    Ok(Json(ApiResponse::new(serde_json::json!({"items": courses}))))
+    Ok(Json(ApiResponse::new(serde_json::json!({
+        "items": courses,
+        "meta": {
+            "total": total
+        }
+    }))))
 }
 
 #[handler]
@@ -389,8 +401,15 @@ pub async fn list_admin_challenges(depot: &mut Depot) -> Result<Json<ApiResponse
         .fetch_all(pool)
         .await
         .map_err(|_| StatusError::internal_server_error())?;
+    
+    let total = challenges.len() as i64;
 
-    Ok(Json(ApiResponse::new(serde_json::json!({"items": challenges}))))
+    Ok(Json(ApiResponse::new(serde_json::json!({
+        "items": challenges,
+        "meta": {
+            "total": total
+        }
+    }))))
 }
 
 #[handler]
@@ -526,8 +545,15 @@ pub async fn list_admin_exercises(depot: &mut Depot) -> Result<Json<ApiResponse<
         .fetch_all(pool)
         .await
         .map_err(|_| StatusError::internal_server_error())?;
+    
+    let total = exercises.len() as i64;
 
-    Ok(Json(ApiResponse::new(serde_json::json!({"items": exercises}))))
+    Ok(Json(ApiResponse::new(serde_json::json!({
+        "items": exercises,
+        "meta": {
+            "total": total
+        }
+    }))))
 }
 
 #[handler]

@@ -61,7 +61,7 @@ pub async fn list_social_activities(req: &mut Request, depot: &mut Depot) -> Res
 
     let learner_id = auth::get_current_account_id(depot)?;
     let page = req.query::<i64>("page").unwrap_or(1).max(1);
-    let per_page = req.query::<i64>("per_page").unwrap_or(20).clamp(1, 100);
+    let per_page = req.query::<i64>("page_size").unwrap_or(20).clamp(1, 100);
     let offset = (page - 1) * per_page;
     
     let activities = sqlx::query_as::<_, SocialActivity>(

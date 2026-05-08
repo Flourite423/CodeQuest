@@ -19,7 +19,7 @@ async fn test_list_challenges() {
     assert_eq!(res.status_code, Some(StatusCode::OK));
     
     let body = res.take_json::<serde_json::Value>().await.unwrap();
-    assert!(body["data"].is_array());
+    assert!(body["data"]["items"].is_array());
 }
 
 #[tokio::test]
@@ -50,7 +50,7 @@ async fn test_create_and_get_challenge() {
         .await;
     
     let body = list_res.take_json::<serde_json::Value>().await.unwrap();
-    let challenges = body["data"].as_array().unwrap();
+    let challenges = body["data"]["items"].as_array().unwrap();
     
     if !challenges.is_empty() {
         let challenge_id = challenges[0]["id"].as_str().unwrap();
@@ -109,7 +109,7 @@ async fn test_update_challenge() {
         .await;
     
     let body = list_res.take_json::<serde_json::Value>().await.unwrap();
-    let challenges = body["data"].as_array().unwrap();
+    let challenges = body["data"]["items"].as_array().unwrap();
     
     if !challenges.is_empty() {
         let challenge_id = challenges[0]["id"].as_str().unwrap();
@@ -154,7 +154,7 @@ async fn test_delete_challenge() {
         .await;
     
     let body = list_res.take_json::<serde_json::Value>().await.unwrap();
-    let challenges = body["data"].as_array().unwrap();
+    let challenges = body["data"]["items"].as_array().unwrap();
     
     if !challenges.is_empty() {
         let challenge_id = challenges[0]["id"].as_str().unwrap();

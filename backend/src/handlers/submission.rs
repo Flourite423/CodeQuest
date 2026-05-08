@@ -29,7 +29,7 @@ pub async fn list_submissions(req: &mut Request, depot: &mut Depot) -> Result<Js
     let exercise_id = req.param::<String>("exercise_id")
         .ok_or_else(StatusError::bad_request)?;
     let page = req.query::<i64>("page").unwrap_or(1).max(1);
-    let per_page = req.query::<i64>("per_page").unwrap_or(20).clamp(1, 100);
+    let per_page = req.query::<i64>("page_size").unwrap_or(20).clamp(1, 100);
     let offset = (page - 1) * per_page;
     
     let submissions = sqlx::query_as::<_, Submission>(
