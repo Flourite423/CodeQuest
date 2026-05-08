@@ -2,6 +2,7 @@
 *.class
 *.log
 *.pyc
+*.pyo
 *.swp
 .DS_Store
 .atom/
@@ -11,6 +12,12 @@
 .svn/
 .swiftpm/
 migrate_working_dir/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
 
 # IntelliJ related
 *.iml
@@ -61,10 +68,12 @@ app.*.map.json
 /windows/flutter/ephemeral/
 
 # Linux build artifacts
+/linux/
 /linux/flutter/ephemeral/
 /linux/flutter/generated_plugins.cmake
 /linux/flutter/generated_plugin_registrant.cc
 /linux/flutter/generated_plugin_registrant.h
+/linux/runner/
 
 # Web build artifacts
 /web/flutter_bootstrap.js

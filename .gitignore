@@ -67,3 +67,13 @@ coverage/
 .Trashes
 ehthumbs.db
 Thumbs.db
+
+# OpenCode skills data (large CSV files)
+.opencode/skills/ui-ux-pro-max/scripts/__pycache__/
+.opencode/skills/ui-ux-pro-max/data/
+.opencode/skills/ui-ux-pro-max/data/stacks/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
