@@ -1,0 +1,31 @@
+{
+  "path": "/api/v1/learner/submissions/2fd5c6df-45bc-4e38-bb2e-dc0fd8ebdd01",
+  "method": "GET",
+  "response": {
+    "status": 200,
+    "body": {
+      "data": {
+        "id": "2fd5c6df-45bc-4e38-bb2e-dc0fd8ebdd01",
+        "exercise_id": "efdafad2-e5f5-4ec6-9694-b7dba51cf401",
+        "learner_id": "0c9f9b0f-2d9a-4d9a-b5ec-6d3f8e684111",
+        "chapter_id": "1b3b0f3c-43df-4f2f-92d3-1ebec9d51001",
+        "attempt_no": 2,
+        "source_code": "fn reverse(s: &str) -> String { s.chars().rev().collect() }",
+        "judge_status": "passed",
+        "score": 100,
+        "passed_case_count": 12,
+        "total_case_count": 12,
+        "error_summary": null,
+        "runtime_ms": 18,
+        "content_version": 3,
+        "rule_version": 2,
+        "submitted_at": "2026-05-07T08:58:00Z",
+        "completed_at": "2026-05-07T08:58:04Z"
+      },
+      "meta": {
+        "request_id": "2f1f70fb-9ae4-4f5b-9d89-8242f53d4d11",
+        "server_time": "2026-05-07T10:00:00Z"
+      }
+    }
+  }
+}

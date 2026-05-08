@@ -1,0 +1,16 @@
+{
+  "path": "/api/v1/auth/logout",
+  "method": "POST",
+  "response": {
+    "status": 200,
+    "body": {
+      "data": {
+        "success": true
+      },
+      "meta": {
+        "request_id": "2f1f70fb-9ae4-4f5b-9d89-8242f53d4d11",
+        "server_time": "2026-05-07T10:00:00Z"
+      }
+    }
+  }
+}

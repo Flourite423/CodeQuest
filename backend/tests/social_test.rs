@@ -1,9 +1,8 @@
 use salvo::prelude::*;
 use salvo::test::{ResponseExt, TestClient};
-use serde_json::json;
 mod common;
 
-use common::{create_test_service, get_auth_token, get_admin_token, setup_test_db};
+use common::{create_test_service, get_auth_token, setup_test_db};
 
 #[tokio::test]
 async fn test_list_friends() {

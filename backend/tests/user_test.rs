@@ -3,7 +3,7 @@ use salvo::test::{ResponseExt, TestClient};
 use serde_json::json;
 mod common;
 
-use common::{create_test_service, get_auth_token, get_admin_token, setup_test_db};
+use common::{create_test_service, get_admin_token, setup_test_db};
 
 #[tokio::test]
 async fn test_list_users() {
@@ -28,7 +28,7 @@ async fn test_create_user_via_auth() {
     let service = create_test_service(pool);
     let admin_token = get_admin_token(&service).await;
     
-    let mut login_res = TestClient::post("http://127.0.0.1:8080/api/v1/auth/learner/login")
+    let login_res = TestClient::post("http://127.0.0.1:8080/api/v1/auth/learner/login")
         .json(&json!({
             "email": "test_user@example.com",
             "password": "password123"
@@ -67,7 +67,7 @@ async fn test_get_user_not_found() {
     let service = create_test_service(pool);
     let admin_token = get_admin_token(&service).await;
     
-    let mut res = TestClient::get("http://127.0.0.1:8080/api/v1/admin/users/550e8400-e29b-41d4-a716-446655440000")
+    let res = TestClient::get("http://127.0.0.1:8080/api/v1/admin/users/550e8400-e29b-41d4-a716-446655440000")
         .bearer_auth(&admin_token)
         .send(&service)
         .await;
@@ -81,7 +81,7 @@ async fn test_update_user() {
     let service = create_test_service(pool);
     let admin_token = get_admin_token(&service).await;
     
-    let mut login_res = TestClient::post("http://127.0.0.1:8080/api/v1/auth/learner/login")
+    let login_res = TestClient::post("http://127.0.0.1:8080/api/v1/auth/learner/login")
         .json(&json!({
             "email": "test_update@example.com",
             "password": "password123"
@@ -102,7 +102,7 @@ async fn test_update_user() {
     if !users.is_empty() {
         let user_id = users[0]["id"].as_str().unwrap();
         
-        let mut update_res = TestClient::put(&format!("http://127.0.0.1:8080/api/v1/admin/users/{}", user_id))
+        let update_res = TestClient::put(&format!("http://127.0.0.1:8080/api/v1/admin/users/{}", user_id))
             .bearer_auth(&admin_token)
             .json(&json!({
                 "account_status": "suspended"
@@ -120,7 +120,7 @@ async fn test_delete_user() {
     let service = create_test_service(pool);
     let admin_token = get_admin_token(&service).await;
     
-    let mut login_res = TestClient::post("http://127.0.0.1:8080/api/v1/auth/learner/login")
+    let login_res = TestClient::post("http://127.0.0.1:8080/api/v1/auth/learner/login")
         .json(&json!({
             "email": "test_delete@example.com",
             "password": "password123"
@@ -141,14 +141,14 @@ async fn test_delete_user() {
     if !users.is_empty() {
         let user_id = users[0]["id"].as_str().unwrap();
         
-        let mut delete_res = TestClient::delete(&format!("http://127.0.0.1:8080/api/v1/admin/users/{}", user_id))
+        let delete_res = TestClient::delete(&format!("http://127.0.0.1:8080/api/v1/admin/users/{}", user_id))
             .bearer_auth(&admin_token)
             .send(&service)
             .await;
         
         assert_eq!(delete_res.status_code, Some(StatusCode::NO_CONTENT));
         
-        let mut get_res = TestClient::get(&format!("http://127.0.0.1:8080/api/v1/admin/users/{}", user_id))
+        let get_res = TestClient::get(&format!("http://127.0.0.1:8080/api/v1/admin/users/{}", user_id))
             .bearer_auth(&admin_token)
             .send(&service)
             .await;
@@ -163,7 +163,7 @@ async fn test_update_user_invalid_body() {
     let service = create_test_service(pool);
     let admin_token = get_admin_token(&service).await;
     
-    let mut login_res = TestClient::post("http://127.0.0.1:8080/api/v1/auth/learner/login")
+    let login_res = TestClient::post("http://127.0.0.1:8080/api/v1/auth/learner/login")
         .json(&json!({
             "email": "test_invalid@example.com",
             "password": "password123"
@@ -184,7 +184,7 @@ async fn test_update_user_invalid_body() {
     if !users.is_empty() {
         let user_id = users[0]["id"].as_str().unwrap();
         
-        let mut res = TestClient::put(&format!("http://127.0.0.1:8080/api/v1/admin/users/{}", user_id))
+        let res = TestClient::put(&format!("http://127.0.0.1:8080/api/v1/admin/users/{}", user_id))
             .bearer_auth(&admin_token)
             .json(&json!({
                 "invalid_field": "value"

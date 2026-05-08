@@ -26,7 +26,7 @@ async fn test_get_course_progress_not_found() {
     let service = create_test_service(pool);
     let token = get_auth_token(&service).await;
     
-    let mut res = TestClient::get("http://127.0.0.1:8080/api/v1/learner/progress/courses/00000000-0000-0000-0000-000000000000")
+    let res = TestClient::get("http://127.0.0.1:8080/api/v1/learner/progress/courses/00000000-0000-0000-0000-000000000000")
         .bearer_auth(&token)
         .send(&service)
         .await;
@@ -40,7 +40,7 @@ async fn test_create_progress_invalid_course() {
     let service = create_test_service(pool);
     let token = get_auth_token(&service).await;
     
-    let mut res = TestClient::post("http://127.0.0.1:8080/api/v1/learner/progress")
+    let res = TestClient::post("http://127.0.0.1:8080/api/v1/learner/progress")
         .bearer_auth(&token)
         .json(&serde_json::json!({
             "course_id": "00000000-0000-0000-0000-000000000000"

@@ -1,0 +1,32 @@
+{
+  "description": "GET /admin/stats/users - 获取用户活跃统计快照",
+  "request": {
+    "method": "GET",
+    "path": "/api/v1/admin/stats/users",
+    "headers": {
+      "Authorization": "Bearer <admin_jwt_token>",
+      "Accept": "application/json"
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "data": {
+        "generated_at": "2026-05-08T09:00:00Z",
+        "daily_active_learner_count": 1284,
+        "weekly_active_learner_count": 5120,
+        "active_session_count": 438,
+        "ai_help_request_count": 912,
+        "average_session_minutes": 34,
+        "latest_session_seen_at": "2026-05-08T09:27:00Z"
+      },
+      "meta": {
+        "request_id": "6f4f5dc4-0e7e-4ef9-a0e1-dbe4c8c1a001",
+        "server_time": "2026-05-08T09:30:00Z"
+      }
+    }
+  }
+}

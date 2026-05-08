@@ -1,0 +1,40 @@
+{
+  "description": "GET /learner/stats/personal - 获取个人统计快照",
+  "request": {
+    "method": "GET",
+    "path": "/api/v1/learner/stats/personal",
+    "headers": {
+      "Authorization": "Bearer <learner_jwt_token>",
+      "Accept": "application/json"
+    },
+    "query": {
+      "board_type": "weekly"
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "data": {
+        "learner_id": "11111111-1111-4111-8111-111111111111",
+        "board_type": "weekly",
+        "period_key": "2026-W19",
+        "current_rank": 4,
+        "current_xp_balance": 1860,
+        "lifetime_xp_earned": 2430,
+        "completed_course_count": 3,
+        "completed_challenge_count": 11,
+        "ai_help_request_count": 8,
+        "total_learning_minutes": 1320,
+        "streak_days": 12,
+        "generated_at": "2026-05-08T09:00:00Z"
+      },
+      "meta": {
+        "request_id": "6f4f5dc4-0e7e-4ef9-a0e1-dbe4c8c1a001",
+        "server_time": "2026-05-08T09:30:00Z"
+      }
+    }
+  }
+}

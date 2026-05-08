@@ -1,0 +1,41 @@
+{
+  "description": "PATCH /admin/feedback/{ticket_id} - 更新反馈工单并返回详情",
+  "request": {
+    "method": "PATCH",
+    "path": "/api/v1/admin/feedback/13131313-1313-4131-8131-131313131313",
+    "headers": {
+      "Authorization": "Bearer <admin_jwt_token>",
+      "Content-Type": "application/json",
+      "Accept": "application/json"
+    },
+    "body": {
+      "status": "resolved",
+      "admin_reply": "问题已在 1.0.8 修复。"
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "data": {
+        "id": "13131313-1313-4131-8131-131313131313",
+        "learner_id": "11111111-1111-4111-8111-111111111111",
+        "category": "bug",
+        "content": "课程详情页在窄屏下封面图会溢出容器。",
+        "screenshot_urls": [
+          "https://cdn.example.com/feedback/bug-cover-overflow.png"
+        ],
+        "status": "resolved",
+        "admin_reply": "问题已在 1.0.8 修复。",
+        "replied_at": "2026-05-08T09:00:00Z",
+        "created_at": "2026-05-07T18:05:00Z"
+      },
+      "meta": {
+        "request_id": "6f4f5dc4-0e7e-4ef9-a0e1-dbe4c8c1a001",
+        "server_time": "2026-05-08T09:30:00Z"
+      }
+    }
+  }
+}

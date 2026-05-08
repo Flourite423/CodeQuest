@@ -1,0 +1,51 @@
+{
+  "description": "GET /learner/leaderboards - 获取排行榜快照",
+  "request": {
+    "method": "GET",
+    "path": "/api/v1/learner/leaderboards",
+    "headers": {
+      "Authorization": "Bearer <learner_jwt_token>",
+      "Accept": "application/json"
+    },
+    "query": {
+      "page": 1,
+      "page_size": 20,
+      "board_type": "weekly",
+      "period_key": "2026-W19"
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "data": {
+        "items": [
+          {
+            "id": "25252525-2525-4252-8252-252525252525",
+            "board_type": "weekly",
+            "period_key": "2026-W19",
+            "learner_id": "11111111-1111-4111-8111-111111111111",
+            "score": 860,
+            "rank_position": 4,
+            "generated_at": "2026-05-08T09:00:00Z",
+            "learner_profile": {
+              "account_id": "11111111-1111-4111-8111-111111111111",
+              "nickname": "code_quester",
+              "avatar_url": "https://cdn.example.com/avatars/learner/code-quester.png"
+            },
+            "current_xp_balance": 1860,
+            "badge_count": 6,
+            "is_current_user": true
+          }
+        ],
+        "generated_at": "2026-05-08T09:00:00Z"
+      },
+      "meta": {
+        "request_id": "6f4f5dc4-0e7e-4ef9-a0e1-dbe4c8c1a001",
+        "server_time": "2026-05-08T09:30:00Z"
+      }
+    }
+  }
+}

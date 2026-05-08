@@ -30,7 +30,7 @@ async fn test_create_and_list_daily_challenges() {
     let learner_token = get_auth_token(&service).await;
     
     let course_code = format!("COURSE-{}", uuid::Uuid::new_v4().to_string().split('-').next().unwrap());
-    let mut course_res = TestClient::post("http://127.0.0.1:8080/api/v1/admin/courses")
+    let course_res = TestClient::post("http://127.0.0.1:8080/api/v1/admin/courses")
         .bearer_auth(&admin_token)
         .json(&json!({
             "course_code": course_code,
@@ -42,7 +42,7 @@ async fn test_create_and_list_daily_challenges() {
         .send(&service)
         .await;
     
-    assert_eq!(course_res.status_code, Some(StatusCode::CREATED));
+    assert_eq!(course_res.status_code, Some(StatusCode::OK));
     
     let mut list_res = TestClient::get("http://127.0.0.1:8080/api/v1/learner/courses")
         .bearer_auth(&learner_token)
@@ -50,13 +50,13 @@ async fn test_create_and_list_daily_challenges() {
         .await;
     
     let body = list_res.take_json::<serde_json::Value>().await.unwrap();
-    let courses = body["data"].as_array().unwrap();
+    let courses = body["data"]["items"].as_array().unwrap();
     
     if !courses.is_empty() {
         let course_id = courses[0]["id"].as_str().unwrap();
         
         let chapter_code = format!("CHAPTER-{}", uuid::Uuid::new_v4().to_string().split('-').next().unwrap());
-        let mut chapter_res = TestClient::post(&format!("http://127.0.0.1:8080/api/v1/admin/chapters/{}", course_id))
+        let chapter_res = TestClient::post(&format!("http://127.0.0.1:8080/api/v1/admin/chapters/{}", course_id))
             .bearer_auth(&admin_token)
             .json(&json!({
                 "chapter_code": chapter_code,
@@ -77,13 +77,13 @@ async fn test_create_and_list_daily_challenges() {
             .await;
         
         let chapters_body = chapters_res.take_json::<serde_json::Value>().await.unwrap();
-        let chapters = chapters_body["data"].as_array().unwrap();
+        let chapters = chapters_body["data"]["items"].as_array().unwrap();
         
         if !chapters.is_empty() {
             let chapter_id = chapters[0]["id"].as_str().unwrap();
             
             let exercise_code = format!("EX-{}", uuid::Uuid::new_v4().to_string().split('-').next().unwrap());
-            let mut exercise_res = TestClient::post(&format!("http://127.0.0.1:8080/api/v1/admin/chapters/{}/exercises", chapter_id))
+            let exercise_res = TestClient::post(&format!("http://127.0.0.1:8080/api/v1/admin/chapters/{}/exercises", chapter_id))
                 .bearer_auth(&admin_token)
                 .json(&json!({
                     "exercise_code": exercise_code,
@@ -105,12 +105,12 @@ async fn test_create_and_list_daily_challenges() {
                 .await;
             
             let exercises_body = exercises_res.take_json::<serde_json::Value>().await.unwrap();
-            let exercises = exercises_body["data"].as_array().unwrap();
+            let exercises = exercises_body["data"]["items"].as_array().unwrap();
             
             if !exercises.is_empty() {
                 let exercise_id = exercises[0]["id"].as_str().unwrap();
                 
-                let mut create_res = TestClient::post("http://127.0.0.1:8080/api/v1/admin/daily-challenges")
+                let create_res = TestClient::post("http://127.0.0.1:8080/api/v1/admin/daily-challenges")
                     .bearer_auth(&admin_token)
                     .json(&json!({
                         "title": "Daily Challenge Test",
@@ -146,7 +146,7 @@ async fn test_submit_daily_challenge() {
     let learner_token = get_auth_token(&service).await;
     
     let course_code = format!("COURSE-{}", uuid::Uuid::new_v4().to_string().split('-').next().unwrap());
-    let mut course_res = TestClient::post("http://127.0.0.1:8080/api/v1/admin/courses")
+    let course_res = TestClient::post("http://127.0.0.1:8080/api/v1/admin/courses")
         .bearer_auth(&admin_token)
         .json(&json!({
             "course_code": course_code,
@@ -158,7 +158,7 @@ async fn test_submit_daily_challenge() {
         .send(&service)
         .await;
     
-    assert_eq!(course_res.status_code, Some(StatusCode::CREATED));
+    assert_eq!(course_res.status_code, Some(StatusCode::OK));
     
     let mut list_res = TestClient::get("http://127.0.0.1:8080/api/v1/learner/courses")
         .bearer_auth(&learner_token)
@@ -166,13 +166,13 @@ async fn test_submit_daily_challenge() {
         .await;
     
     let body = list_res.take_json::<serde_json::Value>().await.unwrap();
-    let courses = body["data"].as_array().unwrap();
+    let courses = body["data"]["items"].as_array().unwrap();
     
     if !courses.is_empty() {
         let course_id = courses[0]["id"].as_str().unwrap();
         
         let chapter_code = format!("CHAPTER-{}", uuid::Uuid::new_v4().to_string().split('-').next().unwrap());
-        let mut chapter_res = TestClient::post(&format!("http://127.0.0.1:8080/api/v1/admin/chapters/{}", course_id))
+        let chapter_res = TestClient::post(&format!("http://127.0.0.1:8080/api/v1/admin/chapters/{}", course_id))
             .bearer_auth(&admin_token)
             .json(&json!({
                 "chapter_code": chapter_code,
@@ -193,13 +193,13 @@ async fn test_submit_daily_challenge() {
             .await;
         
         let chapters_body = chapters_res.take_json::<serde_json::Value>().await.unwrap();
-        let chapters = chapters_body["data"].as_array().unwrap();
+        let chapters = chapters_body["data"]["items"].as_array().unwrap();
         
         if !chapters.is_empty() {
             let chapter_id = chapters[0]["id"].as_str().unwrap();
             
             let exercise_code = format!("EX-{}", uuid::Uuid::new_v4().to_string().split('-').next().unwrap());
-            let mut exercise_res = TestClient::post(&format!("http://127.0.0.1:8080/api/v1/admin/chapters/{}/exercises", chapter_id))
+            let exercise_res = TestClient::post(&format!("http://127.0.0.1:8080/api/v1/admin/chapters/{}/exercises", chapter_id))
                 .bearer_auth(&admin_token)
                 .json(&json!({
                     "exercise_code": exercise_code,
@@ -221,12 +221,12 @@ async fn test_submit_daily_challenge() {
                 .await;
             
             let exercises_body = exercises_res.take_json::<serde_json::Value>().await.unwrap();
-            let exercises = exercises_body["data"].as_array().unwrap();
+            let exercises = exercises_body["data"]["items"].as_array().unwrap();
             
             if !exercises.is_empty() {
                 let exercise_id = exercises[0]["id"].as_str().unwrap();
                 
-                let mut create_res = TestClient::post("http://127.0.0.1:8080/api/v1/admin/daily-challenges")
+                let create_res = TestClient::post("http://127.0.0.1:8080/api/v1/admin/daily-challenges")
                     .bearer_auth(&admin_token)
                     .json(&json!({
                         "title": "Daily Challenge Test",
@@ -246,12 +246,12 @@ async fn test_submit_daily_challenge() {
                     .await;
                 
                 let challenges_body = challenges_res.take_json::<serde_json::Value>().await.unwrap();
-                let challenges = challenges_body["data"].as_array().unwrap();
+                let challenges = challenges_body["data"]["items"].as_array().unwrap();
                 
                 if !challenges.is_empty() {
                     let challenge_id = challenges[0]["id"].as_str().unwrap();
                     
-                    let mut submit_res = TestClient::post(&format!("http://127.0.0.1:8080/api/v1/learner/daily-challenges/{}/submit", challenge_id))
+                    let submit_res = TestClient::post(&format!("http://127.0.0.1:8080/api/v1/learner/daily-challenges/{}/submit", challenge_id))
                         .bearer_auth(&learner_token)
                         .json(&json!({
                             "score": 100,

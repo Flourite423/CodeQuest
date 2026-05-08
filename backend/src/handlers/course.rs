@@ -31,14 +31,14 @@ pub struct UpdateCourseRequest {
 }
 
 #[handler]
-pub async fn list_courses(req: &mut Request, depot: &mut Depot) -> Result<Json<ApiResponse<Vec<Course>>>, StatusError> {
+pub async fn list_courses(req: &mut Request, depot: &mut Depot) -> Result<Json<ApiResponse<course_service::LearnerCourseListResponse>>, StatusError> {
     let pool = depot.obtain::<PgPool>()
         .map_err(|_| StatusError::internal_server_error())?;
     
     let page = req.query::<i64>("page").unwrap_or(1).max(1);
     let per_page = req.query::<i64>("per_page").unwrap_or(20).clamp(1, 100);
     
-    let courses = course_service::list_published_courses(pool, page, per_page)
+    let courses = course_service::list_published_courses_with_meta(pool, page, per_page)
         .await
         .map_err(|_| StatusError::internal_server_error())?;
     
@@ -50,7 +50,7 @@ pub async fn get_course(req: &mut Request, depot: &mut Depot) -> Result<Json<Api
     let pool = depot.obtain::<PgPool>()
         .map_err(|_| StatusError::internal_server_error())?;
     
-    let id = req.param::<String>("id")
+    let id = req.param::<String>("course_id")
         .ok_or_else(StatusError::bad_request)?;
     let id = Uuid::parse_str(&id)
         .map_err(|_| StatusError::bad_request().brief("Invalid course ID"))?;

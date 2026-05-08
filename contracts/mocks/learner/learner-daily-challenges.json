@@ -1,0 +1,36 @@
+{
+  "path": "/api/v1/learner/daily-challenges/today",
+  "method": "GET",
+  "response": {
+    "status": 200,
+    "body": {
+      "data": {
+        "daily_challenge": {
+          "id": "884c2dc1-010a-48f6-9a6e-054d692f5301",
+          "challenge_date": "2026-05-07",
+          "title": "String Ownership Relay",
+          "exercise_id": "efdafad2-e5f5-4ec6-9694-b7dba51cf401",
+          "difficulty": "medium",
+          "time_limit_seconds": 900,
+          "reward_xp": 90,
+          "status": "active",
+          "published_at": "2026-05-07T00:00:00Z"
+        },
+        "learner_record": {
+          "id": "884c2dc1-010a-48f6-9a6e-054d692f5302",
+          "daily_challenge_id": "884c2dc1-010a-48f6-9a6e-054d692f5301",
+          "learner_id": "0c9f9b0f-2d9a-4d9a-b5ec-6d3f8e684111",
+          "status": "passed",
+          "score": 96,
+          "elapsed_seconds": 642,
+          "streak_after_completion": 12,
+          "completed_at": "2026-05-07T09:12:00Z"
+        }
+      },
+      "meta": {
+        "request_id": "2f1f70fb-9ae4-4f5b-9d89-8242f53d4d11",
+        "server_time": "2026-05-07T10:00:00Z"
+      }
+    }
+  }
+}

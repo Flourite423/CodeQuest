@@ -100,7 +100,7 @@ pub struct UpdateFriendRequest {
 }
 
 #[handler]
-pub async fn update_friend_request(req: &mut Request, depot: &mut Depot) -> Result<StatusCode, StatusError> {
+pub async fn update_friend_request(req: &mut Request, depot: &mut Depot) -> Result<Json<ApiResponse<FriendRelation>>, StatusError> {
     let pool = depot.obtain::<PgPool>()
         .map_err(|_| StatusError::internal_server_error())?;
 
@@ -119,5 +119,14 @@ pub async fn update_friend_request(req: &mut Request, depot: &mut Depot) -> Resu
     .await
     .map_err(|_| StatusError::internal_server_error())?;
 
-    Ok(StatusCode::OK)
+    let relation = sqlx::query_as::<_, FriendRelation>(
+        "SELECT * FROM friend_relations WHERE id = $1"
+    )
+    .bind(&request_id)
+    .fetch_optional(pool)
+    .await
+    .map_err(|_| StatusError::internal_server_error())?
+    .ok_or_else(StatusError::not_found)?;
+
+    Ok(Json(ApiResponse::new(relation)))
 }

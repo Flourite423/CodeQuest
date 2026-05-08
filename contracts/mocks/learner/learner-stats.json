@@ -1,0 +1,27 @@
+{
+  "path": "/api/v1/learner/stats/personal",
+  "method": "GET",
+  "response": {
+    "status": 200,
+    "body": {
+      "data": {
+        "learner_id": "0c9f9b0f-2d9a-4d9a-b5ec-6d3f8e684111",
+        "board_type": "weekly",
+        "period_key": "2026-W19",
+        "current_rank": 2,
+        "current_xp_balance": 2480,
+        "lifetime_xp_earned": 6840,
+        "completed_course_count": 6,
+        "completed_challenge_count": 19,
+        "ai_help_request_count": 11,
+        "total_learning_minutes": 1460,
+        "streak_days": 12,
+        "generated_at": "2026-05-07T09:55:00Z"
+      },
+      "meta": {
+        "request_id": "2f1f70fb-9ae4-4f5b-9d89-8242f53d4d11",
+        "server_time": "2026-05-07T10:00:00Z"
+      }
+    }
+  }
+}

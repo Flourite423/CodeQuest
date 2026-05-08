@@ -1,0 +1,44 @@
+{
+  "description": "PATCH /admin/configs/{config_key} - 通过配置键写入新配置（当前 spec 无独立 create 路由）",
+  "request": {
+    "method": "PATCH",
+    "path": "/api/v1/admin/configs/ai_help_daily_limit",
+    "headers": {
+      "Authorization": "Bearer <admin_jwt_token>",
+      "Content-Type": "application/json",
+      "Accept": "application/json"
+    },
+    "body": {
+      "config_scope": "ai",
+      "value_json": {
+        "free_tier_limit": 20,
+        "pro_tier_limit": 80
+      },
+      "status": "active"
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "data": {
+        "id": "16161616-1616-4161-8161-161616161616",
+        "config_key": "ai_help_daily_limit",
+        "config_scope": "ai",
+        "value_json": {
+          "free_tier_limit": 20,
+          "pro_tier_limit": 80
+        },
+        "status": "active",
+        "updated_by": "33333333-3333-4333-8333-333333333333",
+        "updated_at": "2026-05-08T06:00:00Z"
+      },
+      "meta": {
+        "request_id": "6f4f5dc4-0e7e-4ef9-a0e1-dbe4c8c1a001",
+        "server_time": "2026-05-08T09:30:00Z"
+      }
+    }
+  }
+}

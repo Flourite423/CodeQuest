@@ -37,7 +37,7 @@ async fn test_auth_login_invalid_body() {
     let pool = setup_test_db().await;
     let service = create_test_service(pool);
     
-    let mut res = TestClient::post("http://127.0.0.1:8080/api/v1/auth/learner/login")
+    let res = TestClient::post("http://127.0.0.1:8080/api/v1/auth/learner/login")
         .json(&json!({
             "email": "test@example.com"
         }))
@@ -52,7 +52,7 @@ async fn test_auth_logout() {
     let pool = setup_test_db().await;
     let service = create_test_service(pool);
     
-    let mut res = TestClient::post("http://127.0.0.1:8080/api/v1/auth/logout")
+    let res = TestClient::post("http://127.0.0.1:8080/api/v1/auth/logout")
         .send(&service)
         .await;
     
@@ -93,7 +93,7 @@ async fn test_get_current_user_without_auth() {
     let pool = setup_test_db().await;
     let service = create_test_service(pool);
     
-    let mut res = TestClient::get("http://127.0.0.1:8080/api/v1/me")
+    let res = TestClient::get("http://127.0.0.1:8080/api/v1/me")
         .send(&service)
         .await;
     

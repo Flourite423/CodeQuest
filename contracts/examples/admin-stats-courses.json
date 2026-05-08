@@ -1,0 +1,54 @@
+{
+  "description": "GET /admin/stats/courses - 获取课程维度统计列表",
+  "request": {
+    "method": "GET",
+    "path": "/api/v1/admin/stats/courses",
+    "headers": {
+      "Authorization": "Bearer <admin_jwt_token>",
+      "Accept": "application/json"
+    },
+    "query": {
+      "page": 1,
+      "page_size": 20,
+      "sort_by": "completion_rate",
+      "sort_order": "desc"
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "data": {
+        "items": [
+          {
+            "course_id": "55555555-5555-4555-8555-555555555555",
+            "course_code": "modern-css-layouts-2026",
+            "title": "现代 CSS 布局",
+            "enrolled_learner_count": 640,
+            "active_learner_count": 510,
+            "completion_rate": 0.71,
+            "average_learning_minutes": 128,
+            "completed_learner_count": 454,
+            "last_completed_at": "2026-05-07T19:10:00Z"
+          }
+        ],
+        "meta": {
+          "page": 1,
+          "page_size": 20,
+          "total": 1,
+          "has_more": false
+        }
+      },
+      "meta": {
+        "request_id": "6f4f5dc4-0e7e-4ef9-a0e1-dbe4c8c1a001",
+        "server_time": "2026-05-08T09:30:00Z",
+        "page": 1,
+        "page_size": 20,
+        "total": 1,
+        "has_more": false
+      }
+    }
+  }
+}

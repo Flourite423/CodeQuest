@@ -1,0 +1,40 @@
+{
+  "path": "/api/v1/admin/stats/dashboard",
+  "method": "GET",
+  "response": {
+    "status": 200,
+    "body": {
+      "data": {
+        "generated_at": "2026-05-07T09:55:00Z",
+        "daily_active_learner_count": 1284,
+        "course_completion_rate": 0.67,
+        "challenge_completion_rate": 0.58,
+        "total_learning_minutes": 48210,
+        "ai_help_request_count": 912,
+        "top_learners": [
+          {
+            "id": "3b12d65c-7f45-4b57-9595-7b0dfc782701",
+            "board_type": "weekly",
+            "period_key": "2026-W19",
+            "learner_id": "cc6c9e4b-0a96-4253-8f5a-e85689f01231",
+            "score": 980,
+            "rank_position": 1,
+            "generated_at": "2026-05-07T09:55:00Z",
+            "learner_profile": {
+              "account_id": "cc6c9e4b-0a96-4253-8f5a-e85689f01231",
+              "nickname": "debug_runner",
+              "avatar_url": "https://cdn.example.com/avatars/learner/debug-runner.png"
+            },
+            "current_xp_balance": 5320,
+            "badge_count": 14,
+            "is_current_user": false
+          }
+        ]
+      },
+      "meta": {
+        "request_id": "2f1f70fb-9ae4-4f5b-9d89-8242f53d4d11",
+        "server_time": "2026-05-07T10:00:00Z"
+      }
+    }
+  }
+}

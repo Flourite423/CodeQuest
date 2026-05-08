@@ -1,0 +1,49 @@
+{
+  "path": "/api/v1/admin/users",
+  "method": "GET",
+  "response": {
+    "status": 200,
+    "body": {
+      "data": {
+        "items": [
+          {
+            "account_id": "0c9f9b0f-2d9a-4d9a-b5ec-6d3f8e684111",
+            "email": "learner@example.com",
+            "default_role": "learner",
+            "account_status": "active",
+            "roles": [
+              "learner"
+            ],
+            "profile_summary": "Level 9 learner focused on Rust track",
+            "admin_status": null,
+            "last_login_at": "2026-05-07T09:45:00Z",
+            "created_at": "2026-01-12T08:15:00Z"
+          },
+          {
+            "account_id": "c69c0e60-8cf8-4cf8-a8d8-cb0b57f9a222",
+            "email": "admin@example.com",
+            "default_role": "admin",
+            "account_status": "active",
+            "roles": [
+              "admin"
+            ],
+            "profile_summary": "Operations lead for content quality",
+            "admin_status": "active",
+            "last_login_at": "2026-05-07T09:58:00Z",
+            "created_at": "2025-11-18T03:20:00Z"
+          }
+        ],
+        "meta": {
+          "page": 1,
+          "page_size": 20,
+          "total": 2,
+          "has_more": false
+        }
+      },
+      "meta": {
+        "request_id": "2f1f70fb-9ae4-4f5b-9d89-8242f53d4d11",
+        "server_time": "2026-05-07T10:00:00Z"
+      }
+    }
+  }
+}

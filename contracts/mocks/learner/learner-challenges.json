@@ -1,0 +1,47 @@
+{
+  "path": "/api/v1/learner/challenges",
+  "method": "GET",
+  "response": {
+    "status": 200,
+    "body": {
+      "data": {
+        "items": [
+          {
+            "challenge_id": "dc02ef55-7c1b-46ff-909a-8f73af928801",
+            "challenge_code": "ownership-sprint",
+            "title": "Ownership Sprint",
+            "difficulty": "easy",
+            "learner_status": "completed",
+            "best_star": 3,
+            "reward_xp": 120,
+            "sort_order": 1,
+            "stage_count": 3,
+            "completed_stage_count": 3
+          },
+          {
+            "challenge_id": "dc02ef55-7c1b-46ff-909a-8f73af928802",
+            "challenge_code": "borrow-checker-lab",
+            "title": "Borrow Checker Lab",
+            "difficulty": "medium",
+            "learner_status": "unlocked",
+            "best_star": 0,
+            "reward_xp": 180,
+            "sort_order": 2,
+            "stage_count": 4,
+            "completed_stage_count": 1
+          }
+        ],
+        "meta": {
+          "page": 1,
+          "page_size": 20,
+          "total": 2,
+          "has_more": false
+        }
+      },
+      "meta": {
+        "request_id": "2f1f70fb-9ae4-4f5b-9d89-8242f53d4d11",
+        "server_time": "2026-05-07T10:00:00Z"
+      }
+    }
+  }
+}

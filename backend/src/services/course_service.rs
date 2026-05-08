@@ -2,11 +2,55 @@ use sqlx::PgPool;
 use uuid::Uuid;
 use crate::models::Course;
 
+const COURSE_SELECT_COLUMNS: &str = "SELECT
+    id,
+    course_code,
+    title,
+    summary,
+    description,
+    cover_image_url,
+    difficulty::text AS difficulty,
+    estimated_minutes,
+    status::text AS status,
+    sort_order,
+    content_version,
+    created_by,
+    published_at,
+    created_at,
+    updated_at
+ FROM courses";
+
+#[derive(Debug, serde::Serialize)]
+pub struct CourseListMeta {
+    pub page: i64,
+    pub page_size: i64,
+    pub total: i64,
+    pub has_more: bool,
+}
+
+#[derive(Debug, serde::Serialize)]
+pub struct LearnerCourseListItem {
+    pub id: Uuid,
+    pub title: String,
+    pub summary: String,
+    pub cover_image_url: Option<String>,
+    pub difficulty: String,
+    pub estimated_minutes: i32,
+    pub sort_order: i32,
+    pub published_at: chrono::DateTime<chrono::Utc>,
+    pub updated_at: chrono::DateTime<chrono::Utc>,
+}
+
+#[derive(Debug, serde::Serialize)]
+pub struct LearnerCourseListResponse {
+    pub items: Vec<LearnerCourseListItem>,
+    pub meta: CourseListMeta,
+}
+
 pub async fn list_published_courses(pool: &PgPool, page: i64, per_page: i64) -> Result<Vec<Course>, sqlx::Error> {
     let offset = (page - 1) * per_page;
-    sqlx::query_as::<_, Course>(
-        "SELECT * FROM courses WHERE status = 'published' ORDER BY sort_order LIMIT $1 OFFSET $2"
-    )
+    let query = format!("{COURSE_SELECT_COLUMNS} WHERE status = 'published' ORDER BY sort_order LIMIT $1 OFFSET $2");
+    sqlx::query_as::<_, Course>(&query)
     .bind(per_page)
     .bind(offset)
     .fetch_all(pool)
@@ -21,8 +65,45 @@ pub async fn count_published_courses(pool: &PgPool) -> Result<i64, sqlx::Error> 
     Ok(row.0)
 }
 
+pub async fn list_published_courses_with_meta(
+    pool: &PgPool,
+    page: i64,
+    per_page: i64,
+) -> Result<LearnerCourseListResponse, sqlx::Error> {
+    let items = list_published_courses(pool, page, per_page).await?
+        .into_iter()
+        .filter_map(|course| {
+            course.published_at.map(|published_at| LearnerCourseListItem {
+                id: course.id,
+                title: course.title,
+                summary: course.summary,
+                cover_image_url: course.cover_image_url,
+                difficulty: course.difficulty,
+                estimated_minutes: course.estimated_minutes,
+                sort_order: course.sort_order,
+                published_at,
+                updated_at: course.updated_at,
+            })
+        })
+        .collect::<Vec<_>>();
+
+    let total = count_published_courses(pool).await?;
+    let has_more = page * per_page < total;
+
+    Ok(LearnerCourseListResponse {
+        items,
+        meta: CourseListMeta {
+            page,
+            page_size: per_page,
+            total,
+            has_more,
+        },
+    })
+}
+
 pub async fn find_course_by_id(pool: &PgPool, id: Uuid) -> Result<Option<Course>, sqlx::Error> {
-    sqlx::query_as::<_, Course>("SELECT * FROM courses WHERE id = $1")
+    let query = format!("{COURSE_SELECT_COLUMNS} WHERE id = $1");
+    sqlx::query_as::<_, Course>(&query)
         .bind(id)
         .fetch_optional(pool)
         .await

@@ -1,0 +1,75 @@
+{
+  "description": "GET /learner/rewards - 获取奖励汇总、徽章与 XP 流水",
+  "request": {
+    "method": "GET",
+    "path": "/api/v1/learner/rewards",
+    "headers": {
+      "Authorization": "Bearer <learner_jwt_token>",
+      "Accept": "application/json"
+    },
+    "query": {
+      "page": 1,
+      "page_size": 20
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "data": {
+        "summary": {
+          "current_xp_balance": 1860,
+          "lifetime_xp_earned": 2430,
+          "badge_count": 6,
+          "latest_reward_at": "2026-05-08T08:29:00Z"
+        },
+        "badges": [
+          {
+            "id": "31313131-3131-4131-8131-313131313131",
+            "learner_id": "11111111-1111-4111-8111-111111111111",
+            "badge_id": "21212121-2121-4212-8212-212121212121",
+            "award_source_type": "system",
+            "award_source_id": "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+            "awarded_at": "2026-05-01T10:00:00Z"
+          }
+        ],
+        "xp_ledger": [
+          {
+            "id": "23232323-2323-4232-8232-232323232323",
+            "learner_id": "11111111-1111-4111-8111-111111111111",
+            "source_type": "challenge",
+            "source_id": "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+            "delta_xp": 180,
+            "balance_after": 1840,
+            "created_at": "2026-05-08T08:29:00Z"
+          },
+          {
+            "id": "24242424-2424-4242-8242-242424242424",
+            "learner_id": "11111111-1111-4111-8111-111111111111",
+            "source_type": "daily",
+            "source_id": "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee",
+            "delta_xp": 20,
+            "balance_after": 1860,
+            "created_at": "2026-05-08T08:52:00Z"
+          }
+        ],
+        "meta": {
+          "page": 1,
+          "page_size": 20,
+          "total": 2,
+          "has_more": false
+        }
+      },
+      "meta": {
+        "request_id": "6f4f5dc4-0e7e-4ef9-a0e1-dbe4c8c1a001",
+        "server_time": "2026-05-08T09:30:00Z",
+        "page": 1,
+        "page_size": 20,
+        "total": 2,
+        "has_more": false
+      }
+    }
+  }
+}

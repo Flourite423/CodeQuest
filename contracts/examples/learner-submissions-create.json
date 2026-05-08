@@ -1,0 +1,48 @@
+{
+  "description": "POST /learner/submissions - 提交练习代码并进入评测",
+  "request": {
+    "method": "POST",
+    "path": "/api/v1/learner/submissions",
+    "headers": {
+      "Authorization": "Bearer <learner_jwt_token>",
+      "Content-Type": "application/json",
+      "Accept": "application/json"
+    },
+    "body": {
+      "exercise_id": "88888888-8888-4888-8888-888888888888",
+      "source_code": "<style>.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}@media(max-width:768px){.cards{grid-template-columns:1fr}}</style>",
+      "content_version": 3,
+      "rule_version": 2
+    }
+  },
+  "response": {
+    "status": 201,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "data": {
+        "id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+        "exercise_id": "88888888-8888-4888-8888-888888888888",
+        "learner_id": "11111111-1111-4111-8111-111111111111",
+        "chapter_id": "77777777-7777-4777-8777-777777777777",
+        "attempt_no": 3,
+        "source_code": "<style>.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}@media(max-width:768px){.cards{grid-template-columns:1fr}}</style>",
+        "judge_status": "passed",
+        "score": 95,
+        "passed_case_count": 2,
+        "total_case_count": 2,
+        "error_summary": null,
+        "runtime_ms": 412,
+        "content_version": 3,
+        "rule_version": 2,
+        "submitted_at": "2026-05-08T08:48:00Z",
+        "completed_at": "2026-05-08T08:48:01Z"
+      },
+      "meta": {
+        "request_id": "6f4f5dc4-0e7e-4ef9-a0e1-dbe4c8c1a001",
+        "server_time": "2026-05-08T09:30:00Z"
+      }
+    }
+  }
+}

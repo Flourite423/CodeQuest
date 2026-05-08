@@ -4,13 +4,14 @@
     "method": "GET",
     "path": "/api/v1/learner/courses",
     "headers": {
-      "Authorization": "Bearer <jwt_token>",
+      "Authorization": "Bearer <learner_jwt_token>",
       "Accept": "application/json"
     },
     "query": {
       "page": 1,
       "page_size": 20,
-      "status": "published"
+      "sort_by": "published_at",
+      "sort_order": "desc"
     }
   },
   "response": {
@@ -22,26 +23,26 @@
       "data": {
         "items": [
           {
-            "id": "550e8400-e29b-41d4-a716-446655440000",
+            "id": "44444444-4444-4444-8444-444444444444",
             "title": "Rust 编程入门",
-            "summary": "从零开始学习 Rust 语言的核心概念与实战技巧",
+            "summary": "从变量、所有权到模块系统的渐进式入门课程。",
             "cover_image_url": "https://cdn.example.com/courses/rust-basics/cover.png",
             "difficulty": "beginner",
             "estimated_minutes": 120,
             "sort_order": 1,
             "published_at": "2026-04-15T08:00:00Z",
-            "updated_at": "2026-04-20T14:22:00Z"
+            "updated_at": "2026-05-03T10:20:00Z"
           },
           {
-            "id": "550e8400-e29b-41d4-a716-446655440001",
-            "title": "数据结构与算法",
-            "summary": "系统学习常用数据结构及其在算法中的应用",
-            "cover_image_url": "https://cdn.example.com/courses/dsa/cover.png",
+            "id": "55555555-5555-4555-8555-555555555555",
+            "title": "现代 CSS 布局",
+            "summary": "聚焦 Flexbox、Grid 与响应式布局的实战课程。",
+            "cover_image_url": "https://cdn.example.com/courses/modern-css/cover.png",
             "difficulty": "intermediate",
-            "estimated_minutes": 240,
+            "estimated_minutes": 150,
             "sort_order": 2,
-            "published_at": "2026-03-20T06:00:00Z",
-            "updated_at": "2026-03-25T11:45:00Z"
+            "published_at": "2026-04-20T09:00:00Z",
+            "updated_at": "2026-05-05T12:40:00Z"
           }
         ],
         "meta": {
@@ -52,8 +53,12 @@
         }
       },
       "meta": {
-        "request_id": "req-550e8400-e29b-41d4-a716-446655440000",
-        "server_time": "2026-05-07T10:00:00Z"
+        "request_id": "6f4f5dc4-0e7e-4ef9-a0e1-dbe4c8c1a001",
+        "server_time": "2026-05-08T09:30:00Z",
+        "page": 1,
+        "page_size": 20,
+        "total": 2,
+        "has_more": false
       }
     }
   }

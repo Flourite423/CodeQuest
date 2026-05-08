@@ -1,0 +1,61 @@
+{
+  "description": "GET /admin/feedback - 获取反馈工单列表",
+  "request": {
+    "method": "GET",
+    "path": "/api/v1/admin/feedback",
+    "headers": {
+      "Authorization": "Bearer <admin_jwt_token>",
+      "Accept": "application/json"
+    },
+    "query": {
+      "page": 1,
+      "page_size": 20,
+      "sort_by": "created_at",
+      "sort_order": "desc"
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "data": {
+        "items": [
+          {
+            "id": "13131313-1313-4131-8131-131313131313",
+            "learner_id": "11111111-1111-4111-8111-111111111111",
+            "category": "bug",
+            "content": "课程详情页在窄屏下封面图会溢出容器。",
+            "screenshot_urls": [
+              "https://cdn.example.com/feedback/bug-cover-overflow.png"
+            ],
+            "status": "in_progress",
+            "admin_reply": "已复现，前端团队正在修复样式断点。",
+            "replied_at": "2026-05-08T07:30:00Z",
+            "created_at": "2026-05-07T18:05:00Z",
+            "learner_profile": {
+              "account_id": "11111111-1111-4111-8111-111111111111",
+              "nickname": "code_quester",
+              "avatar_url": "https://cdn.example.com/avatars/learner/code-quester.png"
+            }
+          }
+        ],
+        "meta": {
+          "page": 1,
+          "page_size": 20,
+          "total": 1,
+          "has_more": false
+        }
+      },
+      "meta": {
+        "request_id": "6f4f5dc4-0e7e-4ef9-a0e1-dbe4c8c1a001",
+        "server_time": "2026-05-08T09:30:00Z",
+        "page": 1,
+        "page_size": 20,
+        "total": 1,
+        "has_more": false
+      }
+    }
+  }
+}

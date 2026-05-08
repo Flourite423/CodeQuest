@@ -1,0 +1,53 @@
+{
+  "description": "POST /learner/challenges/{challenge_id}/attempts - 提交关卡挑战结果",
+  "request": {
+    "method": "POST",
+    "path": "/api/v1/learner/challenges/bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb/attempts",
+    "headers": {
+      "Authorization": "Bearer <learner_jwt_token>",
+      "Content-Type": "application/json",
+      "Accept": "application/json"
+    },
+    "body": {
+      "stage_results": [
+        {
+          "stage_id": "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
+          "passed": true,
+          "score": 100,
+          "source_code": "<style>.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}@media(max-width:768px){.cards{grid-template-columns:1fr}}</style>",
+          "elapsed_seconds": 260
+        },
+        {
+          "stage_id": "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
+          "passed": true,
+          "score": 95,
+          "source_code": "<style>.nav{display:flex;flex-wrap:wrap}</style>",
+          "elapsed_seconds": 280
+        }
+      ]
+    }
+  },
+  "response": {
+    "status": 201,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "data": {
+        "id": "30303030-3030-4030-8030-303030303030",
+        "challenge_id": "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+        "learner_id": "11111111-1111-4111-8111-111111111111",
+        "best_star": 3,
+        "status": "completed",
+        "started_at": "2026-05-08T08:15:00Z",
+        "completed_at": "2026-05-08T08:28:00Z",
+        "reward_claimed_at": "2026-05-08T08:29:00Z",
+        "updated_at": "2026-05-08T08:29:00Z"
+      },
+      "meta": {
+        "request_id": "6f4f5dc4-0e7e-4ef9-a0e1-dbe4c8c1a001",
+        "server_time": "2026-05-08T09:30:00Z"
+      }
+    }
+  }
+}

@@ -1,0 +1,67 @@
+{
+  "description": "GET /admin/configs - 获取系统配置列表",
+  "request": {
+    "method": "GET",
+    "path": "/api/v1/admin/configs",
+    "headers": {
+      "Authorization": "Bearer <admin_jwt_token>",
+      "Accept": "application/json"
+    },
+    "query": {
+      "page": 1,
+      "page_size": 20,
+      "sort_by": "config_key",
+      "sort_order": "asc"
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "data": {
+        "items": [
+          {
+            "id": "16161616-1616-4161-8161-161616161616",
+            "config_key": "ai_help_daily_limit",
+            "config_scope": "ai",
+            "value_json": {
+              "free_tier_limit": 20,
+              "pro_tier_limit": 80
+            },
+            "status": "active",
+            "updated_by": "33333333-3333-4333-8333-333333333333",
+            "updated_at": "2026-05-08T06:00:00Z"
+          },
+          {
+            "id": "29292929-2929-4292-8292-292929292929",
+            "config_key": "reward_daily_multiplier",
+            "config_scope": "reward",
+            "value_json": {
+              "weekday": 1.0,
+              "weekend": 1.2
+            },
+            "status": "inactive",
+            "updated_by": "33333333-3333-4333-8333-333333333333",
+            "updated_at": "2026-05-06T05:00:00Z"
+          }
+        ],
+        "meta": {
+          "page": 1,
+          "page_size": 20,
+          "total": 2,
+          "has_more": false
+        }
+      },
+      "meta": {
+        "request_id": "6f4f5dc4-0e7e-4ef9-a0e1-dbe4c8c1a001",
+        "server_time": "2026-05-08T09:30:00Z",
+        "page": 1,
+        "page_size": 20,
+        "total": 2,
+        "has_more": false
+      }
+    }
+  }
+}

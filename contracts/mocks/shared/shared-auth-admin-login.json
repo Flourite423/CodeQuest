@@ -1,0 +1,30 @@
+{
+  "path": "/api/v1/auth/admin/login",
+  "method": "POST",
+  "response": {
+    "status": 200,
+    "body": {
+      "data": {
+        "account_id": "c69c0e60-8cf8-4cf8-a8d8-cb0b57f9a222",
+        "active_role": "admin",
+        "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.admin.mock.access",
+        "refresh_token": "refresh_admin_mock_token_v1",
+        "expires_in": 3600,
+        "session_id": "1e5bfd2e-7b84-4837-a58f-79a884450444",
+        "profile": {
+          "account_id": "c69c0e60-8cf8-4cf8-a8d8-cb0b57f9a222",
+          "display_name": "Ops Maya",
+          "avatar_url": "https://cdn.example.com/avatars/admin/ops-maya.png",
+          "admin_status": "active",
+          "last_active_at": "2026-05-07T09:58:00Z",
+          "created_at": "2025-11-18T03:20:00Z",
+          "updated_at": "2026-05-07T09:58:00Z"
+        }
+      },
+      "meta": {
+        "request_id": "2f1f70fb-9ae4-4f5b-9d89-8242f53d4d11",
+        "server_time": "2026-05-07T10:00:00Z"
+      }
+    }
+  }
+}

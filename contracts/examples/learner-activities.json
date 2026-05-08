@@ -1,0 +1,49 @@
+{
+  "description": "GET /learner/activities - 获取学习动态流",
+  "request": {
+    "method": "GET",
+    "path": "/api/v1/learner/activities",
+    "headers": {
+      "Authorization": "Bearer <learner_jwt_token>",
+      "Accept": "application/json"
+    },
+    "query": {
+      "page": 1,
+      "page_size": 20,
+      "visibility": "friends_only"
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "data": {
+        "items": [
+          {
+            "id": "26262626-2626-4262-8262-262626262626",
+            "learner_id": "22222222-2222-4222-8222-222222222222",
+            "activity_type": "challenge_completed",
+            "visibility": "friends_only",
+            "payload_json": {
+              "challenge_id": "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+              "challenge_title": "响应式卡片布局闯关",
+              "best_star": 3
+            },
+            "created_at": "2026-05-07T16:20:00Z",
+            "actor_profile": {
+              "account_id": "22222222-2222-4222-8222-222222222222",
+              "nickname": "layout_master",
+              "avatar_url": "https://cdn.example.com/avatars/learner/layout-master.png"
+            }
+          }
+        ]
+      },
+      "meta": {
+        "request_id": "6f4f5dc4-0e7e-4ef9-a0e1-dbe4c8c1a001",
+        "server_time": "2026-05-08T09:30:00Z"
+      }
+    }
+  }
+}

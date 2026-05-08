@@ -25,7 +25,7 @@ async fn test_not_found() {
     let pool = setup_test_db().await;
     let service = create_test_service(pool);
     
-    let mut res = TestClient::get("http://127.0.0.1:8080/api/v1/nonexistent")
+    let res = TestClient::get("http://127.0.0.1:8080/api/v1/nonexistent")
         .send(&service)
         .await;
     

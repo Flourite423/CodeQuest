@@ -1,0 +1,55 @@
+{
+  "description": "GET /learner/challenges - 获取学习者关卡地图列表",
+  "request": {
+    "method": "GET",
+    "path": "/api/v1/learner/challenges",
+    "headers": {
+      "Authorization": "Bearer <learner_jwt_token>",
+      "Accept": "application/json"
+    },
+    "query": {
+      "page": 1,
+      "page_size": 20,
+      "sort_by": "sort_order",
+      "sort_order": "asc"
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "data": {
+        "items": [
+          {
+            "challenge_id": "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+            "challenge_code": "responsive-card-quest",
+            "title": "响应式卡片布局闯关",
+            "difficulty": "medium",
+            "learner_status": "in_progress",
+            "best_star": 2,
+            "reward_xp": 180,
+            "sort_order": 3,
+            "stage_count": 2,
+            "completed_stage_count": 1
+          }
+        ],
+        "meta": {
+          "page": 1,
+          "page_size": 20,
+          "total": 1,
+          "has_more": false
+        }
+      },
+      "meta": {
+        "request_id": "6f4f5dc4-0e7e-4ef9-a0e1-dbe4c8c1a001",
+        "server_time": "2026-05-08T09:30:00Z",
+        "page": 1,
+        "page_size": 20,
+        "total": 1,
+        "has_more": false
+      }
+    }
+  }
+}

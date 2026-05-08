@@ -1,0 +1,47 @@
+{
+  "path": "/api/v1/admin/configs",
+  "method": "GET",
+  "response": {
+    "status": 200,
+    "body": {
+      "data": {
+        "items": [
+          {
+            "id": "7dbb97ce-b71b-4d96-80db-f332db5bd701",
+            "config_key": "daily_challenge_reward_multiplier",
+            "config_scope": "challenge",
+            "value_json": {
+              "weekday": 1.0,
+              "weekend": 1.5
+            },
+            "status": "active",
+            "updated_by": "c69c0e60-8cf8-4cf8-a8d8-cb0b57f9a222",
+            "updated_at": "2026-05-06T12:00:00Z"
+          },
+          {
+            "id": "7dbb97ce-b71b-4d96-80db-f332db5bd702",
+            "config_key": "ai_hint_daily_limit",
+            "config_scope": "ai",
+            "value_json": {
+              "free_user": 10,
+              "pro_user": 30
+            },
+            "status": "active",
+            "updated_by": "c69c0e60-8cf8-4cf8-a8d8-cb0b57f9a222",
+            "updated_at": "2026-05-07T06:30:00Z"
+          }
+        ],
+        "meta": {
+          "page": 1,
+          "page_size": 20,
+          "total": 2,
+          "has_more": false
+        }
+      },
+      "meta": {
+        "request_id": "2f1f70fb-9ae4-4f5b-9d89-8242f53d4d11",
+        "server_time": "2026-05-07T10:00:00Z"
+      }
+    }
+  }
+}

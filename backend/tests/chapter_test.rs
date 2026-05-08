@@ -30,7 +30,7 @@ async fn test_create_and_get_chapter() {
     let learner_token = get_auth_token(&service).await;
     
     let course_code = format!("COURSE-{}", uuid::Uuid::new_v4().to_string().split('-').next().unwrap());
-    let mut course_res = TestClient::post("http://127.0.0.1:8080/api/v1/admin/courses")
+    let course_res = TestClient::post("http://127.0.0.1:8080/api/v1/admin/courses")
         .bearer_auth(&admin_token)
         .json(&json!({
             "course_code": course_code,
@@ -42,7 +42,7 @@ async fn test_create_and_get_chapter() {
         .send(&service)
         .await;
     
-    assert_eq!(course_res.status_code, Some(StatusCode::CREATED));
+    assert_eq!(course_res.status_code, Some(StatusCode::OK));
     
     let mut list_res = TestClient::get("http://127.0.0.1:8080/api/v1/learner/courses")
         .bearer_auth(&learner_token)
@@ -50,13 +50,13 @@ async fn test_create_and_get_chapter() {
         .await;
     
     let body = list_res.take_json::<serde_json::Value>().await.unwrap();
-    let courses = body["data"].as_array().unwrap();
+    let courses = body["data"]["items"].as_array().unwrap();
     
     if !courses.is_empty() {
         let course_id = courses[0]["id"].as_str().unwrap();
         
         let chapter_code = format!("CHAPTER-{}", uuid::Uuid::new_v4().to_string().split('-').next().unwrap());
-        let mut create_res = TestClient::post(&format!("http://127.0.0.1:8080/api/v1/admin/chapters/{}", course_id))
+        let create_res = TestClient::post(&format!("http://127.0.0.1:8080/api/v1/admin/chapters?course_id={}", course_id))
             .bearer_auth(&admin_token)
             .json(&json!({
                 "chapter_code": chapter_code,
@@ -103,7 +103,7 @@ async fn test_update_chapter() {
     let learner_token = get_auth_token(&service).await;
     
     let course_code = format!("COURSE-{}", uuid::Uuid::new_v4().to_string().split('-').next().unwrap());
-    let mut course_res = TestClient::post("http://127.0.0.1:8080/api/v1/admin/courses")
+    let course_res = TestClient::post("http://127.0.0.1:8080/api/v1/admin/courses")
         .bearer_auth(&admin_token)
         .json(&json!({
             "course_code": course_code,
@@ -115,7 +115,7 @@ async fn test_update_chapter() {
         .send(&service)
         .await;
     
-    assert_eq!(course_res.status_code, Some(StatusCode::CREATED));
+    assert_eq!(course_res.status_code, Some(StatusCode::OK));
     
     let mut list_res = TestClient::get("http://127.0.0.1:8080/api/v1/learner/courses")
         .bearer_auth(&learner_token)
@@ -123,13 +123,13 @@ async fn test_update_chapter() {
         .await;
     
     let body = list_res.take_json::<serde_json::Value>().await.unwrap();
-    let courses = body["data"].as_array().unwrap();
+    let courses = body["data"]["items"].as_array().unwrap();
     
     if !courses.is_empty() {
         let course_id = courses[0]["id"].as_str().unwrap();
         
         let chapter_code = format!("CHAPTER-{}", uuid::Uuid::new_v4().to_string().split('-').next().unwrap());
-        let mut create_res = TestClient::post(&format!("http://127.0.0.1:8080/api/v1/admin/chapters/{}", course_id))
+        let create_res = TestClient::post(&format!("http://127.0.0.1:8080/api/v1/admin/chapters?course_id={}", course_id))
             .bearer_auth(&admin_token)
             .json(&json!({
                 "chapter_code": chapter_code,
@@ -150,12 +150,12 @@ async fn test_update_chapter() {
             .await;
         
         let chapters_body = chapters_res.take_json::<serde_json::Value>().await.unwrap();
-        let chapters = chapters_body["data"].as_array().unwrap();
+        let chapters = chapters_body["data"]["items"].as_array().unwrap();
         
         if !chapters.is_empty() {
             let chapter_id = chapters[0]["id"].as_str().unwrap();
             
-            let mut update_res = TestClient::put(&format!("http://127.0.0.1:8080/api/v1/admin/chapters/{}", chapter_id))
+            let update_res = TestClient::put(&format!("http://127.0.0.1:8080/api/v1/admin/chapters?course_id={}", chapter_id))
                 .bearer_auth(&admin_token)
                 .json(&json!({
                     "title": "Updated Title"
@@ -176,7 +176,7 @@ async fn test_delete_chapter() {
     let learner_token = get_auth_token(&service).await;
     
     let course_code = format!("COURSE-{}", uuid::Uuid::new_v4().to_string().split('-').next().unwrap());
-    let mut course_res = TestClient::post("http://127.0.0.1:8080/api/v1/admin/courses")
+    let course_res = TestClient::post("http://127.0.0.1:8080/api/v1/admin/courses")
         .bearer_auth(&admin_token)
         .json(&json!({
             "course_code": course_code,
@@ -188,7 +188,7 @@ async fn test_delete_chapter() {
         .send(&service)
         .await;
     
-    assert_eq!(course_res.status_code, Some(StatusCode::CREATED));
+    assert_eq!(course_res.status_code, Some(StatusCode::OK));
     
     let mut list_res = TestClient::get("http://127.0.0.1:8080/api/v1/learner/courses")
         .bearer_auth(&learner_token)
@@ -196,13 +196,13 @@ async fn test_delete_chapter() {
         .await;
     
     let body = list_res.take_json::<serde_json::Value>().await.unwrap();
-    let courses = body["data"].as_array().unwrap();
+    let courses = body["data"]["items"].as_array().unwrap();
     
     if !courses.is_empty() {
         let course_id = courses[0]["id"].as_str().unwrap();
         
         let chapter_code = format!("CHAPTER-{}", uuid::Uuid::new_v4().to_string().split('-').next().unwrap());
-        let mut create_res = TestClient::post(&format!("http://127.0.0.1:8080/api/v1/admin/chapters/{}", course_id))
+        let create_res = TestClient::post(&format!("http://127.0.0.1:8080/api/v1/admin/chapters?course_id={}", course_id))
             .bearer_auth(&admin_token)
             .json(&json!({
                 "chapter_code": chapter_code,
@@ -223,12 +223,12 @@ async fn test_delete_chapter() {
             .await;
         
         let chapters_body = chapters_res.take_json::<serde_json::Value>().await.unwrap();
-        let chapters = chapters_body["data"].as_array().unwrap();
+        let chapters = chapters_body["data"]["items"].as_array().unwrap();
         
         if !chapters.is_empty() {
             let chapter_id = chapters[0]["id"].as_str().unwrap();
             
-            let mut delete_res = TestClient::delete(&format!("http://127.0.0.1:8080/api/v1/admin/chapters/{}", chapter_id))
+            let delete_res = TestClient::delete(&format!("http://127.0.0.1:8080/api/v1/admin/chapters?course_id={}", chapter_id))
                 .bearer_auth(&admin_token)
                 .send(&service)
                 .await;

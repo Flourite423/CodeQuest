@@ -97,7 +97,7 @@ pub fn create_router() -> Router {
                         .push(
                             Router::with_path("profile")
                                 .get(handlers::user::get_profile)
-                                .put(handlers::user::update_profile),
+                                .patch(handlers::user::update_profile),
                         )
                         .push(
                             Router::with_path("friends")
@@ -108,9 +108,13 @@ pub fn create_router() -> Router {
                                         .post(handlers::social::create_friend_request)
                                         .push(
                                             Router::with_path("{request_id}")
-                                                .put(handlers::social::update_friend_request),
+                                                .patch(handlers::social::update_friend_request),
                                         ),
                                 ),
+                        )
+                        .push(
+                            Router::with_path("exercises/{exercise_id}")
+                                .get(handlers::exercise::get_exercise),
                         )
                         .push(
                             Router::with_path("activities")
@@ -219,7 +223,7 @@ pub fn create_router() -> Router {
                                 .push(
                                     Router::with_path("{course_id}")
                                         .get(handlers::admin::get_admin_course)
-                                        .put(handlers::admin::update_course)
+                                        .patch(handlers::admin::update_course)
                                         .delete(handlers::admin::delete_course),
                                 ),
                         )
@@ -230,8 +234,17 @@ pub fn create_router() -> Router {
                                 .push(
                                     Router::with_path("{challenge_id}")
                                         .get(handlers::admin::get_admin_challenge)
-                                        .put(handlers::admin::update_challenge)
+                                        .patch(handlers::admin::update_challenge)
                                         .delete(handlers::admin::delete_challenge),
+                                ),
+                        )
+                        .push(
+                            Router::with_path("exercises")
+                                .get(handlers::admin::list_admin_exercises)
+                                .post(handlers::admin::create_exercise)
+                                .push(
+                                    Router::with_path("{exercise_id}")
+                                        .patch(handlers::admin::update_exercise),
                                 ),
                         )
                         .push(
@@ -266,7 +279,7 @@ pub fn create_router() -> Router {
                                         .delete(handlers::user::delete_user)
                                         .push(
                                             Router::with_path("status")
-                                                .put(handlers::admin::update_user_status),
+                                                .patch(handlers::admin::update_user_status),
                                         ),
                                 ),
                         )
@@ -276,7 +289,7 @@ pub fn create_router() -> Router {
                                 .push(
                                     Router::with_path("{ticket_id}")
                                         .get(handlers::admin::get_feedback)
-                                        .put(handlers::admin::update_feedback),
+                                        .patch(handlers::admin::update_feedback),
                                 ),
                         )
                         .push(
@@ -285,7 +298,7 @@ pub fn create_router() -> Router {
                                 .push(
                                     Router::with_path("{case_id}")
                                         .get(handlers::admin::get_moderation_case)
-                                        .put(handlers::admin::update_moderation_case),
+                                        .patch(handlers::admin::update_moderation_case),
                                 ),
                         )
                         .push(
@@ -295,7 +308,7 @@ pub fn create_router() -> Router {
                                 .push(
                                     Router::with_path("{announcement_id}")
                                         .get(handlers::admin::get_announcement)
-                                        .put(handlers::admin::update_announcement)
+                                        .patch(handlers::admin::update_announcement)
                                         .delete(handlers::admin::delete_announcement),
                                 ),
                         )
@@ -306,7 +319,7 @@ pub fn create_router() -> Router {
                                 .push(
                                     Router::with_path("{config_key}")
                                         .get(handlers::admin::get_config)
-                                        .put(handlers::admin::update_config)
+                                        .patch(handlers::admin::update_config)
                                         .delete(handlers::admin::delete_config),
                                 ),
                         )

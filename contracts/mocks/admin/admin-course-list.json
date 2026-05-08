@@ -1,0 +1,38 @@
+{
+  "path": "/api/v1/admin/courses",
+  "method": "GET",
+  "response": {
+    "status": 200,
+    "body": {
+      "data": {
+        "items": [
+          {
+            "id": "550e8400-e29b-41d4-a716-446655440002",
+            "course_code": "advanced-concurrency-2026",
+            "title": "高级并发编程",
+            "summary": "深入探讨多线程、异步编程与锁机制",
+            "difficulty": "intermediate",
+            "estimated_minutes": 180,
+            "status": "draft",
+            "sort_order": 10,
+            "content_version": 1,
+            "created_by": "c69c0e60-8cf8-4cf8-a8d8-cb0b57f9a222",
+            "published_at": null,
+            "created_at": "2026-05-07T08:30:00Z",
+            "updated_at": "2026-05-07T08:30:00Z"
+          }
+        ],
+        "meta": {
+          "page": 1,
+          "page_size": 20,
+          "total": 1,
+          "has_more": false
+        }
+      },
+      "meta": {
+        "request_id": "2f1f70fb-9ae4-4f5b-9d89-8242f53d4d11",
+        "server_time": "2026-05-07T10:00:00Z"
+      }
+    }
+  }
+}

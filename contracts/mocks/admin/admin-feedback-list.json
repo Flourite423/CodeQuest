@@ -1,0 +1,41 @@
+{
+  "path": "/api/v1/admin/feedback",
+  "method": "GET",
+  "response": {
+    "status": 200,
+    "body": {
+      "data": {
+        "items": [
+          {
+            "id": "32beef15-ec50-4f66-b941-7ea1b8797b01",
+            "learner_id": "0c9f9b0f-2d9a-4d9a-b5ec-6d3f8e684111",
+            "category": "bug",
+            "content": "提交运行成功后排行榜积分没有即时刷新。",
+            "screenshot_urls": [
+              "https://cdn.example.com/feedback/score-delay-1.png"
+            ],
+            "status": "in_progress",
+            "admin_reply": "已定位到缓存延迟，预计今天修复。",
+            "replied_at": "2026-05-07T09:20:00Z",
+            "created_at": "2026-05-07T08:05:00Z",
+            "learner_profile": {
+              "account_id": "0c9f9b0f-2d9a-4d9a-b5ec-6d3f8e684111",
+              "nickname": "code_quester",
+              "avatar_url": "https://cdn.example.com/avatars/learner/code-quester.png"
+            }
+          }
+        ],
+        "meta": {
+          "page": 1,
+          "page_size": 20,
+          "total": 1,
+          "has_more": false
+        }
+      },
+      "meta": {
+        "request_id": "2f1f70fb-9ae4-4f5b-9d89-8242f53d4d11",
+        "server_time": "2026-05-07T10:00:00Z"
+      }
+    }
+  }
+}

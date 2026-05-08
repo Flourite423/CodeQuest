@@ -6,6 +6,61 @@ use uuid::Uuid;
 use crate::handlers::auth;
 use crate::models::{Announcement, ApiResponse, SystemConfig};
 
+const COURSE_SELECT_COLUMNS: &str = "SELECT
+    id,
+    course_code,
+    title,
+    summary,
+    description,
+    cover_image_url,
+    difficulty::text AS difficulty,
+    estimated_minutes,
+    status::text AS status,
+    sort_order,
+    content_version,
+    created_by,
+    published_at,
+    created_at,
+    updated_at
+ FROM courses";
+
+fn map_course_difficulty(value: Option<&str>) -> crate::models::DifficultyLevel {
+    match value.unwrap_or("beginner") {
+        "intermediate" => crate::models::DifficultyLevel::Intermediate,
+        "easy" => crate::models::DifficultyLevel::Easy,
+        "medium" => crate::models::DifficultyLevel::Medium,
+        "hard" => crate::models::DifficultyLevel::Hard,
+        _ => crate::models::DifficultyLevel::Beginner,
+    }
+}
+
+async fn fetch_admin_course_detail(pool: &PgPool, course_id: Uuid) -> Result<serde_json::Value, StatusError> {
+    let query = format!("{COURSE_SELECT_COLUMNS} WHERE id = $1");
+    let course = sqlx::query_as::<_, crate::models::Course>(&query)
+        .bind(course_id)
+        .fetch_optional(pool)
+        .await
+        .map_err(|_| StatusError::internal_server_error())?
+        .ok_or_else(StatusError::not_found)?;
+
+    let chapters = sqlx::query_as::<_, crate::models::Chapter>(
+        "SELECT * FROM chapters WHERE course_id = $1 ORDER BY order_index ASC"
+    )
+    .bind(course_id)
+    .fetch_all(pool)
+    .await
+    .map_err(|_| StatusError::internal_server_error())?;
+
+    let mut value = serde_json::to_value(course).map_err(|_| StatusError::internal_server_error())?;
+    if let Some(object) = value.as_object_mut() {
+        object.insert(
+            "chapters".to_string(),
+            serde_json::to_value(chapters).map_err(|_| StatusError::internal_server_error())?,
+        );
+    }
+    Ok(value)
+}
+
 #[derive(Debug, Deserialize)]
 pub struct CreateAnnouncementRequest {
     pub title: String,
@@ -153,7 +208,8 @@ pub async fn list_admin_courses(depot: &mut Depot) -> Result<Json<ApiResponse<se
     let pool = depot.obtain::<PgPool>()
         .map_err(|_| StatusError::internal_server_error())?;
 
-    let courses = sqlx::query_as::<_, crate::models::Course>("SELECT * FROM courses ORDER BY created_at DESC")
+    let query = format!("{COURSE_SELECT_COLUMNS} ORDER BY created_at DESC");
+    let courses = sqlx::query_as::<_, crate::models::Course>(&query)
         .fetch_all(pool)
         .await
         .map_err(|_| StatusError::internal_server_error())?;
@@ -162,7 +218,7 @@ pub async fn list_admin_courses(depot: &mut Depot) -> Result<Json<ApiResponse<se
 }
 
 #[handler]
-pub async fn create_course(req: &mut Request, depot: &mut Depot) -> Result<StatusCode, StatusError> {
+pub async fn create_course(req: &mut Request, depot: &mut Depot) -> Result<Json<ApiResponse<serde_json::Value>>, StatusError> {
     let pool = depot.obtain::<PgPool>()
         .map_err(|_| StatusError::internal_server_error())?;
     
@@ -170,28 +226,33 @@ pub async fn create_course(req: &mut Request, depot: &mut Depot) -> Result<Statu
         .map_err(|_| StatusError::bad_request().brief("Invalid request body"))?;
     
     let id = Uuid::new_v4();
-    let difficulty = body.get("difficulty").and_then(|v| v.as_str()).unwrap_or("beginner");
-    let difficulty_enum = match difficulty {
-        "beginner" => crate::models::DifficultyLevel::Beginner,
-        "intermediate" => crate::models::DifficultyLevel::Intermediate,
-        "easy" => crate::models::DifficultyLevel::Easy,
-        "medium" => crate::models::DifficultyLevel::Medium,
-        "hard" => crate::models::DifficultyLevel::Hard,
-        _ => crate::models::DifficultyLevel::Beginner,
-    };
+    let difficulty_enum = map_course_difficulty(body.get("difficulty").and_then(|v| v.as_str()));
     let estimated_minutes = body.get("estimated_minutes").and_then(|v| v.as_i64()).unwrap_or(0) as i32;
+    let status = body.get("status").and_then(|v| v.as_str()).unwrap_or("draft");
+    let sort_order = body.get("sort_order").and_then(|v| v.as_i64()).unwrap_or(0) as i32;
+    let content_version = body.get("content_version").and_then(|v| v.as_i64()).unwrap_or(1) as i32;
+    let published_at = if status == "published" { Some(chrono::Utc::now()) } else { None };
+    let created_by = auth::get_current_account_id(depot)?;
     
     sqlx::query(
-        "INSERT INTO courses (id, course_code, title, summary, difficulty, estimated_minutes, status, created_by) 
-         VALUES ($1, $2, $3, $4, $5, $6, 'draft', $7)"
+        "INSERT INTO courses (
+            id, course_code, title, summary, description, cover_image_url, difficulty,
+            estimated_minutes, status, sort_order, content_version, created_by, published_at
+         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9::course_status, $10, $11, $12, $13)"
     )
     .bind(id)
     .bind(body.get("course_code").and_then(|v| v.as_str()).unwrap_or(""))
     .bind(body.get("title").and_then(|v| v.as_str()).unwrap_or(""))
     .bind(body.get("summary").and_then(|v| v.as_str()).unwrap_or(""))
+    .bind(body.get("description").and_then(|v| v.as_str()))
+    .bind(body.get("cover_image_url").and_then(|v| v.as_str()))
     .bind(difficulty_enum)
     .bind(estimated_minutes)
-    .bind(auth::get_current_account_id(depot)?)
+    .bind(status)
+    .bind(sort_order)
+    .bind(content_version)
+    .bind(created_by)
+    .bind(published_at)
     .execute(pool)
     .await
     .map_err(|e| {
@@ -199,7 +260,8 @@ pub async fn create_course(req: &mut Request, depot: &mut Depot) -> Result<Statu
         StatusError::internal_server_error()
     })?;
     
-    Ok(StatusCode::CREATED)
+    let detail = fetch_admin_course_detail(pool, id).await?;
+    Ok(Json(ApiResponse::new(detail)))
 }
 
 #[handler]
@@ -209,8 +271,8 @@ pub async fn get_admin_course(req: &mut Request, depot: &mut Depot) -> Result<Js
     
     let id = req.param::<String>("course_id")
         .ok_or_else(StatusError::bad_request)?;
-    
-    let course = sqlx::query_as::<_, crate::models::Course>("SELECT * FROM courses WHERE id = $1")
+    let query = format!("{COURSE_SELECT_COLUMNS} WHERE id = $1");
+    let course = sqlx::query_as::<_, crate::models::Course>(&query)
         .bind(&id)
         .fetch_optional(pool)
         .await
@@ -221,7 +283,7 @@ pub async fn get_admin_course(req: &mut Request, depot: &mut Depot) -> Result<Js
 }
 
 #[handler]
-pub async fn update_course(req: &mut Request, depot: &mut Depot) -> Result<StatusCode, StatusError> {
+pub async fn update_course(req: &mut Request, depot: &mut Depot) -> Result<Json<ApiResponse<serde_json::Value>>, StatusError> {
     let pool = depot.obtain::<PgPool>()
         .map_err(|_| StatusError::internal_server_error())?;
     
@@ -231,30 +293,42 @@ pub async fn update_course(req: &mut Request, depot: &mut Depot) -> Result<Statu
     let body = req.parse_json::<serde_json::Value>().await
         .map_err(|_| StatusError::bad_request().brief("Invalid request body"))?;
     
-    let difficulty = body.get("difficulty").and_then(|v| v.as_str());
-    let difficulty_enum = difficulty.map(|d| match d {
-        "beginner" => crate::models::DifficultyLevel::Beginner,
-        "intermediate" => crate::models::DifficultyLevel::Intermediate,
-        "easy" => crate::models::DifficultyLevel::Easy,
-        "medium" => crate::models::DifficultyLevel::Medium,
-        "hard" => crate::models::DifficultyLevel::Hard,
-        _ => crate::models::DifficultyLevel::Beginner,
-    });
+    let difficulty_enum = body
+        .get("difficulty")
+        .and_then(|v| v.as_str())
+        .map(|value| map_course_difficulty(Some(value)));
+    let published_at = if body.get("status").and_then(|v| v.as_str()) == Some("published") {
+        Some(chrono::Utc::now())
+    } else {
+        None
+    };
     
     sqlx::query(
         "UPDATE courses SET 
          title = COALESCE($2, title),
          summary = COALESCE($3, summary),
-         difficulty = COALESCE($4, difficulty),
-         status = COALESCE($5, status),
+         description = COALESCE($4, description),
+         cover_image_url = COALESCE($5, cover_image_url),
+         difficulty = COALESCE($6, difficulty),
+         estimated_minutes = COALESCE($7, estimated_minutes),
+         status = COALESCE($8::course_status, status),
+         sort_order = COALESCE($9, sort_order),
+         content_version = COALESCE($10, content_version),
+         published_at = COALESCE($11, published_at),
          updated_at = NOW()
          WHERE id = $1"
     )
     .bind(&id)
     .bind(body.get("title").and_then(|v| v.as_str()))
     .bind(body.get("summary").and_then(|v| v.as_str()))
+    .bind(body.get("description").and_then(|v| v.as_str()))
+    .bind(body.get("cover_image_url").and_then(|v| v.as_str()))
     .bind(difficulty_enum)
+    .bind(body.get("estimated_minutes").and_then(|v| v.as_i64()).map(|v| v as i32))
     .bind(body.get("status").and_then(|v| v.as_str()))
+    .bind(body.get("sort_order").and_then(|v| v.as_i64()).map(|v| v as i32))
+    .bind(body.get("content_version").and_then(|v| v.as_i64()).map(|v| v as i32))
+    .bind(published_at)
     .execute(pool)
     .await
     .map_err(|e| {
@@ -262,7 +336,9 @@ pub async fn update_course(req: &mut Request, depot: &mut Depot) -> Result<Statu
         StatusError::internal_server_error()
     })?;
     
-    Ok(StatusCode::OK)
+    let course_id = Uuid::parse_str(&id).map_err(|_| StatusError::bad_request())?;
+    let detail = fetch_admin_course_detail(pool, course_id).await?;
+    Ok(Json(ApiResponse::new(detail)))
 }
 
 #[handler]

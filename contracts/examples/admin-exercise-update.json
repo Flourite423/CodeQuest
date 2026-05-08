@@ -1,0 +1,139 @@
+{
+  "description": "PATCH /admin/exercises/{exercise_id} - 更新练习内容与测试用例",
+  "request": {
+    "method": "PATCH",
+    "path": "/api/v1/admin/exercises/88888888-8888-4888-8888-888888888888",
+    "headers": {
+      "Authorization": "Bearer <admin_jwt_token>",
+      "Content-Type": "application/json",
+      "Accept": "application/json"
+    },
+    "body": {
+      "title": "实现响应式卡片布局",
+      "prompt": "请实现 3 列卡片布局，并保证在 768px 以下折叠为 1 列。",
+      "difficulty": "medium",
+      "pass_score": 85,
+      "status": "published",
+      "content_version": 4,
+      "options": [
+        {
+          "id": "34343434-3434-4343-8343-343434343434",
+          "exercise_id": "88888888-8888-4888-8888-888888888888",
+          "option_key": "a",
+          "option_text": "使用 flex-wrap 控制换行",
+          "is_correct": false,
+          "order_index": 0
+        }
+      ],
+      "test_cases": [
+        {
+          "id": "35353535-3535-4353-8353-353535353535",
+          "exercise_id": "88888888-8888-4888-8888-888888888888",
+          "case_name": "desktop_three_columns",
+          "case_type": "dom_snapshot",
+          "input_payload_json": {
+            "viewport_width": 1440
+          },
+          "expected_payload_json": {
+            "columns": 3
+          },
+          "weight": 60,
+          "is_hidden": false,
+          "order_index": 0,
+          "rule_version": 2
+        },
+        {
+          "id": "36363636-3636-4363-8363-363636363636",
+          "exercise_id": "88888888-8888-4888-8888-888888888888",
+          "case_name": "mobile_single_column_hidden",
+          "case_type": "css_assert",
+          "input_payload_json": {
+            "viewport_width": 375
+          },
+          "expected_payload_json": {
+            "grid_template_columns": "1fr"
+          },
+          "weight": 40,
+          "is_hidden": true,
+          "order_index": 1,
+          "rule_version": 2
+        }
+      ]
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "data": {
+        "exercise": {
+          "id": "88888888-8888-4888-8888-888888888888",
+          "chapter_id": "77777777-7777-4777-8777-777777777777",
+          "exercise_code": "css-card-layout-001",
+          "title": "实现响应式卡片布局",
+          "prompt": "请使用 HTML 和 CSS 实现 3 列卡片布局，并在窄屏下自动换成 1 列。",
+          "exercise_type": "coding",
+          "starter_code": "<section class=\"cards\">\n  <!-- your cards here -->\n</section>",
+          "language": "html_css",
+          "difficulty": "medium",
+          "pass_score": 85,
+          "max_attempts_per_day": 10,
+          "status": "draft",
+          "content_version": 4,
+          "created_at": "2026-04-18T08:00:00Z",
+          "updated_at": "2026-05-08T08:25:00Z"
+        },
+        "options": [
+          {
+            "id": "34343434-3434-4343-8343-343434343434",
+            "exercise_id": "88888888-8888-4888-8888-888888888888",
+            "option_key": "a",
+            "option_text": "使用 flex-wrap 控制换行",
+            "is_correct": false,
+            "order_index": 0
+          }
+        ],
+        "test_cases": [
+          {
+            "id": "35353535-3535-4353-8353-353535353535",
+            "exercise_id": "88888888-8888-4888-8888-888888888888",
+            "case_name": "desktop_three_columns",
+            "case_type": "dom_snapshot",
+            "input_payload_json": {
+              "viewport_width": 1440
+            },
+            "expected_payload_json": {
+              "columns": 3
+            },
+            "weight": 60,
+            "is_hidden": false,
+            "order_index": 0,
+            "rule_version": 2
+          },
+          {
+            "id": "36363636-3636-4363-8363-363636363636",
+            "exercise_id": "88888888-8888-4888-8888-888888888888",
+            "case_name": "mobile_single_column_hidden",
+            "case_type": "css_assert",
+            "input_payload_json": {
+              "viewport_width": 375
+            },
+            "expected_payload_json": {
+              "grid_template_columns": "1fr"
+            },
+            "weight": 40,
+            "is_hidden": true,
+            "order_index": 1,
+            "rule_version": 2
+          }
+        ]
+      },
+      "meta": {
+        "request_id": "6f4f5dc4-0e7e-4ef9-a0e1-dbe4c8c1a001",
+        "server_time": "2026-05-08T09:30:00Z"
+      }
+    }
+  }
+}

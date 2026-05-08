@@ -1,0 +1,59 @@
+{
+  "description": "POST /learner/ai/help - 请求 AI 辅助解释与提示",
+  "request": {
+    "method": "POST",
+    "path": "/api/v1/learner/ai/help",
+    "headers": {
+      "Authorization": "Bearer <learner_jwt_token>",
+      "Content-Type": "application/json",
+      "Accept": "application/json"
+    },
+    "body": {
+      "exercise_id": "88888888-8888-4888-8888-888888888888",
+      "submission_id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      "request_type": "error_explanation",
+      "source_code": "<style>.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}@media(max-width:768px){.cards{grid-template-columns:1fr}}</style>",
+      "error_context_json": {
+        "failing_case": "mobile_single_column",
+        "actual_columns": 2
+      }
+    }
+  },
+  "response": {
+    "status": 201,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "data": {
+        "id": "18181818-1818-4181-8181-181818181818",
+        "learner_id": "11111111-1111-4111-8111-111111111111",
+        "exercise_id": "88888888-8888-4888-8888-888888888888",
+        "submission_id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+        "request_type": "error_explanation",
+        "source_code": "<style>.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}@media(max-width:768px){.cards{grid-template-columns:1fr}}</style>",
+        "error_context_json": {
+          "failing_case": "mobile_single_column",
+          "actual_columns": 2
+        },
+        "response_text": "在窄屏断点下，容器仍保留了两列布局。请检查媒体查询是否覆盖到 `.cards` 的 `grid-template-columns`。",
+        "response_structured_json": {
+          "root_cause": "media_query_not_applied",
+          "next_steps": [
+            "确认断点条件",
+            "在媒体查询中重写 grid-template-columns"
+          ]
+        },
+        "provider_name": "gpt-4.1-mini",
+        "token_usage": 428,
+        "latency_ms": 1380,
+        "status": "succeeded",
+        "created_at": "2026-05-08T08:49:00Z"
+      },
+      "meta": {
+        "request_id": "6f4f5dc4-0e7e-4ef9-a0e1-dbe4c8c1a001",
+        "server_time": "2026-05-08T09:30:00Z"
+      }
+    }
+  }
+}

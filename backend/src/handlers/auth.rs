@@ -1,12 +1,14 @@
-use salvo::prelude::*;
+use chrono::{Duration, Utc};
+use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
 use salvo::jwt_auth::{ConstDecoder, HeaderFinder, JwtAuth, JwtAuthDepotExt};
-use jsonwebtoken::{encode, decode, EncodingKey, DecodingKey, Header, Validation};
+use salvo::prelude::*;
 use serde::{Deserialize, Serialize};
-use chrono::{Utc, Duration};
-use uuid::Uuid;
+use serde_json::Value;
 use sqlx::PgPool;
-use crate::models::{ApiResponse, Account};
+use uuid::Uuid;
+
 use crate::config::AppConfig;
+use crate::models::{Account, AccountStatus, AdminProfile, ApiResponse, LearnerProfile, RoleType};
 
 fn hash_password(password: &str) -> Result<String, bcrypt::BcryptError> {
     bcrypt::hash(password, bcrypt::DEFAULT_COST)
@@ -27,9 +29,15 @@ pub struct JwtClaims {
 
 #[derive(Debug, Deserialize)]
 pub struct RegisterRequest {
-    pub phone: String,
-    pub verification_code: String,
-    pub nickname: Option<String>,
+    #[serde(deserialize_with = "validate_email")]
+    pub email: String,
+    #[serde(deserialize_with = "validate_password")]
+    pub password: String,
+    pub nickname: String,
+    pub device_id: String,
+    #[serde(default)]
+    pub device_name: Option<String>,
+    pub platform: String,
 }
 
 #[derive(Debug, Deserialize)]
@@ -38,6 +46,12 @@ pub struct LearnerLoginRequest {
     pub email: String,
     #[serde(deserialize_with = "validate_password")]
     pub password: String,
+    #[serde(default)]
+    pub device_id: Option<String>,
+    #[serde(default)]
+    pub device_name: Option<String>,
+    #[serde(default)]
+    pub platform: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -46,6 +60,12 @@ pub struct AdminLoginRequest {
     pub email: String,
     #[serde(deserialize_with = "validate_password")]
     pub password: String,
+    #[serde(default)]
+    pub device_id: Option<String>,
+    #[serde(default)]
+    pub device_name: Option<String>,
+    #[serde(default)]
+    pub platform: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -55,11 +75,15 @@ pub struct LoginRequest {
     pub verification_code: String,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct LoginResponse {
+    pub account_id: String,
+    pub active_role: String,
     pub access_token: String,
     pub refresh_token: String,
     pub expires_in: i64,
+    pub session_id: String,
+    pub profile: Value,
     pub token_type: String,
 }
 
@@ -68,10 +92,15 @@ pub struct RefreshRequest {
     pub refresh_token: String,
 }
 
-fn create_access_token(account_id: &str, role: &crate::models::RoleType, secret: &str, expiration: i64) -> Result<String, jsonwebtoken::errors::Error> {
+#[derive(Debug, Deserialize)]
+pub struct LogoutRequest {
+    pub session_id: Uuid,
+}
+
+fn create_access_token(account_id: &str, role: &RoleType, secret: &str, expiration: i64) -> Result<String, jsonwebtoken::errors::Error> {
     let role_str = match role {
-        crate::models::RoleType::Admin => "admin",
-        crate::models::RoleType::Learner => "learner",
+        RoleType::Admin => "admin",
+        RoleType::Learner => "learner",
     };
     let now = Utc::now();
     let claims = JwtClaims {
@@ -97,241 +126,502 @@ fn validate_refresh_token(token: &str, secret: &str) -> Result<JwtClaims, jsonwe
     Ok(token_data.claims)
 }
 
-async fn authenticate_user(
+fn normalize_platform(role: &str, platform: Option<&str>) -> &'static str {
+    match platform {
+        Some("ios") => "ios",
+        Some("android") => "android",
+        Some("web") => "web",
+        _ if role == "admin" => "web",
+        _ => "ios",
+    }
+}
+
+fn default_device_id(role: &str, provided: Option<&str>) -> String {
+    provided
+        .filter(|value| !value.trim().is_empty())
+        .unwrap_or(if role == "admin" { "admin-web-device" } else { "learner-mobile-device" })
+        .to_string()
+}
+
+fn default_nickname_from_email(email: &str) -> String {
+    let local = email.split('@').next().unwrap_or("learner");
+    let fallback = if local.len() < 2 { "learner" } else { local };
+    fallback.chars().take(24).collect()
+}
+
+async fn ensure_learner_profile(
+    pool: &PgPool,
+    account_id: Uuid,
+    nickname: &str,
+) -> Result<LearnerProfile, StatusError> {
+    sqlx::query(
+        "INSERT INTO learner_profiles (account_id, nickname)
+         VALUES ($1, $2)
+         ON CONFLICT (account_id) DO NOTHING",
+    )
+    .bind(account_id)
+    .bind(nickname)
+    .execute(pool)
+    .await
+    .map_err(|_| StatusError::internal_server_error())?;
+
+    sqlx::query_as::<_, LearnerProfile>(
+        "SELECT
+            account_id,
+            nickname,
+            avatar_url,
+            bio,
+            theme_mode::text AS theme_mode,
+            daily_goal_minutes,
+            streak_days,
+            total_xp,
+            current_level,
+            friend_count,
+            ai_daily_limit,
+            last_study_at,
+            created_at,
+            updated_at
+         FROM learner_profiles
+         WHERE account_id = $1",
+    )
+    .bind(account_id)
+    .fetch_one(pool)
+    .await
+    .map_err(|_| StatusError::internal_server_error())
+}
+
+async fn ensure_admin_profile(
+    pool: &PgPool,
+    account_id: Uuid,
+    display_name: &str,
+) -> Result<AdminProfile, StatusError> {
+    sqlx::query(
+        "INSERT INTO admin_profiles (account_id, display_name)
+         VALUES ($1, $2)
+         ON CONFLICT (account_id) DO NOTHING",
+    )
+    .bind(account_id)
+    .bind(display_name)
+    .execute(pool)
+    .await
+    .map_err(|_| StatusError::internal_server_error())?;
+
+    sqlx::query_as::<_, AdminProfile>(
+        "SELECT
+            account_id,
+            display_name,
+            avatar_url,
+            admin_status::text AS admin_status,
+            last_active_at,
+            created_at,
+            updated_at
+         FROM admin_profiles
+         WHERE account_id = $1",
+    )
+    .bind(account_id)
+    .fetch_one(pool)
+    .await
+    .map_err(|_| StatusError::internal_server_error())
+}
+
+fn normalize_admin_profile(mut profile: Value) -> Value {
+    if let Some(status) = profile.get_mut("admin_status") {
+        if status == "enabled" {
+            *status = Value::String("active".to_string());
+        }
+    }
+    profile
+}
+
+async fn load_profile_value(
+    pool: &PgPool,
+    account: &Account,
+    role: &str,
+    preferred_name: Option<&str>,
+) -> Result<Value, StatusError> {
+    if role == "admin" {
+        let display_name = preferred_name.unwrap_or("Admin");
+        let profile = ensure_admin_profile(pool, account.id, display_name).await?;
+        let value = serde_json::to_value(profile).map_err(|_| StatusError::internal_server_error())?;
+        Ok(normalize_admin_profile(value))
+    } else {
+        let nickname = preferred_name.unwrap_or("Learner");
+        let profile = ensure_learner_profile(pool, account.id, nickname).await?;
+        serde_json::to_value(profile).map_err(|_| StatusError::internal_server_error())
+    }
+}
+
+async fn insert_session(
+    pool: &PgPool,
+    account_id: Uuid,
+    role: RoleType,
+    device_id: &str,
+    device_name: Option<&str>,
+    platform: &str,
+    refresh_token_value: &str,
+) -> Result<Uuid, StatusError> {
+    let session_id = Uuid::new_v4();
+    let refresh_expires_at = Utc::now() + Duration::days(7);
+
+    sqlx::query(
+        "INSERT INTO sessions (
+            id, account_id, role, device_id, device_name, platform,
+            refresh_token_hash, refresh_expires_at, last_seen_at
+         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())",
+    )
+    .bind(session_id)
+    .bind(account_id)
+    .bind(role)
+    .bind(device_id)
+    .bind(device_name)
+    .bind(platform)
+    .bind(refresh_token_value)
+    .bind(refresh_expires_at)
+    .execute(pool)
+    .await
+    .map_err(|_| StatusError::internal_server_error())?;
+
+    Ok(session_id)
+}
+
+async fn build_login_response(
     pool: &PgPool,
     cfg: &AppConfig,
-    email_or_phone: &str,
-    password: &str,
+    account: Account,
     role: &str,
+    preferred_name: Option<&str>,
+    device_id: &str,
+    device_name: Option<&str>,
+    platform: &str,
 ) -> Result<LoginResponse, StatusError> {
-    let account = sqlx::query_as::<_, Account>(
-        "SELECT * FROM accounts WHERE email = $1"
-    )
-    .bind(email_or_phone)
-    .fetch_optional(pool)
-    .await
-    .map_err(|e| {
-        eprintln!("Database error when fetching account: {:?}", e);
-        StatusError::internal_server_error()
-    })?;
-    
-    let account = match account {
-        Some(acc) => {
-            if !acc.password_hash.is_empty() {
-                let valid = verify_password(password, &acc.password_hash)
-                    .map_err(|e| {
-                        eprintln!("Password verification error: {:?}", e);
-                        StatusError::internal_server_error()
-                    })?;
-                if !valid {
-                    return Err(StatusError::unauthorized().brief("Invalid email or password"));
-                }
-            }
-            acc
-        }
-        None => {
-            let new_id = Uuid::new_v4();
-            let role_enum = if role == "admin" {
-                crate::models::RoleType::Admin
-            } else {
-                crate::models::RoleType::Learner
-            };
-            
-            let password_hash = hash_password(password)
-                .map_err(|e| {
-                    eprintln!("Password hashing error: {:?}", e);
-                    StatusError::internal_server_error()
-                })?;
-            
-            sqlx::query(
-                "INSERT INTO accounts (id, email, password_hash, default_role, account_status) 
-                 VALUES ($1, $2, $3, $4, $5)"
-            )
-            .bind(new_id)
-            .bind(email_or_phone)
-            .bind(password_hash)
-            .bind(role_enum)
-            .bind(crate::models::AccountStatus::Active)
-            .execute(pool)
-            .await
-            .map_err(|e| {
-                eprintln!("Database error when inserting account: {:?}", e);
-                StatusError::internal_server_error()
-            })?;
-            
-            Account {
-                id: new_id,
-                email: email_or_phone.to_string(),
-                password_hash: "".to_string(),
-                default_role: crate::models::RoleType::Learner,
-                account_status: crate::models::AccountStatus::Active,
-                last_login_at: None,
-                created_at: Utc::now(),
-                updated_at: Utc::now(),
-            }
-        }
+    let role_enum = if role == "admin" {
+        RoleType::Admin
+    } else {
+        RoleType::Learner
     };
-    
+
     let access_token = create_access_token(
-        &account.id.to_string(), 
-        &account.default_role,
-        &cfg.jwt_secret,
-        cfg.jwt_expiration
-    )
-    .map_err(|_| StatusError::internal_server_error())?;
-    
-    let refresh_token_str = create_access_token(
         &account.id.to_string(),
-        &account.default_role,
+        &role_enum,
         &cfg.jwt_secret,
-        cfg.jwt_expiration * 7
+        cfg.jwt_expiration,
     )
     .map_err(|_| StatusError::internal_server_error())?;
-    
+
+    let refresh_token_value = create_access_token(
+        &account.id.to_string(),
+        &role_enum,
+        &cfg.jwt_secret,
+        cfg.jwt_expiration * 7,
+    )
+    .map_err(|_| StatusError::internal_server_error())?;
+
+    let session_id = insert_session(
+        pool,
+        account.id,
+        role_enum,
+        device_id,
+        device_name,
+        platform,
+        &refresh_token_value,
+    )
+    .await?;
+
     sqlx::query("UPDATE accounts SET last_login_at = NOW() WHERE id = $1")
         .bind(account.id)
         .execute(pool)
         .await
         .map_err(|_| StatusError::internal_server_error())?;
-    
+
+    let profile = load_profile_value(pool, &account, role, preferred_name).await?;
+
     Ok(LoginResponse {
+        account_id: account.id.to_string(),
+        active_role: role.to_string(),
         access_token,
-        refresh_token: refresh_token_str,
+        refresh_token: refresh_token_value,
         expires_in: cfg.jwt_expiration,
+        session_id: session_id.to_string(),
+        profile,
         token_type: "Bearer".to_string(),
     })
 }
 
-#[handler]
-pub async fn register(req: &mut Request, depot: &mut Depot) -> Result<Json<ApiResponse<LoginResponse>>, StatusError> {
-    let body: RegisterRequest = req.parse_json().await
-        .map_err(|_| StatusError::bad_request().brief("Invalid request body"))?;
-    
-    if body.verification_code.len() != 6 || !body.verification_code.chars().all(|c| c.is_ascii_digit()) {
-        return Err(StatusError::unauthorized().brief("Invalid verification code format"));
-    }
-    
-    let pool = depot.obtain::<PgPool>()
+async fn authenticate_user(
+    pool: &PgPool,
+    cfg: &AppConfig,
+    email: &str,
+    password: &str,
+    role: &str,
+    device_id: &str,
+    device_name: Option<&str>,
+    platform: &str,
+) -> Result<LoginResponse, StatusError> {
+    let account = sqlx::query_as::<_, Account>("SELECT * FROM accounts WHERE email = $1")
+        .bind(email)
+        .fetch_optional(pool)
+        .await
         .map_err(|_| StatusError::internal_server_error())?;
-    let cfg = depot.obtain::<AppConfig>()
-        .map_err(|_| StatusError::internal_server_error().brief("Config not available"))?;
-    
-    let response = authenticate_user(pool, cfg, &body.phone, "", "learner").await?;
-    
-    if let Some(nickname) = body.nickname {
-        let account_id = Uuid::parse_str(
-        &response.access_token)
-            .map_err(|_| StatusError::internal_server_error())?;
-        sqlx::query("INSERT INTO user_profiles (account_id, nickname) VALUES ($1, $2) ON CONFLICT (account_id) DO UPDATE SET nickname = $2")
+
+    let preferred_name = default_nickname_from_email(email);
+    let account = match account {
+        Some(account) => {
+            let valid = verify_password(password, &account.password_hash)
+                .map_err(|_| StatusError::internal_server_error())?;
+            if !valid {
+                return Err(StatusError::unauthorized().brief("Invalid email or password"));
+            }
+            if role == "admin" && !matches!(account.default_role, RoleType::Admin) {
+                return Err(StatusError::forbidden().brief("Admin access required"));
+            }
+            account
+        }
+        None => {
+            let account_id = Uuid::new_v4();
+            let role_enum = if role == "admin" { RoleType::Admin } else { RoleType::Learner };
+            let password_hash = hash_password(password).map_err(|_| StatusError::internal_server_error())?;
+
+            sqlx::query(
+                "INSERT INTO accounts (id, email, password_hash, default_role, account_status)
+                 VALUES ($1, $2, $3, $4, $5)",
+            )
             .bind(account_id)
-            .bind(nickname)
+            .bind(email)
+            .bind(&password_hash)
+            .bind(role_enum.clone())
+            .bind(AccountStatus::Active)
             .execute(pool)
             .await
             .map_err(|_| StatusError::internal_server_error())?;
+
+            if role == "admin" {
+                let _ = ensure_admin_profile(pool, account_id, &preferred_name).await?;
+            } else {
+                let _ = ensure_learner_profile(pool, account_id, &preferred_name).await?;
+            }
+
+            sqlx::query_as::<_, Account>("SELECT * FROM accounts WHERE id = $1")
+                .bind(account_id)
+                .fetch_one(pool)
+                .await
+                .map_err(|_| StatusError::internal_server_error())?
+        }
+    };
+
+    build_login_response(
+        pool,
+        cfg,
+        account,
+        role,
+        Some(&preferred_name),
+        device_id,
+        device_name,
+        platform,
+    )
+    .await
+}
+
+#[handler]
+pub async fn register(
+    req: &mut Request,
+    depot: &mut Depot,
+    res: &mut Response,
+) -> Result<Json<ApiResponse<LoginResponse>>, StatusError> {
+    let body: RegisterRequest = req
+        .parse_json()
+        .await
+        .map_err(|_| StatusError::bad_request().brief("Invalid request body"))?;
+
+    let pool = depot.obtain::<PgPool>().map_err(|_| StatusError::internal_server_error())?;
+    let cfg = depot.obtain::<AppConfig>().map_err(|_| StatusError::internal_server_error())?;
+
+    let existing: Option<(Uuid,)> = sqlx::query_as("SELECT id FROM accounts WHERE email = $1")
+        .bind(&body.email)
+        .fetch_optional(pool)
+        .await
+        .map_err(|_| StatusError::internal_server_error())?;
+    if existing.is_some() {
+        return Err(StatusError::bad_request().brief("Account already exists"));
     }
-    
+
+    let account_id = Uuid::new_v4();
+    let password_hash = hash_password(&body.password).map_err(|_| StatusError::internal_server_error())?;
+
+    sqlx::query(
+        "INSERT INTO accounts (id, email, password_hash, default_role, account_status)
+         VALUES ($1, $2, $3, 'learner', 'active')",
+    )
+    .bind(account_id)
+    .bind(&body.email)
+    .bind(&password_hash)
+    .execute(pool)
+    .await
+    .map_err(|_| StatusError::internal_server_error())?;
+
+    let _ = ensure_learner_profile(pool, account_id, &body.nickname).await?;
+    let account = sqlx::query_as::<_, Account>("SELECT * FROM accounts WHERE id = $1")
+        .bind(account_id)
+        .fetch_one(pool)
+        .await
+        .map_err(|_| StatusError::internal_server_error())?;
+
+    let response = build_login_response(
+        pool,
+        cfg,
+        account,
+        "learner",
+        Some(&body.nickname),
+        &body.device_id,
+        body.device_name.as_deref(),
+        normalize_platform("learner", Some(&body.platform)),
+    )
+    .await?;
+
+    res.status_code(StatusCode::CREATED);
     Ok(Json(ApiResponse::new(response)))
 }
 
 #[handler]
 pub async fn learner_login(req: &mut Request, depot: &mut Depot) -> Result<Json<ApiResponse<LoginResponse>>, StatusError> {
-    let body: LearnerLoginRequest = req.parse_json().await
-        .map_err(|e| {
-            eprintln!("Failed to parse request body: {:?}", e);
-            StatusError::bad_request().brief("Invalid request body")
-        })?;
-    
-    let pool = depot.obtain::<PgPool>()
-        .map_err(|e| {
-            eprintln!("Failed to obtain pool: {:?}", e);
-            StatusError::internal_server_error()
-        })?;
-    let cfg = depot.obtain::<AppConfig>()
-        .map_err(|e| {
-            eprintln!("Failed to obtain config: {:?}", e);
-            StatusError::internal_server_error().brief("Config not available")
-        })?;
-    
-    let response = authenticate_user(pool, cfg, &body.email, &body.password, "learner").await?;
+    let body: LearnerLoginRequest = req
+        .parse_json()
+        .await
+        .map_err(|_| StatusError::bad_request().brief("Invalid request body"))?;
+
+    let pool = depot.obtain::<PgPool>().map_err(|_| StatusError::internal_server_error())?;
+    let cfg = depot.obtain::<AppConfig>().map_err(|_| StatusError::internal_server_error())?;
+    let device_id = default_device_id("learner", body.device_id.as_deref());
+    let platform = normalize_platform("learner", body.platform.as_deref());
+
+    let response = authenticate_user(
+        pool,
+        cfg,
+        &body.email,
+        &body.password,
+        "learner",
+        &device_id,
+        body.device_name.as_deref(),
+        platform,
+    )
+    .await?;
+
     Ok(Json(ApiResponse::new(response)))
 }
 
 #[handler]
 pub async fn admin_login(req: &mut Request, depot: &mut Depot) -> Result<Json<ApiResponse<LoginResponse>>, StatusError> {
-    let body: AdminLoginRequest = req.parse_json().await
+    let body: AdminLoginRequest = req
+        .parse_json()
+        .await
         .map_err(|_| StatusError::bad_request().brief("Invalid request body"))?;
-    
-    let pool = depot.obtain::<PgPool>()
-        .map_err(|_| StatusError::internal_server_error())?;
-    let cfg = depot.obtain::<AppConfig>()
-        .map_err(|_| StatusError::internal_server_error().brief("Config not available"))?;
-    
-    let response = authenticate_user(pool, cfg, &body.email, &body.password, "admin").await?;
+
+    let pool = depot.obtain::<PgPool>().map_err(|_| StatusError::internal_server_error())?;
+    let cfg = depot.obtain::<AppConfig>().map_err(|_| StatusError::internal_server_error())?;
+    let device_id = default_device_id("admin", body.device_id.as_deref());
+    let platform = normalize_platform("admin", body.platform.as_deref());
+
+    let response = authenticate_user(
+        pool,
+        cfg,
+        &body.email,
+        &body.password,
+        "admin",
+        &device_id,
+        body.device_name.as_deref(),
+        platform,
+    )
+    .await?;
+
     Ok(Json(ApiResponse::new(response)))
 }
 
 #[handler]
 pub async fn login(req: &mut Request, depot: &mut Depot) -> Result<Json<ApiResponse<LoginResponse>>, StatusError> {
-    let body: LoginRequest = req.parse_json().await
+    let body: LoginRequest = req
+        .parse_json()
+        .await
         .map_err(|_| StatusError::bad_request().brief("Invalid request body"))?;
-    
+
     if body.verification_code.len() != 6 || !body.verification_code.chars().all(|c| c.is_ascii_digit()) {
         return Err(StatusError::unauthorized().brief("Invalid verification code format"));
     }
-    
-    let pool = depot.obtain::<PgPool>()
-        .map_err(|_| StatusError::internal_server_error())?;
-    let cfg = depot.obtain::<AppConfig>()
-        .map_err(|_| StatusError::internal_server_error().brief("Config not available"))?;
-    
-    let response = authenticate_user(pool, cfg, &body.phone, "", "learner").await?;
+
+    let pool = depot.obtain::<PgPool>().map_err(|_| StatusError::internal_server_error())?;
+    let cfg = depot.obtain::<AppConfig>().map_err(|_| StatusError::internal_server_error())?;
+
+    let pseudo_email = format!("{}@legacy.local", body.phone);
+    let response = authenticate_user(
+        pool,
+        cfg,
+        &pseudo_email,
+        "legacy-passcode",
+        "learner",
+        "legacy-device",
+        None,
+        "ios",
+    )
+    .await?;
+
     Ok(Json(ApiResponse::new(response)))
 }
 
 #[handler]
-pub async fn logout(_req: &mut Request, _depot: &mut Depot) -> Result<StatusCode, StatusError> {
+pub async fn logout(req: &mut Request, depot: &mut Depot) -> Result<StatusCode, StatusError> {
+    if let Ok(body) = req.parse_json::<LogoutRequest>().await {
+        if let Ok(pool) = depot.obtain::<PgPool>() {
+            let _ = sqlx::query("UPDATE sessions SET revoked_at = NOW() WHERE id = $1")
+                .bind(body.session_id)
+                .execute(pool)
+                .await;
+        }
+    }
     Ok(StatusCode::OK)
 }
 
 #[handler]
 pub async fn refresh_token(req: &mut Request, depot: &mut Depot) -> Result<Json<ApiResponse<LoginResponse>>, StatusError> {
-    let body: RefreshRequest = req.parse_json().await
+    let body: RefreshRequest = req
+        .parse_json()
+        .await
         .map_err(|_| StatusError::bad_request().brief("Invalid request body"))?;
-    
-    let cfg = depot.obtain::<AppConfig>()
-        .map_err(|_| StatusError::internal_server_error().brief("Config not available"))?;
-    
+
+    let pool = depot.obtain::<PgPool>().map_err(|_| StatusError::internal_server_error())?;
+    let cfg = depot.obtain::<AppConfig>().map_err(|_| StatusError::internal_server_error())?;
     let claims = validate_refresh_token(&body.refresh_token, &cfg.jwt_secret)
         .map_err(|_| StatusError::unauthorized().brief("Invalid refresh token"))?;
-    
-    let role_enum = match claims.role.as_str() {
-        "admin" => crate::models::RoleType::Admin,
-        _ => crate::models::RoleType::Learner,
-    };
-    let access_token = create_access_token(
-        &claims.account_id, 
-        &role_enum,
-        &cfg.jwt_secret,
-        cfg.jwt_expiration
+
+    let account_id = Uuid::parse_str(&claims.account_id).map_err(|_| StatusError::unauthorized())?;
+    let account = sqlx::query_as::<_, Account>("SELECT * FROM accounts WHERE id = $1")
+        .bind(account_id)
+        .fetch_optional(pool)
+        .await
+        .map_err(|_| StatusError::internal_server_error())?
+        .ok_or_else(StatusError::not_found)?;
+
+    let session_id = sqlx::query_scalar::<_, Uuid>(
+        "SELECT id FROM sessions WHERE account_id = $1 AND revoked_at IS NULL ORDER BY created_at DESC LIMIT 1",
     )
-    .map_err(|_| StatusError::internal_server_error())?;
-    
-    let role_enum = match claims.role.as_str() {
-        "admin" => crate::models::RoleType::Admin,
-        _ => crate::models::RoleType::Learner,
-    };
-    let new_refresh_token = create_access_token(
-        &claims.account_id,
-        &role_enum,
-        &cfg.jwt_secret,
-        cfg.jwt_expiration * 7
-    )
-    .map_err(|_| StatusError::internal_server_error())?;
-    
+    .bind(account_id)
+    .fetch_optional(pool)
+    .await
+    .map_err(|_| StatusError::internal_server_error())?
+    .unwrap_or_else(Uuid::new_v4);
+
+    let role_enum = if claims.role == "admin" { RoleType::Admin } else { RoleType::Learner };
+    let access_token = create_access_token(&claims.account_id, &role_enum, &cfg.jwt_secret, cfg.jwt_expiration)
+        .map_err(|_| StatusError::internal_server_error())?;
+    let new_refresh_token = create_access_token(&claims.account_id, &role_enum, &cfg.jwt_secret, cfg.jwt_expiration * 7)
+        .map_err(|_| StatusError::internal_server_error())?;
+    let profile = load_profile_value(pool, &account, &claims.role, None).await?;
+
     Ok(Json(ApiResponse::new(LoginResponse {
+        account_id: claims.account_id,
+        active_role: claims.role,
         access_token,
         refresh_token: new_refresh_token,
         expires_in: cfg.jwt_expiration,
+        session_id: session_id.to_string(),
+        profile,
         token_type: "Bearer".to_string(),
     })))
 }
@@ -343,37 +633,31 @@ pub fn jwt_auth_middleware(secret: String) -> JwtAuth<JwtClaims, ConstDecoder> {
 
 #[handler]
 pub async fn get_current_user(depot: &mut Depot) -> Result<Json<ApiResponse<Account>>, StatusError> {
-    let pool = depot.obtain::<PgPool>()
-        .map_err(|_| StatusError::internal_server_error())?;
-    
-    let jwt_data = depot.jwt_auth_data::<JwtClaims>()
-        .ok_or_else(StatusError::unauthorized)?;
-    
-    let account_id = Uuid::parse_str(&jwt_data.claims.account_id)
-        .map_err(|_| StatusError::unauthorized())?;
-    
+    let pool = depot.obtain::<PgPool>().map_err(|_| StatusError::internal_server_error())?;
+
+    let jwt_data = depot.jwt_auth_data::<JwtClaims>().ok_or_else(StatusError::unauthorized)?;
+
+    let account_id = Uuid::parse_str(&jwt_data.claims.account_id).map_err(|_| StatusError::unauthorized())?;
+
     let account = sqlx::query_as::<_, Account>("SELECT * FROM accounts WHERE id = $1")
         .bind(account_id)
         .fetch_optional(pool)
         .await
         .map_err(|_| StatusError::internal_server_error())?
         .ok_or_else(StatusError::not_found)?;
-    
+
     Ok(Json(ApiResponse::new(account)))
 }
 
 pub fn get_current_account_id(depot: &Depot) -> Result<Uuid, StatusError> {
-    let jwt_data = depot.jwt_auth_data::<JwtClaims>()
-        .ok_or_else(StatusError::unauthorized)?;
-    
-    Uuid::parse_str(&jwt_data.claims.account_id)
-        .map_err(|_| StatusError::unauthorized())
+    let jwt_data = depot.jwt_auth_data::<JwtClaims>().ok_or_else(StatusError::unauthorized)?;
+
+    Uuid::parse_str(&jwt_data.claims.account_id).map_err(|_| StatusError::unauthorized())
 }
 
 pub fn get_current_role(depot: &Depot) -> Result<String, StatusError> {
-    let jwt_data = depot.jwt_auth_data::<JwtClaims>()
-        .ok_or_else(StatusError::unauthorized)?;
-    
+    let jwt_data = depot.jwt_auth_data::<JwtClaims>().ok_or_else(StatusError::unauthorized)?;
+
     Ok(jwt_data.claims.role.clone())
 }
 
@@ -394,9 +678,9 @@ where
     D: serde::Deserializer<'de>,
 {
     let password: String = serde::Deserialize::deserialize(deserializer)?;
-    if password.len() >= 6 {
+    if password.len() >= 8 {
         Ok(password)
     } else {
-        Err(serde::de::Error::custom("Password must be at least 6 characters"))
+        Err(serde::de::Error::custom("Password must be at least 8 characters"))
     }
 }

@@ -1,0 +1,52 @@
+{
+  "path": "/api/v1/learner/leaderboards",
+  "method": "GET",
+  "response": {
+    "status": 200,
+    "body": {
+      "data": {
+        "items": [
+          {
+            "id": "3b12d65c-7f45-4b57-9595-7b0dfc782701",
+            "board_type": "weekly",
+            "period_key": "2026-W19",
+            "learner_id": "cc6c9e4b-0a96-4253-8f5a-e85689f01231",
+            "score": 980,
+            "rank_position": 1,
+            "generated_at": "2026-05-07T09:55:00Z",
+            "learner_profile": {
+              "account_id": "cc6c9e4b-0a96-4253-8f5a-e85689f01231",
+              "nickname": "debug_runner",
+              "avatar_url": "https://cdn.example.com/avatars/learner/debug-runner.png"
+            },
+            "current_xp_balance": 5320,
+            "badge_count": 14,
+            "is_current_user": false
+          },
+          {
+            "id": "3b12d65c-7f45-4b57-9595-7b0dfc782702",
+            "board_type": "weekly",
+            "period_key": "2026-W19",
+            "learner_id": "0c9f9b0f-2d9a-4d9a-b5ec-6d3f8e684111",
+            "score": 860,
+            "rank_position": 2,
+            "generated_at": "2026-05-07T09:55:00Z",
+            "learner_profile": {
+              "account_id": "0c9f9b0f-2d9a-4d9a-b5ec-6d3f8e684111",
+              "nickname": "code_quester",
+              "avatar_url": "https://cdn.example.com/avatars/learner/code-quester.png"
+            },
+            "current_xp_balance": 2480,
+            "badge_count": 6,
+            "is_current_user": true
+          }
+        ],
+        "generated_at": "2026-05-07T09:55:00Z"
+      },
+      "meta": {
+        "request_id": "2f1f70fb-9ae4-4f5b-9d89-8242f53d4d11",
+        "server_time": "2026-05-07T10:00:00Z"
+      }
+    }
+  }
+}

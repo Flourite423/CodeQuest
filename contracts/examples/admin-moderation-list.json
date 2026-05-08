@@ -1,0 +1,66 @@
+{
+  "description": "GET /admin/moderation - 获取审核单列表",
+  "request": {
+    "method": "GET",
+    "path": "/api/v1/admin/moderation",
+    "headers": {
+      "Authorization": "Bearer <admin_jwt_token>",
+      "Accept": "application/json"
+    },
+    "query": {
+      "page": 1,
+      "page_size": 20,
+      "sort_by": "created_at",
+      "sort_order": "desc"
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "data": {
+        "items": [
+          {
+            "id": "14141414-1414-4141-8141-141414141414",
+            "case_type": "nickname",
+            "target_id": "11111111-1111-4111-8111-111111111111",
+            "target_snapshot_json": {
+              "submitted_nickname": "free_xp_hacker",
+              "current_nickname": "code_quester"
+            },
+            "status": "approved",
+            "decision_reason": "申诉通过，当前昵称符合社区规范。",
+            "reviewed_by": "33333333-3333-4333-8333-333333333333",
+            "reviewed_at": "2026-05-08T06:45:00Z",
+            "created_at": "2026-05-07T20:00:00Z",
+            "target_summary": {
+              "target_label": "昵称审核：free_xp_hacker",
+              "target_owner_id": "11111111-1111-4111-8111-111111111111"
+            },
+            "reviewer_profile": {
+              "account_id": "33333333-3333-4333-8333-333333333333",
+              "display_name": "运营管理员 Ada",
+              "avatar_url": "https://cdn.example.com/avatars/admin/ada.png"
+            }
+          }
+        ],
+        "meta": {
+          "page": 1,
+          "page_size": 20,
+          "total": 1,
+          "has_more": false
+        }
+      },
+      "meta": {
+        "request_id": "6f4f5dc4-0e7e-4ef9-a0e1-dbe4c8c1a001",
+        "server_time": "2026-05-08T09:30:00Z",
+        "page": 1,
+        "page_size": 20,
+        "total": 1,
+        "has_more": false
+      }
+    }
+  }
+}

@@ -1,5 +1,5 @@
 {
-  "description": "POST /admin/courses - 管理员创建新课程",
+  "description": "POST /admin/courses - 创建课程",
   "request": {
     "method": "POST",
     "path": "/api/v1/admin/courses",
@@ -9,46 +9,79 @@
       "Accept": "application/json"
     },
     "body": {
-      "course_code": "advanced-concurrency-2026",
-      "title": "高级并发编程",
-      "summary": "深入探讨多线程、异步编程与锁机制",
-      "description": "本课程系统讲解操作系统层面的并发原语、语言级并发模型以及分布式系统中的并发设计模式。",
-      "cover_image_url": "https://cdn.example.com/courses/advanced-concurrency/cover.png",
+      "course_code": "modern-css-layouts-2026",
+      "title": "现代 CSS 布局",
+      "summary": "聚焦 Flexbox、Grid 与响应式布局的实战课程。",
+      "description": "从经典双栏到复杂仪表盘布局，系统讲解 CSS 布局实战。",
+      "cover_image_url": "https://cdn.example.com/courses/modern-css/cover.png",
       "difficulty": "intermediate",
-      "estimated_minutes": 180,
-      "status": "draft",
-      "sort_order": 10,
-      "content_version": 1
+      "estimated_minutes": 150,
+      "status": "published",
+      "sort_order": 2,
+      "content_version": 3,
+      "published_at": "2026-04-20T09:00:00Z"
     }
   },
   "response": {
-    "status": 201,
+    "status": 200,
     "headers": {
-      "Content-Type": "application/json",
-      "Location": "/api/v1/admin/courses/550e8400-e29b-41d4-a716-446655440002"
+      "Content-Type": "application/json"
     },
     "body": {
       "data": {
-        "id": "550e8400-e29b-41d4-a716-446655440002",
-        "course_code": "advanced-concurrency-2026",
-        "title": "高级并发编程",
-        "summary": "深入探讨多线程、异步编程与锁机制",
-        "description": "本课程系统讲解操作系统层面的并发原语、语言级并发模型以及分布式系统中的并发设计模式。",
-        "cover_image_url": "https://cdn.example.com/courses/advanced-concurrency/cover.png",
+        "id": "55555555-5555-4555-8555-555555555555",
+        "course_code": "modern-css-layouts-2026",
+        "title": "现代 CSS 布局",
+        "summary": "聚焦 Flexbox、Grid 与响应式布局的实战课程。",
+        "description": "从经典双栏到复杂仪表盘布局，系统讲解 CSS 布局实战。",
+        "cover_image_url": "https://cdn.example.com/courses/modern-css/cover.png",
         "difficulty": "intermediate",
-        "estimated_minutes": 180,
-        "status": "draft",
-        "sort_order": 10,
-        "content_version": 1,
-        "created_by": "550e8400-e29b-41d4-a716-446655440010",
-        "published_at": null,
-        "created_at": "2026-05-07T08:30:00Z",
-        "updated_at": "2026-05-07T08:30:00Z",
-        "chapters": []
+        "estimated_minutes": 150,
+        "status": "published",
+        "sort_order": 2,
+        "content_version": 3,
+        "created_by": "33333333-3333-4333-8333-333333333333",
+        "published_at": "2026-04-20T09:00:00Z",
+        "created_at": "2026-04-10T07:00:00Z",
+        "updated_at": "2026-05-05T12:40:00Z",
+        "chapters": [
+          {
+            "id": "66666666-6666-4666-8666-666666666666",
+            "course_id": "55555555-5555-4555-8555-555555555555",
+            "chapter_code": "flex-axis-101",
+            "title": "Flex 容器与主轴控制",
+            "summary": "理解主轴、交叉轴与常见对齐策略。",
+            "learning_content_markdown": "## Flexbox\n通过 `display: flex` 建立弹性布局上下文。",
+            "sample_code": ".container { display: flex; justify-content: center; }",
+            "estimated_minutes": 35,
+            "order_index": 1,
+            "unlock_rule": "free",
+            "status": "published",
+            "content_version": 1,
+            "created_at": "2026-04-10T07:20:00Z",
+            "updated_at": "2026-05-04T09:30:00Z"
+          },
+          {
+            "id": "77777777-7777-4777-8777-777777777777",
+            "course_id": "55555555-5555-4555-8555-555555555555",
+            "chapter_code": "grid-dashboard-201",
+            "title": "Grid 双栏布局",
+            "summary": "使用 Grid 构建常见后台双栏布局。",
+            "learning_content_markdown": "## Grid\n使用 `grid-template-columns` 组织页面主区域。",
+            "sample_code": ".layout { display: grid; grid-template-columns: 240px 1fr; }",
+            "estimated_minutes": 40,
+            "order_index": 2,
+            "unlock_rule": "after_previous_completed",
+            "status": "published",
+            "content_version": 1,
+            "created_at": "2026-04-10T07:45:00Z",
+            "updated_at": "2026-05-04T10:15:00Z"
+          }
+        ]
       },
       "meta": {
-        "request_id": "req-550e8400-e29b-41d4-a716-446655440000",
-        "server_time": "2026-05-07T10:00:00Z"
+        "request_id": "6f4f5dc4-0e7e-4ef9-a0e1-dbe4c8c1a001",
+        "server_time": "2026-05-08T09:30:00Z"
       }
     }
   }

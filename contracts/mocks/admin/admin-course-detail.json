@@ -1,0 +1,64 @@
+{
+  "path": "/api/v1/admin/courses/550e8400-e29b-41d4-a716-446655440002",
+  "method": "GET",
+  "response": {
+    "status": 200,
+    "body": {
+      "data": {
+        "id": "550e8400-e29b-41d4-a716-446655440002",
+        "course_code": "advanced-concurrency-2026",
+        "title": "高级并发编程",
+        "summary": "深入探讨多线程、异步编程与锁机制",
+        "description": "本课程系统讲解操作系统层面的并发原语、语言级并发模型以及分布式系统中的并发设计模式。",
+        "cover_image_url": "https://cdn.example.com/courses/advanced-concurrency/cover.png",
+        "difficulty": "intermediate",
+        "estimated_minutes": 180,
+        "status": "draft",
+        "sort_order": 10,
+        "content_version": 3,
+        "created_by": "c69c0e60-8cf8-4cf8-a8d8-cb0b57f9a222",
+        "published_at": null,
+        "created_at": "2026-05-07T08:30:00Z",
+        "updated_at": "2026-05-07T09:15:00Z",
+        "chapters": [
+          {
+            "id": "1b3b0f3c-43df-4f2f-92d3-1ebec9d51001",
+            "course_id": "550e8400-e29b-41d4-a716-446655440002",
+            "chapter_code": "ownership-basics",
+            "title": "Ownership 基础",
+            "summary": "理解所有权、借用与生命周期的基础模型",
+            "learning_content_markdown": "# Ownership\n\n通过示例理解 move 与 borrow。",
+            "sample_code": "fn main() { let s = String::from(\"hi\"); println!(\"{}\", s); }",
+            "estimated_minutes": 35,
+            "order_index": 0,
+            "unlock_rule": "free",
+            "status": "published",
+            "content_version": 3,
+            "created_at": "2026-04-10T07:00:00Z",
+            "updated_at": "2026-04-20T10:00:00Z"
+          },
+          {
+            "id": "1b3b0f3c-43df-4f2f-92d3-1ebec9d51002",
+            "course_id": "550e8400-e29b-41d4-a716-446655440002",
+            "chapter_code": "borrow-checker-practice",
+            "title": "Borrow Checker 实战",
+            "summary": "通过代码练习掌握可变借用与不可变借用",
+            "learning_content_markdown": "# Borrow Checker\n\n练习典型报错与修复方式。",
+            "sample_code": null,
+            "estimated_minutes": 40,
+            "order_index": 1,
+            "unlock_rule": "after_previous_completed",
+            "status": "draft",
+            "content_version": 2,
+            "created_at": "2026-04-11T07:00:00Z",
+            "updated_at": "2026-05-01T09:30:00Z"
+          }
+        ]
+      },
+      "meta": {
+        "request_id": "2f1f70fb-9ae4-4f5b-9d89-8242f53d4d11",
+        "server_time": "2026-05-07T10:00:00Z"
+      }
+    }
+  }
+}

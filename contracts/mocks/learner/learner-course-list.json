@@ -1,0 +1,45 @@
+{
+  "path": "/api/v1/learner/courses",
+  "method": "GET",
+  "response": {
+    "status": 200,
+    "body": {
+      "data": {
+        "items": [
+          {
+            "id": "550e8400-e29b-41d4-a716-446655440000",
+            "title": "Rust 编程入门",
+            "summary": "从零开始学习 Rust 语言的核心概念与实战技巧",
+            "cover_image_url": "https://cdn.example.com/courses/rust-basics/cover.png",
+            "difficulty": "beginner",
+            "estimated_minutes": 120,
+            "sort_order": 1,
+            "published_at": "2026-04-15T08:00:00Z",
+            "updated_at": "2026-04-20T14:22:00Z"
+          },
+          {
+            "id": "550e8400-e29b-41d4-a716-446655440001",
+            "title": "数据结构与算法",
+            "summary": "系统学习常用数据结构及其在算法中的应用",
+            "cover_image_url": "https://cdn.example.com/courses/dsa/cover.png",
+            "difficulty": "intermediate",
+            "estimated_minutes": 240,
+            "sort_order": 2,
+            "published_at": "2026-03-20T06:00:00Z",
+            "updated_at": "2026-03-25T11:45:00Z"
+          }
+        ],
+        "meta": {
+          "page": 1,
+          "page_size": 20,
+          "total": 2,
+          "has_more": false
+        }
+      },
+      "meta": {
+        "request_id": "2f1f70fb-9ae4-4f5b-9d89-8242f53d4d11",
+        "server_time": "2026-05-07T10:00:00Z"
+      }
+    }
+  }
+}

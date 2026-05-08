@@ -32,6 +32,7 @@ pub async fn list_chapters(req: &mut Request, depot: &mut Depot) -> Result<Json<
         .map_err(|_| StatusError::internal_server_error())?;
     
     let course_id = req.param::<String>("course_id")
+        .or_else(|| req.query::<String>("course_id"))
         .ok_or_else(StatusError::bad_request)?;
     
     let status_filter = req.query::<String>("status").unwrap_or_else(|| "published".to_string());
@@ -72,6 +73,7 @@ pub async fn create_chapter(req: &mut Request, depot: &mut Depot) -> Result<Stat
         .map_err(|_| StatusError::internal_server_error())?;
     
     let course_id = req.param::<String>("course_id")
+        .or_else(|| req.query::<String>("course_id"))
         .ok_or_else(StatusError::bad_request)?;
     
     let body: CreateChapterRequest = req.parse_json().await

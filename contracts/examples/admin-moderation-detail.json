@@ -1,0 +1,42 @@
+{
+  "description": "PATCH /admin/moderation/{case_id} - 审核单决策并返回详情",
+  "request": {
+    "method": "PATCH",
+    "path": "/api/v1/admin/moderation/14141414-1414-4141-8141-141414141414",
+    "headers": {
+      "Authorization": "Bearer <admin_jwt_token>",
+      "Content-Type": "application/json",
+      "Accept": "application/json"
+    },
+    "body": {
+      "status": "approved",
+      "decision_reason": "申诉通过，当前昵称符合社区规范。"
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "data": {
+        "id": "14141414-1414-4141-8141-141414141414",
+        "case_type": "nickname",
+        "target_id": "11111111-1111-4111-8111-111111111111",
+        "target_snapshot_json": {
+          "submitted_nickname": "free_xp_hacker",
+          "current_nickname": "code_quester"
+        },
+        "status": "approved",
+        "decision_reason": "申诉通过，当前昵称符合社区规范。",
+        "reviewed_by": "33333333-3333-4333-8333-333333333333",
+        "reviewed_at": "2026-05-08T06:45:00Z",
+        "created_at": "2026-05-07T20:00:00Z"
+      },
+      "meta": {
+        "request_id": "6f4f5dc4-0e7e-4ef9-a0e1-dbe4c8c1a001",
+        "server_time": "2026-05-08T09:30:00Z"
+      }
+    }
+  }
+}

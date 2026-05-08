@@ -1,0 +1,57 @@
+{
+  "path": "/api/v1/learner/rewards",
+  "method": "GET",
+  "response": {
+    "status": 200,
+    "body": {
+      "data": {
+        "summary": {
+          "current_xp_balance": 2480,
+          "lifetime_xp_earned": 6840,
+          "badge_count": 6,
+          "latest_reward_at": "2026-05-07T09:12:00Z"
+        },
+        "badges": [
+          {
+            "id": "a92a3478-59b9-4c5b-b2a0-e7c6d0983301",
+            "learner_id": "0c9f9b0f-2d9a-4d9a-b5ec-6d3f8e684111",
+            "badge_id": "8d1ab56a-67d9-4505-a160-5bfbc4ea4f10",
+            "award_source_type": "daily",
+            "award_source_id": "884c2dc1-010a-48f6-9a6e-054d692f5301",
+            "awarded_at": "2026-05-07T09:12:00Z"
+          }
+        ],
+        "xp_ledger": [
+          {
+            "id": "bbc93452-52a5-472b-8b07-91a0a6f6c201",
+            "learner_id": "0c9f9b0f-2d9a-4d9a-b5ec-6d3f8e684111",
+            "source_type": "challenge",
+            "source_id": "dc02ef55-7c1b-46ff-909a-8f73af928801",
+            "delta_xp": 120,
+            "balance_after": 2390,
+            "created_at": "2026-05-06T18:00:00Z"
+          },
+          {
+            "id": "bbc93452-52a5-472b-8b07-91a0a6f6c202",
+            "learner_id": "0c9f9b0f-2d9a-4d9a-b5ec-6d3f8e684111",
+            "source_type": "daily",
+            "source_id": "884c2dc1-010a-48f6-9a6e-054d692f5301",
+            "delta_xp": 90,
+            "balance_after": 2480,
+            "created_at": "2026-05-07T09:12:00Z"
+          }
+        ],
+        "meta": {
+          "page": 1,
+          "page_size": 20,
+          "total": 3,
+          "has_more": false
+        }
+      },
+      "meta": {
+        "request_id": "2f1f70fb-9ae4-4f5b-9d89-8242f53d4d11",
+        "server_time": "2026-05-07T10:00:00Z"
+      }
+    }
+  }
+}
