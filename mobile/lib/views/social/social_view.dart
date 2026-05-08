@@ -1,0 +1,423 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:get/get.dart';
+
+import '../../controllers/base_controller.dart';
+import '../../models/models.dart';
+import '../../services/mock_data.dart';
+import '../../widgets/shared/empty_state.dart';
+import '../../widgets/shared/list_card.dart';
+import '../../widgets/shared/rank_row.dart';
+
+class SocialView extends GetView<SocialController> {
+  const SocialView({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return DefaultTabController(
+      length: 3,
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Social Center'),
+          bottom: const TabBar(
+            tabs: [
+              Tab(text: 'Activity'),
+              Tab(text: 'Friends'),
+              Tab(text: 'Leaderboard'),
+            ],
+          ),
+        ),
+        body: TabBarView(
+          children: [
+            _ActivityTab(controller: controller),
+            _FriendsTab(controller: controller),
+            _LeaderboardTab(controller: controller),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class SocialController extends BaseController {
+  final MockDataService _mockData = Get.find<MockDataService>();
+
+  final RxList<Activity> activities = <Activity>[].obs;
+  final RxList<Friend> friends = <Friend>[].obs;
+  final RxList<LeaderboardEntry> leaderboard = <LeaderboardEntry>[].obs;
+
+  // Current user ID for highlighting in leaderboard
+  static const String currentUserId = 'leader-5';
+
+  @override
+  void onInit() {
+    super.onInit();
+    loadAllData();
+  }
+
+  Future<void> loadAllData() async {
+    await Future.wait([
+      loadActivities(),
+      loadFriends(),
+      loadLeaderboard(),
+    ]);
+  }
+
+  Future<void> loadActivities() async {
+    try {
+      final data = await _mockData.fetchActivities();
+      activities.value = data;
+    } catch (e) {
+      // Keep existing data or empty list
+      activities.value = <Activity>[];
+    }
+  }
+
+  Future<void> loadFriends() async {
+    try {
+      final data = await _mockData.fetchFriends();
+      friends.value = data;
+    } catch (e) {
+      friends.value = <Friend>[];
+    }
+  }
+
+  Future<void> loadLeaderboard() async {
+    try {
+      final data = await _mockData.fetchLeaderboard();
+      leaderboard.value = data;
+    } catch (e) {
+      leaderboard.value = <LeaderboardEntry>[];
+    }
+  }
+
+  void acceptFriendRequest(String friendId) {
+    final index = friends.indexWhere((f) => f.id == friendId);
+    if (index != -1) {
+      final friend = friends[index];
+      friends[index] = Friend(
+        id: friend.id,
+        nickname: friend.nickname,
+        avatar: friend.avatar,
+        level: friend.level,
+        status: 'accepted',
+      );
+    }
+  }
+
+  void declineFriendRequest(String friendId) {
+    friends.removeWhere((f) => f.id == friendId);
+  }
+}
+
+class SocialBinding extends Bindings {
+  @override
+  void dependencies() {
+    Get.lazyPut<SocialController>(() => SocialController());
+  }
+}
+
+// ─── Activity Tab ───────────────────────────────────────────────────────────
+
+class _ActivityTab extends StatelessWidget {
+  const _ActivityTab({required this.controller});
+
+  final SocialController controller;
+
+  IconData _activityIcon(String type) {
+    switch (type) {
+      case 'challenge_completed':
+        return Icons.flag_outlined;
+      case 'badge_earned':
+        return Icons.workspace_premium_outlined;
+      case 'streak_reached':
+        return Icons.local_fire_department_outlined;
+      case 'course_completed':
+        return Icons.book_outlined;
+      default:
+        return Icons.notifications_outlined;
+    }
+  }
+
+  String _timeAgo(DateTime timestamp) {
+    final now = DateTime.now();
+    final diff = now.difference(timestamp);
+
+    if (diff.inMinutes < 1) return 'Just now';
+    if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
+    if (diff.inHours < 24) return '${diff.inHours}h ago';
+    if (diff.inDays < 7) return '${diff.inDays}d ago';
+    return '${diff.inDays ~/ 7}w ago';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Obx(() {
+      final items = controller.activities;
+
+      if (items.isEmpty) {
+        return const EmptyState(
+          icon: Icons.notifications_none_outlined,
+          title: 'No Activity Yet',
+          description: 'Your friends\' activities will appear here.',
+        );
+      }
+
+      return ListView.separated(
+        padding: EdgeInsets.all(16.w),
+        itemCount: items.length,
+        separatorBuilder: (_, __) => SizedBox(height: 12.h),
+        itemBuilder: (context, index) {
+          final activity = items[index];
+          return ListCard(
+            leading: CircleAvatar(
+              radius: 20.r,
+              backgroundImage: activity.user.avatar != null
+                  ? NetworkImage(activity.user.avatar!)
+                  : null,
+              child: activity.user.avatar == null
+                  ? Text(
+                      activity.user.nickname.isNotEmpty
+                          ? activity.user.nickname[0].toUpperCase()
+                          : '?',
+                      style: TextStyle(fontSize: 14.sp),
+                    )
+                  : null,
+            ),
+            title: activity.user.nickname,
+            subtitle: '${activity.description} · ${_timeAgo(activity.timestamp)}',
+            trailing: Icon(
+              _activityIcon(activity.type),
+              color: Theme.of(context).colorScheme.primary,
+            ),
+          );
+        },
+      );
+    });
+  }
+}
+
+// ─── Friends Tab ────────────────────────────────────────────────────────────
+
+class _FriendsTab extends StatelessWidget {
+  const _FriendsTab({required this.controller});
+
+  final SocialController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    return Obx(() {
+      final allFriends = controller.friends;
+      final pendingFriends = allFriends.where((f) => f.status == 'pending').toList();
+      final acceptedFriends = allFriends.where((f) => f.status == 'accepted').toList();
+
+      if (allFriends.isEmpty) {
+        return const EmptyState(
+          icon: Icons.people_outline,
+          title: 'No Friends Yet',
+          description: 'Connect with other learners to see them here.',
+        );
+      }
+
+      return ListView(
+        padding: EdgeInsets.all(16.w),
+        children: [
+          // Pending requests section
+          if (pendingFriends.isNotEmpty) ...[
+            Text(
+              'Friend Requests (${pendingFriends.length})',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+            ),
+            SizedBox(height: 12.h),
+            ...pendingFriends.map((friend) => _FriendRequestCard(
+                  friend: friend,
+                  onAccept: () => controller.acceptFriendRequest(friend.id),
+                  onDecline: () => controller.declineFriendRequest(friend.id),
+                )),
+            SizedBox(height: 24.h),
+          ],
+
+          // Accepted friends section
+          if (acceptedFriends.isNotEmpty) ...[
+            Text(
+              'Friends',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+            ),
+            SizedBox(height: 12.h),
+            ...acceptedFriends.map((friend) => _FriendCard(friend: friend)),
+          ],
+        ],
+      );
+    });
+  }
+}
+
+class _FriendRequestCard extends StatelessWidget {
+  const _FriendRequestCard({
+    required this.friend,
+    required this.onAccept,
+    required this.onDecline,
+  });
+
+  final Friend friend;
+  final VoidCallback onAccept;
+  final VoidCallback onDecline;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Card(
+      margin: EdgeInsets.only(bottom: 12.h),
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12.r),
+      ),
+      child: Padding(
+        padding: EdgeInsets.all(12.w),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                CircleAvatar(
+                  radius: 24.r,
+                  backgroundImage:
+                      friend.avatar != null ? NetworkImage(friend.avatar!) : null,
+                  child: friend.avatar == null
+                      ? Text(
+                          friend.nickname.isNotEmpty
+                              ? friend.nickname[0].toUpperCase()
+                              : '?',
+                          style: TextStyle(fontSize: 16.sp),
+                        )
+                      : null,
+                ),
+                SizedBox(width: 12.w),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        friend.nickname,
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      if (friend.level != null)
+                        Text(
+                          'Level ${friend.level}',
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: 12.h),
+            Wrap(
+              spacing: 8.w,
+              runSpacing: 8.h,
+              children: [
+                OutlinedButton(
+                  onPressed: onDecline,
+                  style: OutlinedButton.styleFrom(
+                    padding: EdgeInsets.symmetric(horizontal: 12.w),
+                    minimumSize: Size(0, 36.h),
+                  ),
+                  child: const Text('Decline'),
+                ),
+                FilledButton(
+                  onPressed: onAccept,
+                  style: FilledButton.styleFrom(
+                    padding: EdgeInsets.symmetric(horizontal: 12.w),
+                    minimumSize: Size(0, 36.h),
+                  ),
+                  child: const Text('Accept'),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _FriendCard extends StatelessWidget {
+  const _FriendCard({required this.friend});
+
+  final Friend friend;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListCard(
+      leading: CircleAvatar(
+        radius: 20.r,
+        backgroundImage:
+            friend.avatar != null ? NetworkImage(friend.avatar!) : null,
+        child: friend.avatar == null
+            ? Text(
+                friend.nickname.isNotEmpty
+                    ? friend.nickname[0].toUpperCase()
+                    : '?',
+                style: TextStyle(fontSize: 14.sp),
+              )
+            : null,
+      ),
+      title: friend.nickname,
+      subtitle: friend.level != null ? 'Level ${friend.level}' : null,
+      trailing: IconButton(
+        icon: const Icon(Icons.open_in_new),
+        onPressed: () => Get.toNamed('/friends'),
+      ),
+    );
+  }
+}
+
+// ─── Leaderboard Tab ────────────────────────────────────────────────────────
+
+class _LeaderboardTab extends StatelessWidget {
+  const _LeaderboardTab({required this.controller});
+
+  final SocialController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    return Obx(() {
+      final entries = controller.leaderboard;
+
+      if (entries.isEmpty) {
+        return const EmptyState(
+          icon: Icons.emoji_events_outlined,
+          title: 'No Rankings Yet',
+          description: 'Leaderboard will be available once learners start competing.',
+        );
+      }
+
+      return ListView.separated(
+        padding: EdgeInsets.all(16.w),
+        itemCount: entries.length,
+        separatorBuilder: (_, __) => SizedBox(height: 8.h),
+        itemBuilder: (context, index) {
+          final entry = entries[index];
+          return RankRow(
+            rank: entry.rank,
+            username: entry.nickname,
+            level: entry.level ?? 1,
+            xp: entry.xp,
+            avatarUrl: null,
+            isCurrentUser: entry.userId == SocialController.currentUserId,
+          );
+        },
+      );
+    });
+  }
+}

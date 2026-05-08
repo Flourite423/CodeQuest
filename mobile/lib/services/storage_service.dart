@@ -2,6 +2,8 @@ import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 
 class StorageService extends GetxService {
+  static const String authTokenKey = 'auth_token';
+
   late final GetStorage _box;
 
   @override
@@ -26,7 +28,15 @@ class StorageService extends GetxService {
     await _box.erase();
   }
 
+  Future<void> clearAuthSession() async {
+    await _box.remove(authTokenKey);
+  }
+
   bool hasKey(String key) {
     return _box.hasData(key);
+  }
+
+  String? readAuthToken() {
+    return read<String>(authTokenKey);
   }
 }
