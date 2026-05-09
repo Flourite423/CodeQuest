@@ -209,7 +209,7 @@ class _FilterSheetState extends State<FilterSheet> {
           height: 56.h,
           child: FilledButton(
             onPressed: _apply,
-            child: const Text('Apply Filters'),
+            child: const Text('应用筛选'),
           ),
         ),
         SizedBox(height: 12.h),
@@ -218,7 +218,7 @@ class _FilterSheetState extends State<FilterSheet> {
           height: 48.h,
           child: OutlinedButton(
             onPressed: _reset,
-            child: const Text('Reset Filters'),
+            child: const Text('重置筛选'),
           ),
         ),
       ],

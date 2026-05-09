@@ -14,7 +14,7 @@ class ProfileView extends GetView<ProfileController> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Profile'),
+        title: const Text('个人中心'),
         actions: [
           IconButton(
             icon: const Icon(Icons.settings_outlined),
@@ -78,14 +78,14 @@ class ProfileView extends GetView<ProfileController> {
             ),
             SizedBox(height: 16.h),
             Text(
-              user?.nickname ?? 'Learner',
+              user?.nickname ?? '学习者',
               style: textTheme.titleLarge?.copyWith(
                 fontWeight: FontWeight.bold,
               ),
             ),
             SizedBox(height: 4.h),
             Text(
-              'Level ${user?.level ?? 1}',
+              '等级 ${user?.level ?? 1}',
               style: textTheme.bodyMedium?.copyWith(
                 color: colorScheme.onSurfaceVariant,
               ),
@@ -147,7 +147,7 @@ class ProfileView extends GetView<ProfileController> {
         ),
         SizedBox(height: 4.h),
         Text(
-          '${nextLevelXp - currentXp} XP to next level',
+          '距离下一级还需 ${nextLevelXp - currentXp} XP',
           style: TextStyle(
             fontSize: 12.sp,
             color: colorScheme.onSurfaceVariant,
@@ -167,22 +167,22 @@ class ProfileView extends GetView<ProfileController> {
 
     final statItems = [
       _StatItem(
-        label: 'Study Time',
+        label: '学习时长',
         value: '${stats.studyTime}m',
         icon: Icons.timer_outlined,
       ),
       _StatItem(
-        label: 'Courses',
+        label: '课程',
         value: '${stats.coursesCompleted}',
         icon: Icons.menu_book_outlined,
       ),
       _StatItem(
-        label: 'Challenges',
+        label: '挑战',
         value: '${stats.challengesWon}',
         icon: Icons.emoji_events_outlined,
       ),
       _StatItem(
-        label: 'Streak',
+        label: '连续天数',
         value: '${stats.currentStreak}d',
         icon: Icons.local_fire_department_outlined,
       ),
@@ -192,7 +192,7 @@ class ProfileView extends GetView<ProfileController> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Statistics',
+          '统计数据',
           style: textTheme.titleMedium?.copyWith(
             fontWeight: FontWeight.w600,
           ),
@@ -260,7 +260,7 @@ class ProfileView extends GetView<ProfileController> {
           children: [
             Expanded(
               child: Text(
-                'Recent Badges',
+                '最近徽章',
                 style: textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.w600,
                 ),
@@ -269,7 +269,7 @@ class ProfileView extends GetView<ProfileController> {
             ),
             TextButton(
               onPressed: () => Get.toNamed('/profile/rewards'),
-              child: const Text('View All'),
+              child: const Text('查看全部'),
             ),
           ],
         ),
@@ -323,7 +323,7 @@ class ProfileView extends GetView<ProfileController> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Quick Access',
+          '快捷入口',
           style: textTheme.titleMedium?.copyWith(
             fontWeight: FontWeight.w600,
           ),
@@ -331,25 +331,25 @@ class ProfileView extends GetView<ProfileController> {
         SizedBox(height: 12.h),
         _buildActionTile(
           context,
-          title: 'View Stats',
+          title: '查看统计',
           icon: Icons.insights_outlined,
           routeName: '/profile/stats',
         ),
         _buildActionTile(
           context,
-          title: 'Rewards Center',
+          title: '奖励中心',
           icon: Icons.workspace_premium_outlined,
           routeName: '/profile/rewards',
         ),
         _buildActionTile(
           context,
-          title: 'Edit Profile',
+          title: '编辑资料',
           icon: Icons.edit_outlined,
           routeName: '/profile/edit',
         ),
         _buildActionTile(
           context,
-          title: 'Settings',
+          title: '设置',
           icon: Icons.settings_outlined,
           routeName: '/settings',
         ),
@@ -392,7 +392,7 @@ class ProfileController extends BaseController {
   final Rx<app_models.Stats?> stats = Rx<app_models.Stats?>(null);
   final RxList<app_models.Badge> badges = <app_models.Badge>[].obs;
 
-  final MockDataService _mockDataService = MockDataService();
+  final MockDataService _mockDataService = Get.find<MockDataService>();
 
   @override
   void onInit() {
@@ -401,7 +401,7 @@ class ProfileController extends BaseController {
   }
 
   Future<void> loadProfileData() async {
-    setLoading(message: 'Loading profile...');
+    setLoading(message: '加载个人资料中...');
     registerRetry(loadProfileData);
 
     try {
@@ -415,10 +415,10 @@ class ProfileController extends BaseController {
         badges.assignAll(badgesData);
         resetState();
       } else {
-        setEmpty(message: 'Profile data not available.');
+        setEmpty(message: '个人资料暂不可用。');
       }
     } catch (e) {
-      setError(message: 'Failed to load profile. Please try again.');
+      setError(message: '加载个人资料失败，请重试。');
     }
   }
 }

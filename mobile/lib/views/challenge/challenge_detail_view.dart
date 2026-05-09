@@ -5,7 +5,7 @@ import 'package:get/get.dart';
 import '../../controllers/base_controller.dart';
 import '../../models/app_models.dart';
 import '../../services/mock_data.dart';
-import '../../services/storage_service.dart';
+import '../../services/progress_service.dart';
 import '../../widgets/page_state_host.dart';
 import '../../widgets/shared/cta_bar.dart';
 
@@ -23,16 +23,19 @@ class ChallengeController extends BaseController {
   final Rx<ChallengeDetailState> detailState = ChallengeDetailState.overview.obs;
   final RxBool isSubmitting = false.obs;
 
-  static const String _storageCompletionTimes = 'challenge_completion_times';
-  static const String _storageRewardSettledTimes = 'challenge_reward_settled_times';
-
   final Rxn<DateTime> completionTimestamp = Rxn<DateTime>();
   final Rxn<DateTime> rewardSettlementTimestamp = Rxn<DateTime>();
   final RxBool isRewardSettled = false.obs;
   final RxBool isSettlingReward = false.obs;
 
   MockDataService get _mockData => Get.find<MockDataService>();
-  StorageService get _storage => Get.find<StorageService>();
+
+  ProgressService get _progress {
+    if (Get.isRegistered<ProgressService>()) {
+      return Get.find<ProgressService>();
+    }
+    return Get.put(ProgressService(), permanent: true);
+  }
 
   @override
   void onInit() {
@@ -41,12 +44,34 @@ class ChallengeController extends BaseController {
     if (challengeId.value.isNotEmpty) {
       loadChallenge();
     } else {
-      setError(message: 'Invalid challenge ID.');
+      setError(message: '无效的挑战ID。');
     }
   }
 
   Future<void> loadChallenge() async {
-    setLoading(message: 'Loading challenge...');
+    if (!_progress.isOnline.value) {
+      final cachedChallenges = _progress.getCachedChallenges();
+      final cachedItem = cachedChallenges.firstWhereOrNull(
+        (item) => item.id == challengeId.value,
+      );
+      if (cachedItem != null) {
+        final processed = _progress.applyChallengeProgress(cachedItem);
+        challenge.value = processed;
+        tasks.assignAll(processed.tasks);
+        earnedStars.value = processed.stars;
+        completionTimestamp.value = _progress.getChallengeCompletedAt(challengeId.value);
+        rewardSettlementTimestamp.value =
+            _progress.getChallengeRewardSettledAt(challengeId.value);
+        isRewardSettled.value = _progress.isChallengeRewardSettled(challengeId.value);
+        detailState.value = processed.isCompleted
+            ? ChallengeDetailState.completed
+            : ChallengeDetailState.overview;
+        setPartialData(message: '当前为离线模式，已加载本地挑战数据。');
+        return;
+      }
+    }
+
+    setLoading(message: '加载挑战中...');
     registerRetry(loadChallenge);
 
     try {
@@ -57,48 +82,26 @@ class ChallengeController extends BaseController {
       );
 
       if (found == null) {
-        setEmpty(message: 'Challenge not found.');
+        setEmpty(message: '未找到挑战。');
         return;
       }
 
-      challenge.value = found;
-      tasks.assignAll(found.tasks);
-
-      // Load persisted state
-      final starsData = _storage.read<Map<String, dynamic>>('challenge_stars');
-      if (starsData != null && starsData.containsKey(challengeId.value)) {
-        earnedStars.value = (starsData[challengeId.value] as num).toInt();
-      } else {
-        earnedStars.value = found.stars;
-      }
-
-      // Read persisted completion timestamp
-      final completionTimes = _storage.read<Map<String, dynamic>>(_storageCompletionTimes);
-      if (completionTimes != null && completionTimes.containsKey(challengeId.value)) {
-        final ts = DateTime.tryParse(completionTimes[challengeId.value] as String? ?? '');
-        if (ts != null) completionTimestamp.value = ts;
-      }
-
-      // Read persisted reward settlement timestamp
-      final settledTimes = _storage.read<Map<String, dynamic>>(_storageRewardSettledTimes);
-      if (settledTimes != null && settledTimes.containsKey(challengeId.value)) {
-        final ts = DateTime.tryParse(settledTimes[challengeId.value] as String? ?? '');
-        if (ts != null) {
-          rewardSettlementTimestamp.value = ts;
-          isRewardSettled.value = true;
-        }
-      }
-
-      // Determine state
-      if (found.isCompleted) {
-        detailState.value = ChallengeDetailState.completed;
-      } else {
-        detailState.value = ChallengeDetailState.overview;
-      }
+      await _progress.cacheChallenges(allChallenges);
+      final processedChallenge = _progress.applyChallengeProgress(found);
+      challenge.value = processedChallenge;
+      tasks.assignAll(processedChallenge.tasks);
+      earnedStars.value = processedChallenge.stars;
+      completionTimestamp.value = _progress.getChallengeCompletedAt(challengeId.value);
+      rewardSettlementTimestamp.value =
+          _progress.getChallengeRewardSettledAt(challengeId.value);
+      isRewardSettled.value = _progress.isChallengeRewardSettled(challengeId.value);
+      detailState.value = processedChallenge.isCompleted
+          ? ChallengeDetailState.completed
+          : ChallengeDetailState.overview;
 
       resetState();
     } catch (e) {
-      setError(message: 'Failed to load challenge. Please try again.');
+      setError(message: '加载挑战失败，请重试。');
     }
   }
 
@@ -138,35 +141,26 @@ class ChallengeController extends BaseController {
       earnedStars.value = stars;
       detailState.value = ChallengeDetailState.completed;
 
-      // Persist stars
-      final starsData = _storage.read<Map<String, dynamic>>('challenge_stars') ?? {};
-      starsData[challengeId.value] = stars;
-      await _storage.write('challenge_stars', starsData);
-
-      // Persist completion timestamp
       final now = DateTime.now();
       completionTimestamp.value = now;
-      final completionTimes = _storage.read<Map<String, dynamic>>(_storageCompletionTimes) ?? {};
-      completionTimes[challengeId.value] = now.toIso8601String();
-      await _storage.write(_storageCompletionTimes, completionTimes);
+      await _progress.saveChallengeCompletion(
+        challengeId: challengeId.value,
+        stars: stars,
+        rewardXp: challenge.value?.reward ?? 0,
+        completedAt: now,
+      );
 
-      // Persist completion status
-      final completedData = _storage.read<List<dynamic>>('completed_challenges') ?? [];
-      if (!completedData.contains(challengeId.value)) {
-        completedData.add(challengeId.value);
-        await _storage.write('completed_challenges', completedData);
-      }
-
+      final cs = Theme.of(Get.context!).colorScheme;
       Get.snackbar(
-        'Challenge Complete!',
-        'You earned $stars ${stars == 1 ? 'star' : 'stars'} and ${challenge.value?.reward ?? 0} XP!',
+        '挑战完成！',
+        '你获得了 $stars ${stars == 1 ? '颗星' : '颗星'} 和 ${challenge.value?.reward ?? 0} 经验值！',
         snackPosition: SnackPosition.BOTTOM,
         margin: const EdgeInsets.all(16),
-        backgroundColor: Colors.green[50],
-        colorText: Colors.green[800],
+        backgroundColor: cs.primaryContainer,
+        colorText: cs.onPrimaryContainer,
       );
     } catch (e) {
-      setError(message: 'Failed to submit challenge. Please try again.');
+      setError(message: '提交挑战失败，请重试。');
     } finally {
       isSubmitting.value = false;
     }
@@ -197,30 +191,28 @@ class ChallengeController extends BaseController {
       final now = DateTime.now();
       rewardSettlementTimestamp.value = now;
       isRewardSettled.value = true;
+      await _progress.markChallengeRewardSettled(challengeId.value);
 
-      final settledTimes = _storage.read<Map<String, dynamic>>(_storageRewardSettledTimes) ?? {};
-      settledTimes[challengeId.value] = now.toIso8601String();
-      await _storage.write(_storageRewardSettledTimes, settledTimes);
-
+      final cs = Theme.of(Get.context!).colorScheme;
       Get.snackbar(
-        'Reward Claimed!',
-        'Your reward for ${challenge.value?.title ?? 'this challenge'} has been settled.',
+        '奖励已领取！',
+        '${challenge.value?.title ?? '此挑战'} 的奖励已结算。',
         snackPosition: SnackPosition.BOTTOM,
         margin: const EdgeInsets.all(16),
-        backgroundColor: Colors.green[50],
-        colorText: Colors.green[800],
+        backgroundColor: cs.primaryContainer,
+        colorText: cs.onPrimaryContainer,
       );
     } catch (e) {
-      setError(message: 'Failed to settle reward. Please try again.');
+      setError(message: '结算奖励失败，请重试。');
     } finally {
       isSettlingReward.value = false;
     }
   }
 
   String getStarRuleDescription() {
-    return 'Complete all tasks to earn 3 stars.\n'
-        'Complete 60% or more to earn 2 stars.\n'
-        'Complete 30% or more to earn 1 star.';
+    return '完成所有任务可获得 3 颗星。\n'
+        '完成 60% 或更多可获得 2 颗星。\n'
+        '完成 30% 或更多可获得 1 颗星。';
   }
 }
 
@@ -240,7 +232,7 @@ class ChallengeDetailView extends GetView<ChallengeController> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Challenge', style: theme.textTheme.titleLarge),
+        title: Text('挑战', style: theme.textTheme.titleLarge),
         centerTitle: true,
         elevation: 0,
       ),
@@ -261,7 +253,7 @@ class ChallengeDetailView extends GetView<ChallengeController> {
   Widget _buildContent(BuildContext context) {
     final challenge = controller.challenge.value;
     if (challenge == null) {
-      return const Center(child: Text('Challenge not found.'));
+      return const Center(child: Text('未找到挑战。'));
     }
 
     return SingleChildScrollView(
@@ -304,7 +296,7 @@ class ChallengeDetailView extends GetView<ChallengeController> {
           Icon(
             Icons.emoji_events,
             size: 64.sp,
-            color: Colors.amber[600],
+            color: colorScheme.secondary,
           ),
           SizedBox(height: 16.h),
           Text(
@@ -326,18 +318,18 @@ class ChallengeDetailView extends GetView<ChallengeController> {
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              _buildDifficultyChip(context, 'Intermediate'),
+              _buildDifficultyChip(context, '中级'),
               SizedBox(width: 8.w),
-              Chip(
-                label: Text(
-                  '${challenge.reward} XP',
-                  style: theme.textTheme.labelMedium?.copyWith(
-                    color: Colors.amber[800],
-                    fontWeight: FontWeight.w600,
+                Chip(
+                  label: Text(
+                    '${challenge.reward} XP',
+                    style: theme.textTheme.labelMedium?.copyWith(
+                      color: colorScheme.secondary,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
-                ),
-                backgroundColor: Colors.amber[50],
-                side: BorderSide(color: Colors.amber[200]!),
+                  backgroundColor: colorScheme.secondaryContainer,
+                  side: BorderSide(color: colorScheme.secondary),
               ),
             ],
           ),
@@ -376,14 +368,14 @@ class ChallengeDetailView extends GetView<ChallengeController> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Tasks',
+            '任务',
             style: theme.textTheme.titleLarge?.copyWith(
               fontWeight: FontWeight.bold,
             ),
           ),
           SizedBox(height: 4.h),
           Text(
-            'Complete these tasks to finish the challenge',
+            '完成这些任务以完成挑战',
             style: theme.textTheme.bodyMedium?.copyWith(
               color: colorScheme.onSurfaceVariant,
             ),
@@ -398,7 +390,7 @@ class ChallengeDetailView extends GetView<ChallengeController> {
               ),
               child: Center(
                 child: Text(
-                  'No tasks defined for this challenge.',
+                  '该挑战暂无任务。',
                   style: theme.textTheme.bodyMedium?.copyWith(
                     color: colorScheme.onSurfaceVariant,
                   ),
@@ -433,29 +425,29 @@ class ChallengeDetailView extends GetView<ChallengeController> {
     return Container(
       margin: EdgeInsets.only(bottom: 8.h),
       decoration: BoxDecoration(
+      color: task.isCompleted
+          ? colorScheme.primaryContainer.withValues(alpha: 0.3)
+          : colorScheme.surface,
+      borderRadius: BorderRadius.circular(12.r),
+      border: Border.all(
         color: task.isCompleted
-            ? Colors.green[50]
-            : colorScheme.surface,
-        borderRadius: BorderRadius.circular(12.r),
-        border: Border.all(
-          color: task.isCompleted
-              ? Colors.green[200]!
-              : colorScheme.outline.withValues(alpha: 0.1),
-        ),
+            ? colorScheme.primary.withValues(alpha: 0.3)
+            : colorScheme.outline.withValues(alpha: 0.1),
+      ),
       ),
       child: ListTile(
         leading: Container(
           width: 32.w,
           height: 32.w,
           decoration: BoxDecoration(
-            color: task.isCompleted
-                ? Colors.green[100]
-                : colorScheme.primaryContainer.withValues(alpha: 0.3),
+          color: task.isCompleted
+              ? colorScheme.primaryContainer
+              : colorScheme.primaryContainer.withValues(alpha: 0.3),
             shape: BoxShape.circle,
           ),
           child: Center(
             child: task.isCompleted
-                ? Icon(Icons.check, size: 18.sp, color: Colors.green[700])
+                ? Icon(Icons.check, size: 18.sp, color: colorScheme.primary)
                 : Text(
                     '${index + 1}',
                     style: theme.textTheme.labelMedium?.copyWith(
@@ -480,7 +472,7 @@ class ChallengeDetailView extends GetView<ChallengeController> {
                 onChanged: (_) => controller.toggleTask(index),
               )
             : task.isCompleted
-                ? Icon(Icons.check_circle, color: Colors.green[600], size: 24.sp)
+                ? Icon(Icons.check_circle, color: colorScheme.primary, size: 24.sp)
                 : Icon(Icons.circle_outlined, color: colorScheme.outline, size: 24.sp),
         onTap: isInteractive ? () => controller.toggleTask(index) : null,
       ),
@@ -502,10 +494,10 @@ class ChallengeDetailView extends GetView<ChallengeController> {
         children: [
           Row(
             children: [
-              Icon(Icons.stars, size: 20.sp, color: Colors.amber[600]),
+              Icon(Icons.stars, size: 20.sp, color: colorScheme.secondary),
               SizedBox(width: 8.w),
               Text(
-                'Star Rules',
+                '星级规则',
                 style: theme.textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
@@ -513,9 +505,9 @@ class ChallengeDetailView extends GetView<ChallengeController> {
             ],
           ),
           SizedBox(height: 12.h),
-          _buildStarRuleItem(context, stars: 3, label: 'Complete all tasks'),
-          _buildStarRuleItem(context, stars: 2, label: 'Complete 60% or more'),
-          _buildStarRuleItem(context, stars: 1, label: 'Complete 30% or more'),
+          _buildStarRuleItem(context, stars: 3, label: '完成所有任务'),
+          _buildStarRuleItem(context, stars: 2, label: '完成 60% 或更多'),
+          _buildStarRuleItem(context, stars: 1, label: '完成 30% 或更多'),
         ],
       ),
     );
@@ -527,6 +519,7 @@ class ChallengeDetailView extends GetView<ChallengeController> {
     required String label,
   }) {
     final theme = Theme.of(context);
+    final cs = theme.colorScheme;
     return Padding(
       padding: EdgeInsets.only(bottom: 8.h),
       child: Row(
@@ -537,7 +530,7 @@ class ChallengeDetailView extends GetView<ChallengeController> {
               return Icon(
                 i < stars ? Icons.star : Icons.star_border,
                 size: 16.sp,
-                color: i < stars ? Colors.amber[600] : Colors.grey[300],
+                color: i < stars ? cs.secondary : cs.outline.withValues(alpha: 0.3),
               );
             }),
           ),
@@ -553,26 +546,27 @@ class ChallengeDetailView extends GetView<ChallengeController> {
 
   Widget _buildRewardPreview(BuildContext context, Challenge challenge) {
     final theme = Theme.of(context);
+    final cs = theme.colorScheme;
 
     return Container(
       padding: EdgeInsets.all(16.w),
       decoration: BoxDecoration(
-        color: Colors.amber[50],
+        color: cs.secondaryContainer.withValues(alpha: 0.3),
         borderRadius: BorderRadius.circular(12.r),
-        border: Border.all(color: Colors.amber[200]!),
+        border: Border.all(color: cs.secondary.withValues(alpha: 0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(Icons.card_giftcard, size: 20.sp, color: Colors.amber[700]),
+              Icon(Icons.card_giftcard, size: 20.sp, color: cs.secondary),
               SizedBox(width: 8.w),
               Text(
-                'Reward Preview',
+                '奖励预览',
                 style: theme.textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.bold,
-                  color: Colors.amber[900],
+                  color: cs.onSecondaryContainer,
                 ),
               ),
             ],
@@ -581,14 +575,14 @@ class ChallengeDetailView extends GetView<ChallengeController> {
           _buildRewardItem(
             context,
             icon: Icons.stars,
-            label: 'Experience Points',
+            label: '经验值',
             value: '${challenge.reward} XP',
           ),
           _buildRewardItem(
             context,
             icon: Icons.emoji_events,
-            label: 'Challenge Completion',
-            value: 'Badge + Stars',
+            label: '挑战完成',
+            value: '徽章 + 星级',
           ),
         ],
       ),
@@ -602,11 +596,12 @@ class ChallengeDetailView extends GetView<ChallengeController> {
     required String value,
   }) {
     final theme = Theme.of(context);
+    final cs = theme.colorScheme;
     return Padding(
       padding: EdgeInsets.only(bottom: 8.h),
       child: Row(
         children: [
-          Icon(icon, size: 20.sp, color: Colors.amber[600]),
+          Icon(icon, size: 20.sp, color: cs.secondary),
           SizedBox(width: 12.w),
           Expanded(
             child: Text(
@@ -618,7 +613,7 @@ class ChallengeDetailView extends GetView<ChallengeController> {
             value,
             style: theme.textTheme.bodyMedium?.copyWith(
               fontWeight: FontWeight.w600,
-              color: Colors.amber[800],
+              color: cs.onSecondaryContainer,
             ),
           ),
         ],
@@ -641,23 +636,23 @@ class ChallengeDetailView extends GetView<ChallengeController> {
           Container(
             padding: EdgeInsets.all(24.w),
             decoration: BoxDecoration(
-              color: Colors.green[50],
+              color: theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
               borderRadius: BorderRadius.circular(12.r),
-              border: Border.all(color: Colors.green[200]!),
+              border: Border.all(color: theme.colorScheme.primary.withValues(alpha: 0.3)),
             ),
             child: Column(
               children: [
                 Icon(
                   Icons.celebration,
                   size: 48.sp,
-                  color: Colors.green[600],
+                  color: theme.colorScheme.primary,
                 ),
                 SizedBox(height: 12.h),
                 Text(
-                  'Challenge Completed!',
+                  '挑战完成！',
                   style: theme.textTheme.headlineSmall?.copyWith(
                     fontWeight: FontWeight.bold,
-                    color: Colors.green[800],
+                    color: theme.colorScheme.onPrimaryContainer,
                   ),
                 ),
                 SizedBox(height: 16.h),
@@ -667,15 +662,15 @@ class ChallengeDetailView extends GetView<ChallengeController> {
                     return Icon(
                       i < stars ? Icons.star : Icons.star_border,
                       size: 32.sp,
-                      color: i < stars ? Colors.amber[600] : Colors.grey[300],
+                      color: i < stars ? theme.colorScheme.secondary : theme.colorScheme.outline.withValues(alpha: 0.3),
                     );
                   }),
                 ),
                 SizedBox(height: 8.h),
                 Text(
-                  '$stars ${stars == 1 ? 'Star' : 'Stars'} Earned',
+                  '获得 $stars ${stars == 1 ? '颗星' : '颗星'}',
                   style: theme.textTheme.titleMedium?.copyWith(
-                    color: Colors.amber[800],
+                    color: theme.colorScheme.secondary,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -683,7 +678,7 @@ class ChallengeDetailView extends GetView<ChallengeController> {
                 Text(
                   '+${challenge?.reward ?? 0} XP',
                   style: theme.textTheme.titleLarge?.copyWith(
-                    color: Colors.green[700],
+                    color: theme.colorScheme.primary,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -692,12 +687,12 @@ class ChallengeDetailView extends GetView<ChallengeController> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.check_circle_outline, size: 16.sp, color: Colors.green[600]),
+                      Icon(Icons.check_circle_outline, size: 16.sp, color: theme.colorScheme.primary),
                       SizedBox(width: 6.w),
                       Text(
-                        'Completed: ${_formatTimestamp(completionTime)}',
+                        '完成时间：${_formatTimestamp(completionTime)}',
                         style: theme.textTheme.bodySmall?.copyWith(
-                          color: Colors.green[700],
+                          color: theme.colorScheme.onPrimaryContainer,
                         ),
                       ),
                     ],
@@ -708,12 +703,12 @@ class ChallengeDetailView extends GetView<ChallengeController> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.card_giftcard, size: 16.sp, color: Colors.green[600]),
+                      Icon(Icons.card_giftcard, size: 16.sp, color: theme.colorScheme.primary),
                       SizedBox(width: 6.w),
                       Text(
-                        'Reward settled: ${_formatTimestamp(settlementTime)}',
+                        '奖励已结算：${_formatTimestamp(settlementTime)}',
                         style: theme.textTheme.bodySmall?.copyWith(
-                          color: Colors.green[700],
+                          color: theme.colorScheme.onPrimaryContainer,
                         ),
                       ),
                     ],
@@ -747,21 +742,21 @@ class ChallengeDetailView extends GetView<ChallengeController> {
         ),
         child: Row(
           children: [
-            Icon(Icons.emoji_events, size: 24.sp, color: Colors.amber[600]),
+            Icon(Icons.emoji_events, size: 24.sp, color: colorScheme.secondary),
             SizedBox(width: 12.w),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'View Achievements',
+                    '查看成就',
                     style: theme.textTheme.titleSmall?.copyWith(
                       fontWeight: FontWeight.w600,
                     ),
                   ),
                   SizedBox(height: 2.h),
                   Text(
-                    'See all your badges and completed challenges',
+                    '查看所有徽章和已完成的挑战',
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: colorScheme.onSurfaceVariant,
                     ),
@@ -779,9 +774,9 @@ class ChallengeDetailView extends GetView<ChallengeController> {
   String _formatTimestamp(DateTime dt) {
     final now = DateTime.now();
     final diff = now.difference(dt);
-    if (diff.inMinutes < 1) return 'Just now';
-    if (diff.inHours < 1) return '${diff.inMinutes}m ago';
-    if (diff.inDays < 1) return '${diff.inHours}h ago';
+    if (diff.inMinutes < 1) return '刚刚';
+    if (diff.inHours < 1) return '${diff.inMinutes}分钟前';
+    if (diff.inDays < 1) return '${diff.inHours}小时前';
     return '${dt.month}/${dt.day}/${dt.year}';
   }
 
@@ -792,14 +787,14 @@ class ChallengeDetailView extends GetView<ChallengeController> {
       switch (state) {
         case ChallengeDetailState.overview:
           return CTABar(
-            primaryLabel: 'Start Challenge',
+            primaryLabel: '开始挑战',
             onPrimary: controller.startChallenge,
           );
         case ChallengeDetailState.inProgress:
           return CTABar(
             primaryLabel: controller.isSubmitting.value
-                ? 'Submitting...'
-                : 'Complete Challenge',
+                ? '提交中...'
+                : '完成挑战',
             onPrimary: controller.isSubmitting.value
                 ? () {}
                 : controller.completeChallenge,
@@ -807,18 +802,18 @@ class ChallengeDetailView extends GetView<ChallengeController> {
         case ChallengeDetailState.completed:
           if (controller.isRewardSettled.value) {
             return CTABar(
-              primaryLabel: 'Back to Map',
+              primaryLabel: '返回地图',
               onPrimary: () => Get.back(),
             );
           }
           return CTABar(
             primaryLabel: controller.isSettlingReward.value
-                ? 'Claiming...'
-                : 'Claim Reward',
+                ? '领取中...'
+                : '领取奖励',
             onPrimary: controller.isSettlingReward.value
                 ? () {}
                 : controller.settleReward,
-            secondaryLabel: 'Back to Map',
+            secondaryLabel: '返回地图',
             onSecondary: () => Get.back(),
           );
       }

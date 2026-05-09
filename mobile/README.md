@@ -1,6 +1,6 @@
-# Learning App Mobile
+# CodeQuest Mobile
 
-基于 Flutter + GetX 的学习应用移动端。
+基于 Flutter + GetX 的 CodeQuest 移动端。
 
 ## 项目结构
 

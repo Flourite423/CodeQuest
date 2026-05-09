@@ -1,5 +1,5 @@
-name: learning_app_mobile
-description: A new Flutter project for the Learning App mobile client.
+name: codequest
+description: CodeQuest mobile client - a Flutter-based learning application.
 publish_to: 'none'
 version: 0.1.0+1
 
@@ -11,9 +11,14 @@ dependencies:
     sdk: flutter
   get: ^4.6.6
   dio: ^5.4.0
+  connectivity_plus: ^6.1.5
   get_storage: ^2.1.1
   flutter_screenutil: ^5.9.0
+  image_picker: ^1.0.7
   logger: ^2.0.2
+  firebase_core: ^2.27.0
+  firebase_messaging: ^14.7.19
+  flutter_local_notifications: ^17.2.1
 
 dev_dependencies:
   flutter_test:

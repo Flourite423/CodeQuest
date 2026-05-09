@@ -18,12 +18,12 @@ class SocialView extends GetView<SocialController> {
       length: 3,
       child: Scaffold(
         appBar: AppBar(
-          title: const Text('Social Center'),
+          title: const Text('社交中心'),
           bottom: const TabBar(
             tabs: [
-              Tab(text: 'Activity'),
-              Tab(text: 'Friends'),
-              Tab(text: 'Leaderboard'),
+              Tab(text: '动态'),
+              Tab(text: '好友'),
+              Tab(text: '排行榜'),
             ],
           ),
         ),
@@ -143,11 +143,11 @@ class _ActivityTab extends StatelessWidget {
     final now = DateTime.now();
     final diff = now.difference(timestamp);
 
-    if (diff.inMinutes < 1) return 'Just now';
-    if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
-    if (diff.inHours < 24) return '${diff.inHours}h ago';
-    if (diff.inDays < 7) return '${diff.inDays}d ago';
-    return '${diff.inDays ~/ 7}w ago';
+    if (diff.inMinutes < 1) return '刚刚';
+    if (diff.inMinutes < 60) return '${diff.inMinutes}分钟前';
+    if (diff.inHours < 24) return '${diff.inHours}小时前';
+    if (diff.inDays < 7) return '${diff.inDays}天前';
+    return '${diff.inDays ~/ 7}周前';
   }
 
   @override
@@ -158,8 +158,8 @@ class _ActivityTab extends StatelessWidget {
       if (items.isEmpty) {
         return const EmptyState(
           icon: Icons.notifications_none_outlined,
-          title: 'No Activity Yet',
-          description: 'Your friends\' activities will appear here.',
+          title: '暂无动态',
+          description: '好友的动态将显示在这里。',
         );
       }
 
@@ -211,44 +211,60 @@ class _FriendsTab extends StatelessWidget {
       final pendingFriends = allFriends.where((f) => f.status == 'pending').toList();
       final acceptedFriends = allFriends.where((f) => f.status == 'accepted').toList();
 
-      if (allFriends.isEmpty) {
-        return const EmptyState(
-          icon: Icons.people_outline,
-          title: 'No Friends Yet',
-          description: 'Connect with other learners to see them here.',
-        );
-      }
-
       return ListView(
         padding: EdgeInsets.all(16.w),
         children: [
-          // Pending requests section
-          if (pendingFriends.isNotEmpty) ...[
-            Text(
-              'Friend Requests (${pendingFriends.length})',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
+          // Add friend button
+          SizedBox(
+            width: double.infinity,
+            height: 48.h,
+            child: FilledButton.icon(
+              onPressed: () => Get.toNamed('/add-friend'),
+              icon: const Icon(Icons.person_add),
+              label: const Text('添加好友'),
             ),
-            SizedBox(height: 12.h),
-            ...pendingFriends.map((friend) => _FriendRequestCard(
-                  friend: friend,
-                  onAccept: () => controller.acceptFriendRequest(friend.id),
-                  onDecline: () => controller.declineFriendRequest(friend.id),
-                )),
-            SizedBox(height: 24.h),
+          ),
+          SizedBox(height: 16.h),
+
+          if (allFriends.isEmpty) ...[
+            EmptyState(
+              icon: Icons.people_outline,
+              title: '暂无好友',
+              description: '与其他学习者建立联系，他们将显示在这里。',
+              actionLabel: '添加好友',
+              onAction: () => Get.toNamed('/add-friend'),
+            ),
           ],
 
-          // Accepted friends section
-          if (acceptedFriends.isNotEmpty) ...[
-            Text(
-              'Friends',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-            ),
-            SizedBox(height: 12.h),
-            ...acceptedFriends.map((friend) => _FriendCard(friend: friend)),
+          if (allFriends.isNotEmpty) ...[
+            // Pending requests section
+            if (pendingFriends.isNotEmpty) ...[
+              Text(
+                '好友请求 (${pendingFriends.length})',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+              ),
+              SizedBox(height: 12.h),
+              ...pendingFriends.map((friend) => _FriendRequestCard(
+                    friend: friend,
+                    onAccept: () => controller.acceptFriendRequest(friend.id),
+                    onDecline: () => controller.declineFriendRequest(friend.id),
+                  )),
+              SizedBox(height: 24.h),
+            ],
+
+            // Accepted friends section
+            if (acceptedFriends.isNotEmpty) ...[
+              Text(
+                '好友',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+              ),
+              SizedBox(height: 12.h),
+              ...acceptedFriends.map((friend) => _FriendCard(friend: friend)),
+            ],
           ],
         ],
       );
@@ -311,7 +327,7 @@ class _FriendRequestCard extends StatelessWidget {
                       ),
                       if (friend.level != null)
                         Text(
-                          'Level ${friend.level}',
+                          '等级 ${friend.level}',
                           style: theme.textTheme.bodyMedium?.copyWith(
                             color: colorScheme.onSurfaceVariant,
                           ),
@@ -332,7 +348,7 @@ class _FriendRequestCard extends StatelessWidget {
                     padding: EdgeInsets.symmetric(horizontal: 12.w),
                     minimumSize: Size(0, 36.h),
                   ),
-                  child: const Text('Decline'),
+                  child: const Text('拒绝'),
                 ),
                 FilledButton(
                   onPressed: onAccept,
@@ -340,7 +356,7 @@ class _FriendRequestCard extends StatelessWidget {
                     padding: EdgeInsets.symmetric(horizontal: 12.w),
                     minimumSize: Size(0, 36.h),
                   ),
-                  child: const Text('Accept'),
+                  child: const Text('接受'),
                 ),
               ],
             ),
@@ -373,7 +389,7 @@ class _FriendCard extends StatelessWidget {
             : null,
       ),
       title: friend.nickname,
-      subtitle: friend.level != null ? 'Level ${friend.level}' : null,
+      subtitle: friend.level != null ? '等级 ${friend.level}' : null,
       trailing: IconButton(
         icon: const Icon(Icons.open_in_new),
         onPressed: () => Get.toNamed('/friends'),
@@ -397,8 +413,8 @@ class _LeaderboardTab extends StatelessWidget {
       if (entries.isEmpty) {
         return const EmptyState(
           icon: Icons.emoji_events_outlined,
-          title: 'No Rankings Yet',
-          description: 'Leaderboard will be available once learners start competing.',
+          title: '暂无排名',
+          description: '学习者开始竞争后，排行榜将可用。',
         );
       }
 

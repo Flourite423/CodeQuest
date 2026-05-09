@@ -6,6 +6,7 @@ import '../../controllers/base_controller.dart';
 import '../../models/models.dart' as app_models;
 import 'home_view.dart';
 import '../../services/mock_data.dart';
+import '../../services/progress_service.dart';
 import '../../widgets/page_state_host.dart';
 import '../../widgets/shared/list_card.dart';
 
@@ -433,7 +434,12 @@ class HomeDashboardView extends GetView<HomeDashboardController> {
         borderRadius: BorderRadius.circular(12.r),
       ),
       child: InkWell(
-        onTap: () => Get.toNamed('/chapter/${nextChapter.id}'),
+                        onTap: () => Get.toNamed(
+                          '/chapter/${nextChapter.id}',
+                          parameters: <String, String>{
+                            'courseId': continueCourse.id,
+                          },
+                        ),
         borderRadius: BorderRadius.circular(12.r),
         child: Padding(
           padding: EdgeInsets.all(16.w),
@@ -867,7 +873,14 @@ class _StatItem {
 ///
 /// 管理仪表板数据加载和状态，支持部分数据失败。
 class HomeDashboardController extends BaseController {
-  final MockDataService _mockData = MockDataService();
+  MockDataService get _mockData => Get.find<MockDataService>();
+
+  ProgressService get _progress {
+    if (Get.isRegistered<ProgressService>()) {
+      return Get.find<ProgressService>();
+    }
+    return Get.put(ProgressService(), permanent: true);
+  }
 
   // 响应式数据
   final Rxn<app_models.User> user = Rxn<app_models.User>();
@@ -896,7 +909,12 @@ class HomeDashboardController extends BaseController {
   ///
   /// 各模块独立加载，部分失败不影响其他模块。
   Future<void> loadDashboardData() async {
-    setLoading(message: '加载中...');
+    if (!_progress.isOnline.value) {
+      _loadOfflineDashboardData();
+      return;
+    }
+
+    setLoading(message: '加载仪表板中...');
 
     // 重置加载状态
     userLoaded.value = false;
@@ -932,7 +950,7 @@ class HomeDashboardController extends BaseController {
         badgesLoaded.value;
 
     if (!hasAnyData) {
-      setError(message: '无法加载仪表板数据，请检查网络连接。');
+      setError(message: '加载仪表板失败，请重试。');
     } else if (!hasAllData) {
       setPartialData(message: '部分数据加载失败，显示可用内容。');
     } else {
@@ -943,7 +961,22 @@ class HomeDashboardController extends BaseController {
   Future<void> _loadUser() async {
     try {
       final result = await _mockData.fetchUser();
-      user.value = result;
+      if (result != null) {
+        await _progress.cacheUser(result);
+        final snapshot = _progress.getLearningStatsSnapshot();
+        user.value = app_models.User(
+          id: result.id,
+          email: result.email,
+          nickname: result.nickname,
+          avatar: result.avatar,
+          level: result.level,
+          xp: result.xp + snapshot.earnedXp,
+          streak: snapshot.streakDays > 0 ? snapshot.streakDays : result.streak,
+          bio: result.bio,
+          dailyGoal: result.dailyGoal,
+          themeMode: result.themeMode,
+        );
+      }
       userLoaded.value = true;
     } catch (e) {
       userLoaded.value = false;
@@ -953,7 +986,25 @@ class HomeDashboardController extends BaseController {
   Future<void> _loadStats() async {
     try {
       final result = await _mockData.fetchStats();
-      stats.value = result;
+      if (result != null) {
+        final snapshot = _progress.getLearningStatsSnapshot();
+        final merged = app_models.Stats(
+          studyTime: snapshot.studyMinutes > 0 ? snapshot.studyMinutes : result.studyTime,
+          coursesCompleted: snapshot.completedCourses > 0
+              ? snapshot.completedCourses
+              : result.coursesCompleted,
+          challengesWon: snapshot.completedChallenges > 0
+              ? snapshot.completedChallenges
+              : result.challengesWon,
+          currentStreak: snapshot.streakDays > 0
+              ? snapshot.streakDays
+              : result.currentStreak,
+          totalXp: result.totalXp + snapshot.earnedXp,
+          mastery: result.mastery,
+        );
+        stats.value = merged;
+        await _progress.cacheStats(merged);
+      }
       statsLoaded.value = true;
     } catch (e) {
       statsLoaded.value = false;
@@ -963,7 +1014,11 @@ class HomeDashboardController extends BaseController {
   Future<void> _loadDailyChallenge() async {
     try {
       final result = await _mockData.fetchDailyChallenge();
-      dailyChallenge.value = result;
+      if (result != null) {
+        final merged = _progress.applyDailyChallengeProgress(result);
+        dailyChallenge.value = merged;
+        await _progress.cacheDailyChallenge(merged);
+      }
       dailyLoaded.value = true;
     } catch (e) {
       dailyLoaded.value = false;
@@ -972,9 +1027,27 @@ class HomeDashboardController extends BaseController {
 
   Future<void> _loadContinueCourse() async {
     try {
+      final cachedDetail = _progress.getCachedCourse('course-1');
+      if (cachedDetail != null) {
+        final processed = _progress.applyCourseProgress(cachedDetail);
+        continueCourse.value = processed;
+        courseLoaded.value = true;
+        return;
+      }
+
+      final detail = await _mockData.fetchCourse();
+      if (detail != null) {
+        final processed = _progress.applyCourseProgress(detail);
+        await _progress.cacheCourse(processed);
+        continueCourse.value = processed;
+        courseLoaded.value = true;
+        return;
+      }
+
       final courses = await _mockData.fetchCourses();
-      // 找到第一个有未完成章节的课程
-      final course = courses.firstWhereOrNull(
+      final withProgress = _progress.applyCourseProgressList(courses);
+      await _progress.cacheCourses(withProgress);
+      final course = withProgress.firstWhereOrNull(
         (c) => c.chapters.any((ch) => !ch.isCompleted && !ch.isLocked),
       );
       continueCourse.value = course;
@@ -1001,6 +1074,36 @@ class HomeDashboardController extends BaseController {
       badgesLoaded.value = true;
     } catch (e) {
       badgesLoaded.value = false;
+    }
+  }
+
+  void _loadOfflineDashboardData() {
+    user.value = _progress.getCachedUser();
+    stats.value = _progress.getCachedStats();
+    final cachedDaily = _progress.getCachedDailyChallenge();
+    if (cachedDaily != null) {
+      dailyChallenge.value = _progress.applyDailyChallengeProgress(cachedDaily);
+    }
+    final cachedCourseDetail = _progress.getCachedCourse('course-1');
+    if (cachedCourseDetail != null) {
+      continueCourse.value = _progress.applyCourseProgress(cachedCourseDetail);
+    } else {
+      final cachedCourses = _progress.applyCourseProgressList(_progress.getCachedCourses());
+      continueCourse.value = cachedCourses.firstWhereOrNull(
+        (c) => c.chapters.any((ch) => !ch.isCompleted && !ch.isLocked),
+      );
+    }
+    userLoaded.value = user.value != null;
+    statsLoaded.value = stats.value != null;
+    dailyLoaded.value = dailyChallenge.value != null;
+    courseLoaded.value = continueCourse.value != null;
+    activitiesLoaded.value = activities.isNotEmpty;
+    badgesLoaded.value = badges.isNotEmpty;
+
+    if (userLoaded.value || statsLoaded.value || dailyLoaded.value || courseLoaded.value) {
+      setPartialData(message: '当前为离线模式，已显示本地学习统计与缓存内容。');
+    } else {
+      setOffline(message: '当前没有可用网络，且本地暂无可展示的仪表板缓存。');
     }
   }
 }

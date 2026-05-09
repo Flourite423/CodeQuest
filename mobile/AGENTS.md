@@ -55,7 +55,7 @@ mobile/
 
 | Symbol | Type | Location | Role |
 |--------|------|----------|------|
-| LearningApp | StatelessWidget | main.dart | 应用根组件 |
+| CodeQuestApp | StatelessWidget | main.dart | 应用根组件 |
 | AppBinding | Bindings | bindings/app_binding.dart | 全局依赖注入 |
 | AppPages | Class | routes/app_pages.dart | 路由配置 |
 | AppTheme | Class | themes/app_theme.dart | 主题配置 |

@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 
@@ -13,10 +14,12 @@ class StorageService extends GetxService {
     try {
       _box = GetStorage();
       _initialized = true;
+      debugPrint('StorageService: GetStorage initialized successfully');
     } catch (e) {
       // GetStorage initialization failed (e.g., headless environment)
       // Will use fallback behavior
       _initialized = false;
+      debugPrint('StorageService: GetStorage initialization failed: $e');
     }
   }
 

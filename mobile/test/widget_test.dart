@@ -1,14 +1,28 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-
-import 'package:learning_app_mobile/main.dart';
+import 'package:get/get.dart';
+import 'package:codequest/main.dart';
+import 'package:codequest/services/mock_data.dart';
 
 void main() {
+  setUp(() {
+    Get.reset();
+    final mockData = MockDataService();
+    mockData.enableDelay = false;
+    Get.put<MockDataService>(mockData);
+  });
+
+  tearDown(() {
+    Get.reset();
+  });
+
   testWidgets('App renders without errors', (WidgetTester tester) async {
     // Build our app and trigger a frame.
-    await tester.pumpWidget(const LearningApp());
+    await tester.pumpWidget(const CodeQuestApp());
 
     // Verify that the app renders.
-    expect(find.byType(LearningApp), findsOneWidget);
+    expect(find.byType(CodeQuestApp), findsOneWidget);
+    
+    // Wait for splash screen navigation to complete
+    await tester.pump(const Duration(seconds: 3));
   });
 }

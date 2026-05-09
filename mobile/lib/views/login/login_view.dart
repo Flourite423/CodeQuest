@@ -39,7 +39,7 @@ class LoginView extends GetView<LoginController> {
           ),
           SizedBox(height: 24.h),
           Text(
-            'Welcome Back',
+            '欢迎回来',
             style: theme.textTheme.headlineLarge?.copyWith(
               fontWeight: FontWeight.bold,
             ),
@@ -47,7 +47,7 @@ class LoginView extends GetView<LoginController> {
           ),
           SizedBox(height: 8.h),
           Text(
-            'Sign in to continue learning',
+            '登录以继续学习',
             style: theme.textTheme.bodyLarge?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
             ),
@@ -59,7 +59,7 @@ class LoginView extends GetView<LoginController> {
           Obx(() => TextField(
             controller: controller.emailController,
             decoration: InputDecoration(
-              labelText: 'Email',
+              labelText: '邮箱',
               prefixIcon: const Icon(Icons.email_outlined),
               errorText: controller.emailError.value.isEmpty
                   ? null
@@ -78,7 +78,7 @@ class LoginView extends GetView<LoginController> {
           Obx(() => TextField(
             controller: controller.passwordController,
             decoration: InputDecoration(
-              labelText: 'Password',
+              labelText: '密码',
               prefixIcon: const Icon(Icons.lock_outline),
               suffixIcon: IconButton(
                 icon: Icon(
@@ -118,7 +118,7 @@ class LoginView extends GetView<LoginController> {
                       ),
                     )
                   : const Text(
-                      'Sign In',
+                      '登录',
                       style: TextStyle(fontSize: 16),
                     ),
             ),
@@ -130,14 +130,14 @@ class LoginView extends GetView<LoginController> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Text(
-                "Don't have an account? ",
+                '还没有账号？',
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
               ),
               TextButton(
                 onPressed: () => Get.toNamed('/register'),
-                child: const Text('Sign Up'),
+                child: const Text('注册'),
               ),
             ],
           ),
@@ -176,19 +176,19 @@ class LoginController extends BaseController {
 
     final email = emailController.text.trim();
     if (email.isEmpty) {
-      emailError.value = 'Email is required';
+      emailError.value = '请输入邮箱';
       isValid = false;
     } else if (!_isValidEmail(email)) {
-      emailError.value = 'Please enter a valid email';
+      emailError.value = '请输入有效的邮箱地址';
       isValid = false;
     }
 
     final password = passwordController.text;
     if (password.isEmpty) {
-      passwordError.value = 'Password is required';
+      passwordError.value = '请输入密码';
       isValid = false;
     } else if (password.length < 6) {
-      passwordError.value = 'Password must be at least 6 characters';
+      passwordError.value = '密码至少需要6个字符';
       isValid = false;
     }
 
@@ -218,24 +218,24 @@ class LoginController extends BaseController {
           await _storage.write(StorageService.authTokenKey, token);
           Get.offAllNamed('/home');
         } else {
-          setError(message: 'Invalid response from server');
+          setError(message: '服务器响应无效');
         }
       }
     } on dio.DioException catch (e) {
       if (e.response?.statusCode == 401) {
-        setError(message: 'Invalid email or password');
+        setError(message: '邮箱或密码错误');
       } else if (e.response?.statusCode == 403) {
-        setError(message: 'Account is disabled. Please contact support.');
+        setError(message: '账号已被禁用，请联系客服');
       } else if (e.type == dio.DioExceptionType.connectionTimeout ||
           e.type == dio.DioExceptionType.receiveTimeout) {
-        setError(message: 'Connection timed out. Please try again.');
+        setError(message: '连接超时，请重试');
       } else if (e.type == dio.DioExceptionType.connectionError) {
-        setError(message: 'No internet connection. Please check your network.');
+        setError(message: '无网络连接，请检查网络设置');
       } else {
-        setError(message: 'Login failed. Please try again later.');
+        setError(message: '登录失败，请稍后重试');
       }
     } catch (e) {
-      setError(message: 'An unexpected error occurred. Please try again.');
+      setError(message: '发生未知错误，请重试');
     } finally {
       isLoading.value = false;
     }

@@ -21,7 +21,7 @@ class OnboardingView extends GetView<OnboardingController> {
                 child: Obx(() => controller.currentPage.value < controller.pages.length - 1
                     ? TextButton(
                         onPressed: controller.skip,
-                        child: const Text('Skip'),
+                        child: const Text('跳过'),
                       )
                     : const SizedBox.shrink()),
               ),
@@ -76,8 +76,8 @@ class OnboardingView extends GetView<OnboardingController> {
                       onPressed: controller.nextPage,
                       child: Text(
                         controller.currentPage.value == controller.pages.length - 1
-                            ? 'Get Started'
-                            : 'Next',
+                            ? '开始使用'
+                            : '下一步',
                         style: const TextStyle(fontSize: 16),
                       ),
                     ),
@@ -101,33 +101,37 @@ class _OnboardingPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return Padding(
-      padding: EdgeInsets.symmetric(horizontal: 32.w),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            page.icon,
-            size: 120.sp,
-            color: theme.primaryColor,
-          ),
-          SizedBox(height: 40.h),
-          Text(
-            page.title,
-            style: theme.textTheme.headlineMedium?.copyWith(
-              fontWeight: FontWeight.bold,
+    return SingleChildScrollView(
+      child: Padding(
+        padding: EdgeInsets.symmetric(horizontal: 32.w, vertical: 24.h),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            SizedBox(height: 40.h),
+            Icon(
+              page.icon,
+              size: 100.sp,
+              color: theme.primaryColor,
             ),
-            textAlign: TextAlign.center,
-          ),
-          SizedBox(height: 16.h),
-          Text(
-            page.description,
-            style: theme.textTheme.bodyLarge?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
+            SizedBox(height: 32.h),
+            Text(
+              page.title,
+              style: theme.textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+              textAlign: TextAlign.center,
             ),
-            textAlign: TextAlign.center,
-          ),
-        ],
+            SizedBox(height: 16.h),
+            Text(
+              page.description,
+              style: theme.textTheme.bodyLarge?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            SizedBox(height: 40.h),
+          ],
+        ),
       ),
     );
   }
@@ -156,23 +160,23 @@ class OnboardingController extends GetxController {
   final List<OnboardingPageData> pages = const [
     OnboardingPageData(
       icon: Icons.school,
-      title: 'Learn Anything',
-      description: 'Access a wide variety of courses and challenges to expand your knowledge and skills.',
+      title: '学无止境',
+      description: '探索丰富多样的课程和挑战，不断拓展你的知识和技能。',
     ),
     OnboardingPageData(
       icon: Icons.emoji_events,
-      title: 'Earn Rewards',
-      description: 'Complete challenges, earn points, and unlock achievements as you progress.',
+      title: '赢取奖励',
+      description: '完成挑战、赚取积分，在进步的过程中解锁各种成就。',
     ),
     OnboardingPageData(
       icon: Icons.people,
-      title: 'Connect with Friends',
-      description: 'Compete with friends on the leaderboard and share your learning journey.',
+      title: '好友互动',
+      description: '与好友在排行榜上一较高下，分享你的学习历程。',
     ),
     OnboardingPageData(
       icon: Icons.trending_up,
-      title: 'Track Progress',
-      description: 'Monitor your stats, view your rewards, and see how far you\'ve come.',
+      title: '追踪进度',
+      description: '查看学习统计、浏览已获得奖励，见证自己的成长。',
     ),
   ];
 

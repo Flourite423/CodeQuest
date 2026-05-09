@@ -17,11 +17,12 @@ import '../views/profile_rewards/profile_rewards_view.dart';
 import '../views/profile_stats/profile_stats_view.dart';
 import '../views/register/register_view.dart';
 import '../views/settings/settings_view.dart';
+import '../views/add_friend/add_friend_view.dart';
 import '../views/social/social_view.dart';
 import '../views/splash/splash_view.dart';
 
 class AppPages {
-  static const INITIAL = '/splash';
+  static const initialRoute = '/splash';
 
   static final routes = [
     GetPage(
@@ -88,6 +89,11 @@ class AppPages {
       name: '/social',
       page: () => const SocialView(),
       binding: SocialBinding(),
+    ),
+    GetPage(
+      name: '/add-friend',
+      page: () => const AddFriendView(),
+      binding: AddFriendBinding(),
     ),
     GetPage(
       name: '/profile',

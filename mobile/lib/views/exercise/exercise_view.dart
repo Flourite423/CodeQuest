@@ -27,8 +27,8 @@ class ExerciseView extends GetView<ExerciseController> {
           state: controller.pageState.value,
           message: controller.stateMessage.value,
           onRetry: controller.retry,
-          emptyTitle: 'Exercise unavailable',
-          emptyDescription: 'This exercise has no learner-safe content yet.',
+          emptyTitle: '练习不可用',
+          emptyDescription: '该练习暂无学习内容。',
           child: _ExerciseWorkspace(controller: controller),
         ),
       ),
@@ -393,7 +393,7 @@ class _CodeEditorPanel extends StatelessWidget {
               height: 1.5,
             ),
             decoration: InputDecoration(
-              hintText: 'Write your learner-safe solution here...',
+              hintText: '在此编写你的解决方案...',
               border: InputBorder.none,
               contentPadding: EdgeInsets.all(16.w),
             ),
@@ -446,8 +446,8 @@ class _PreviewPanel extends StatelessWidget {
               color: colorScheme.surface,
               borderRadius: BorderRadius.circular(12.r),
             ),
-            child: SelectableText(
-              code.trim().isEmpty ? 'No preview available yet.' : code.trim(),
+            child:               SelectableText(
+              code.trim().isEmpty ? '暂无预览。' : code.trim(),
               style: theme.textTheme.bodyMedium?.copyWith(
                 fontFamily: 'monospace',
                 height: 1.5,
@@ -629,15 +629,21 @@ class _MetaChip extends StatelessWidget {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
       decoration: BoxDecoration(
-        color: colorScheme.surface.withValues(alpha: 0.7),
+        color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.7),
         borderRadius: BorderRadius.circular(999.r),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 16.sp),
+          Icon(icon, size: 16.sp, color: colorScheme.onSurfaceVariant),
           SizedBox(width: 6.w),
-          Text(label),
+          Text(
+            label,
+            style: TextStyle(
+              color: colorScheme.onSurfaceVariant,
+              fontSize: 12.sp,
+            ),
+          ),
         ],
       ),
     );
@@ -827,7 +833,7 @@ class ExerciseController extends BaseController {
   bool get isCoding => exercise.value?.type == 'coding';
   bool get isSingleChoice => exercise.value?.type == 'single_choice';
 
-  String get exerciseTitle => exercise.value?.title ?? 'Exercise';
+  String get exerciseTitle => exercise.value?.title ?? '练习';
 
   String get currentCode => codeController.text;
 
@@ -861,7 +867,7 @@ class ExerciseController extends BaseController {
     codeController.addListener(_onCodeChanged);
 
     if (exerciseId.value.isEmpty) {
-      setError(message: 'Exercise ID is missing.');
+      setError(message: '练习ID缺失。');
       return;
     }
 
@@ -877,7 +883,7 @@ class ExerciseController extends BaseController {
   }
 
   Future<void> loadExercise() async {
-    setLoading(message: 'Loading exercise...');
+    setLoading(message: '加载练习中...');
     registerRetry(loadExercise);
 
     try {
@@ -888,7 +894,7 @@ class ExerciseController extends BaseController {
       await _restoreDraft(item);
 
       if (item.testCases.isEmpty) {
-        setEmpty(message: 'No visible test cases are available yet.');
+        setEmpty(message: '暂无可用的测试用例。');
         return;
       }
 
@@ -896,7 +902,7 @@ class ExerciseController extends BaseController {
     } on MockDataException catch (error) {
       setError(message: error.message);
     } catch (_) {
-      setError(message: 'Failed to load exercise. Please try again.');
+      setError(message: '加载练习失败，请重试。');
     }
   }
 
@@ -906,10 +912,10 @@ class ExerciseController extends BaseController {
     }
 
     return const <ExerciseChoiceOption>[
-      ExerciseChoiceOption(key: 'A', text: 'Use semantic structure so the learner layout stays readable.'),
-      ExerciseChoiceOption(key: 'B', text: 'Rely only on visual spacing and skip structural tags.'),
-      ExerciseChoiceOption(key: 'C', text: 'Hide the prompt inside comments so the UI stays clean.'),
-      ExerciseChoiceOption(key: 'D', text: 'Expose hidden assertions to help the learner debug faster.'),
+      ExerciseChoiceOption(key: 'A', text: '使用语义化结构，使学习者布局保持可读性。'),
+      ExerciseChoiceOption(key: 'B', text: '仅依赖视觉间距，跳过结构性标签。'),
+      ExerciseChoiceOption(key: 'C', text: '将提示隐藏在注释中，使 UI 保持整洁。'),
+      ExerciseChoiceOption(key: 'D', text: '暴露隐藏断言，帮助学习者更快调试。'),
     ];
   }
 

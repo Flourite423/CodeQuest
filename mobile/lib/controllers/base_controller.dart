@@ -59,14 +59,14 @@ abstract class BaseController extends GetxController {
     hasPartialData.value = false;
   }
 
-  void setOffline({String message = 'You are offline. Check your connection and try again.'}) {
+  void setOffline({String message = '当前处于离线状态，请检查网络后重试。'}) {
     pageState.value = PageState.offline;
     stateMessage.value = message;
     hasPartialData.value = false;
   }
 
   Future<void> setAuthExpired({
-    String message = 'Session expired. Please sign in again.',
+    String message = '登录状态已失效，请重新登录。',
   }) async {
     pageState.value = PageState.authExpired;
     stateMessage.value = message;
@@ -75,7 +75,7 @@ abstract class BaseController extends GetxController {
   }
 
   void setPartialData({
-    String message = 'Showing the latest available data. Some content may be unavailable.',
+    String message = '当前仅显示本地缓存内容，部分信息可能不是最新。',
   }) {
     pageState.value = PageState.partialData;
     stateMessage.value = message;
@@ -83,7 +83,7 @@ abstract class BaseController extends GetxController {
   }
 
   static Future<void> handleUnauthorized({
-    String message = 'Session expired. Please sign in again.',
+    String message = '登录状态已失效，请重新登录。',
   }) async {
     final storage = Get.isRegistered<StorageService>()
         ? Get.find<StorageService>()
@@ -92,7 +92,7 @@ abstract class BaseController extends GetxController {
 
     if (Get.context != null) {
       Get.snackbar(
-        'Authentication expired',
+        '登录已过期',
         message,
         snackPosition: SnackPosition.BOTTOM,
         duration: const Duration(seconds: 3),

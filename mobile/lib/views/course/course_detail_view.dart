@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 import '../../controllers/base_controller.dart';
 import '../../models/models.dart';
 import '../../services/mock_data.dart';
+import '../../services/progress_service.dart';
 import '../../widgets/page_state_host.dart';
 import '../../widgets/shared/cta_bar.dart';
 
@@ -28,7 +29,7 @@ class CourseDetailView extends GetView<CourseController> {
         if (nextChapter == null) return const SizedBox.shrink();
 
         return CTABar(
-          primaryLabel: 'Continue Learning',
+          primaryLabel: '继续学习',
           onPrimary: () => controller.openChapter(nextChapter),
         );
       }),
@@ -80,7 +81,7 @@ class _CourseContent extends StatelessWidget {
                   _ProgressOverview(course: course),
                   SizedBox(height: 24.h),
                   Text(
-                    'Chapters',
+                    '章节',
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
                       fontWeight: FontWeight.w600,
                     ),
@@ -208,7 +209,7 @@ class _CourseHeader extends StatelessWidget {
               SizedBox(width: 8.w),
               _MetaChip(
                 icon: Icons.menu_book,
-                label: '${course.chapters.length} chapters',
+                label: '${course.chapters.length} 章节',
               ),
             ],
           ],
@@ -244,7 +245,7 @@ class _ProgressOverview extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Progress',
+                '进度',
                 style: theme.textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.w600,
                 ),
@@ -271,7 +272,7 @@ class _ProgressOverview extends StatelessWidget {
           if (totalChapters > 0) ...[
             SizedBox(height: 8.h),
             Text(
-              '$completedChapters of $totalChapters chapters completed',
+              '已完成 $completedChapters / $totalChapters 章节',
               style: theme.textTheme.bodySmall?.copyWith(
                 color: colorScheme.onSurfaceVariant,
               ),
@@ -448,6 +449,13 @@ class _MetaChip extends StatelessWidget {
 class CourseController extends BaseController {
   final MockDataService _mockDataService = Get.find<MockDataService>();
 
+  ProgressService get _progressService {
+    if (Get.isRegistered<ProgressService>()) {
+      return Get.find<ProgressService>();
+    }
+    return Get.put(ProgressService(), permanent: true);
+  }
+
   final Rx<Course?> course = Rx<Course?>(null);
   final RxString courseId = ''.obs;
 
@@ -468,76 +476,40 @@ class CourseController extends BaseController {
     if (courseId.value.isNotEmpty) {
       loadCourse();
     } else {
-      setError(message: 'Course ID is missing.');
+      setError(message: '课程ID缺失。');
     }
   }
 
   Future<void> loadCourse() async {
-    setLoading(message: 'Loading course...');
+    if (!_progressService.isOnline.value) {
+      final cachedCourse = _progressService.getCachedCourse(courseId.value);
+      if (cachedCourse != null) {
+        course.value = _progressService.applyCourseProgress(cachedCourse);
+        setPartialData(message: '当前为离线模式，已显示本地缓存的课程内容。');
+        return;
+      }
+    }
+
+    setLoading(message: '加载课程中...');
     registerRetry(loadCourse);
 
     try {
       final result = await _mockDataService.fetchCourse();
       if (result == null) {
-        setEmpty(message: 'Course not found.');
+        setEmpty(message: '未找到课程。');
         return;
       }
 
-      // Apply chapter lock logic based on completion state
-      final processedChapters = _processChapters(result.chapters);
-      course.value = Course(
-        id: result.id,
-        title: result.title,
-        summary: result.summary,
-        difficulty: result.difficulty,
-        estimatedMinutes: result.estimatedMinutes,
-        progress: result.progress,
-        chapters: processedChapters,
-        description: result.description,
-        coverImageUrl: result.coverImageUrl,
-      );
+      final courseWithProgress = _progressService.applyCourseProgress(result);
+      await _progressService.cacheCourse(courseWithProgress);
+      course.value = courseWithProgress;
 
       pageState.value = PageState.initial;
     } on MockDataException catch (e) {
       setError(message: e.message);
     } catch (e) {
-      setError(message: 'Failed to load course. Please try again.');
+      setError(message: '加载课程失败，请重试。');
     }
-  }
-
-  List<Chapter> _processChapters(List<Chapter> chapters) {
-    // Lock logic: first chapter is always unlocked
-    // Subsequent chapters are unlocked only if previous chapter is completed
-    return chapters.asMap().entries.map((entry) {
-      final index = entry.key;
-      final chapter = entry.value;
-
-      if (index == 0) {
-        // First chapter is always unlocked
-        return Chapter(
-          id: chapter.id,
-          title: chapter.title,
-          content: chapter.content,
-          sampleCode: chapter.sampleCode,
-          summary: chapter.summary,
-          isCompleted: chapter.isCompleted,
-          isLocked: false,
-        );
-      }
-
-      final previousChapter = chapters[index - 1];
-      final isLocked = !previousChapter.isCompleted;
-
-      return Chapter(
-        id: chapter.id,
-        title: chapter.title,
-        content: chapter.content,
-        sampleCode: chapter.sampleCode,
-        summary: chapter.summary,
-        isCompleted: chapter.isCompleted,
-        isLocked: isLocked,
-      );
-    }).toList();
   }
 
   void onChapterTap(Chapter chapter, int index) {
@@ -563,18 +535,18 @@ class CourseController extends BaseController {
               color: Theme.of(Get.context!).colorScheme.primary,
             ),
             SizedBox(width: 8.w),
-            const Text('Chapter Locked'),
+            const Text('章节已锁定'),
           ],
         ),
         content: Text(
           previousIndex >= 0
-              ? 'Complete "${course.value?.chapters[previousIndex].title ?? 'the previous chapter'}" to unlock this chapter.'
-              : 'This chapter is locked. Complete previous chapters to unlock it.',
+              ? '完成"${course.value?.chapters[previousIndex].title ?? '上一章节'}"以解锁此章节。'
+              : '此章节已锁定。完成前面的章节以解锁。',
         ),
         actions: [
           TextButton(
             onPressed: () => Get.back(),
-            child: const Text('Got it'),
+            child: const Text('知道了'),
           ),
         ],
       ),
@@ -582,7 +554,9 @@ class CourseController extends BaseController {
   }
 
   void openChapter(Chapter chapter) {
-    Get.toNamed('/chapter/${chapter.id}');
+    Get.toNamed('/chapter/${chapter.id}', parameters: <String, String>{
+      'courseId': courseId.value,
+    });
   }
 }
 

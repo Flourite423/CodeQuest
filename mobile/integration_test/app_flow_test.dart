@@ -6,21 +6,21 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:integration_test/integration_test.dart';
-import 'package:learning_app_mobile/controllers/base_controller.dart';
-import 'package:learning_app_mobile/routes/app_pages.dart';
-import 'package:learning_app_mobile/services/api_service.dart';
-import 'package:learning_app_mobile/services/mock_data.dart';
-import 'package:learning_app_mobile/services/storage_service.dart';
-import 'package:learning_app_mobile/themes/app_theme.dart';
-import 'package:learning_app_mobile/views/challenge/challenge_detail_view.dart';
-import 'package:learning_app_mobile/views/challenge/challenge_list_view.dart';
-import 'package:learning_app_mobile/views/chapter/chapter_view.dart';
-import 'package:learning_app_mobile/views/course/course_detail_view.dart';
-import 'package:learning_app_mobile/views/course/course_list_view.dart';
-import 'package:learning_app_mobile/views/exercise/exercise_view.dart';
-import 'package:learning_app_mobile/views/home/home_dashboard_view.dart';
-import 'package:learning_app_mobile/views/profile/profile_view.dart';
-import 'package:learning_app_mobile/views/social/social_view.dart';
+import 'package:codequest/controllers/base_controller.dart';
+import 'package:codequest/routes/app_pages.dart';
+import 'package:codequest/services/api_service.dart';
+import 'package:codequest/services/mock_data.dart';
+import 'package:codequest/services/storage_service.dart';
+import 'package:codequest/themes/app_theme.dart';
+import 'package:codequest/views/challenge/challenge_detail_view.dart';
+import 'package:codequest/views/challenge/challenge_list_view.dart';
+import 'package:codequest/views/chapter/chapter_view.dart';
+import 'package:codequest/views/course/course_detail_view.dart';
+import 'package:codequest/views/course/course_list_view.dart';
+
+import 'package:codequest/views/home/home_dashboard_view.dart';
+import 'package:codequest/views/profile/profile_view.dart';
+import 'package:codequest/views/social/social_view.dart';
 
 typedef PostHandler = FutureOr<dio.Response<dynamic>> Function(dynamic data);
 typedef GetHandler = FutureOr<dio.Response<dynamic>> Function(
@@ -30,8 +30,6 @@ typedef GetHandler = FutureOr<dio.Response<dynamic>> Function(
 class _FakeStorageService extends StorageService {
   final Map<String, dynamic> _data = <String, dynamic>{};
 
-  @override
-  void onInit() {}
 
   @override
   Future<void> write(String key, dynamic value) async {
@@ -79,8 +77,6 @@ class _FakeApiService extends ApiService {
   final Map<String, PostHandler> _postHandlers;
   final Map<String, GetHandler> _getHandlers;
 
-  @override
-  void onInit() {}
 
   @override
   Future<dio.Response<dynamic>> post(String path, {dynamic data}) async {
@@ -222,7 +218,7 @@ Widget _buildTestApp({
   required _FakeApiService apiService,
   required _FakeStorageService storageService,
   MockDataService? mockDataService,
-  String initialRoute = AppPages.INITIAL,
+  String initialRoute = AppPages.initialRoute,
   List<GetPage<dynamic>> extraPages = const <GetPage<dynamic>>[],
 }) {
   return ScreenUtilInit(
@@ -231,7 +227,7 @@ Widget _buildTestApp({
     splitScreenMode: true,
     builder: (_, __) {
       return GetMaterialApp(
-        title: 'Learning App',
+        title: 'CodeQuest',
         debugShowCheckedModeBanner: false,
         theme: AppTheme.lightTheme,
         darkTheme: AppTheme.darkTheme,
@@ -257,7 +253,7 @@ Future<void> _pumpApp(
   required _FakeApiService apiService,
   required _FakeStorageService storageService,
   MockDataService? mockDataService,
-  String initialRoute = AppPages.INITIAL,
+  String initialRoute = AppPages.initialRoute,
   List<GetPage<dynamic>> extraPages = const <GetPage<dynamic>>[],
 }) async {
   await tester.pumpWidget(
@@ -332,7 +328,7 @@ void main() {
       initialRoute: '/splash',
     );
 
-    expect(find.text('Learning App'), findsOneWidget);
+    expect(find.text('CodeQuest'), findsOneWidget);
 
     await tester.pump(const Duration(seconds: 2));
     await tester.pumpAndSettle();

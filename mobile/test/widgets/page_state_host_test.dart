@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
-import 'package:learning_app_mobile/controllers/base_controller.dart';
-import 'package:learning_app_mobile/widgets/page_state_host.dart';
+import 'package:codequest/controllers/base_controller.dart';
+import 'package:codequest/widgets/page_state_host.dart';
 
 void main() {
   Widget buildHost(PageState state, {VoidCallback? onRetry}) {
@@ -38,7 +38,7 @@ void main() {
   testWidgets('empty state renders reusable empty widget', (tester) async {
     await tester.pumpWidget(buildHost(PageState.empty));
 
-    expect(find.text('Nothing here yet'), findsOneWidget);
+    expect(find.text('这里还没有内容'), findsOneWidget);
     expect(find.text('State message'), findsOneWidget);
   });
 
@@ -49,7 +49,7 @@ void main() {
       buildHost(PageState.error, onRetry: () => tapped = true),
     );
 
-    await tester.tap(find.text('Retry'));
+    await tester.tap(find.text('重试'));
     await tester.pump();
 
     expect(tapped, isTrue);
@@ -60,7 +60,7 @@ void main() {
   ) async {
     await tester.pumpWidget(buildHost(PageState.empty, onRetry: () {}));
 
-    expect(find.text('Refresh'), findsOneWidget);
+    expect(find.text('刷新'), findsOneWidget);
   });
 
   testWidgets('offline state renders retry affordance', (tester) async {
@@ -70,8 +70,8 @@ void main() {
       buildHost(PageState.offline, onRetry: () => tapped = true),
     );
 
-    expect(find.text('No connection'), findsOneWidget);
-    await tester.tap(find.text('Retry'));
+    expect(find.text('无网络连接'), findsOneWidget);
+    await tester.tap(find.text('重试'));
     await tester.pump();
 
     expect(tapped, isTrue);
@@ -80,9 +80,9 @@ void main() {
   testWidgets('auth expired state shows session copy', (tester) async {
     await tester.pumpWidget(buildHost(PageState.authExpired));
 
-    expect(find.text('Session expired'), findsOneWidget);
+    expect(find.text('会话已过期'), findsOneWidget);
     expect(find.text('State message'), findsOneWidget);
-    expect(find.text('Go to login'), findsNothing);
+    expect(find.text('去登录'), findsNothing);
   });
 
   testWidgets('auth expired state triggers explicit login CTA when provided', (
@@ -94,8 +94,8 @@ void main() {
       buildHost(PageState.authExpired, onRetry: () => tapped = true),
     );
 
-    expect(find.text('Go to login'), findsOneWidget);
-    await tester.tap(find.text('Go to login'));
+    expect(find.text('去登录'), findsOneWidget);
+    await tester.tap(find.text('去登录'));
     await tester.pump();
 
     expect(tapped, isTrue);
@@ -117,7 +117,7 @@ void main() {
       buildHost(PageState.partialData, onRetry: () => tapped = true),
     );
 
-    await tester.tap(find.text('Retry'));
+    await tester.tap(find.text('重试'));
     await tester.pump();
 
     expect(tapped, isTrue);

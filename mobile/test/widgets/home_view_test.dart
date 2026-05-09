@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
-import 'package:learning_app_mobile/views/home/home_dashboard_view.dart';
-import 'package:learning_app_mobile/views/home/home_view.dart';
+import 'package:codequest/views/home/home_dashboard_view.dart';
+import 'package:codequest/views/home/home_view.dart';
 
 /// A lightweight HomeDashboardController for testing that skips
 /// data loading on init to avoid pending timers and network requests.
@@ -40,11 +40,11 @@ void main() {
     await tester.pump();
 
     // Verify 5 tab labels exist in the BottomNavigationBar
-    expect(find.text('Home'), findsOneWidget);
-    expect(find.text('Courses'), findsOneWidget);
-    expect(find.text('Challenges'), findsOneWidget);
-    expect(find.text('Social'), findsOneWidget);
-    expect(find.text('Profile'), findsOneWidget);
+    expect(find.text('首页'), findsOneWidget);
+    expect(find.text('课程'), findsOneWidget);
+    expect(find.text('挑战'), findsOneWidget);
+    expect(find.text('社交'), findsOneWidget);
+    expect(find.text('我的'), findsOneWidget);
 
     // Verify IndexedStack exists (it's now lazy-loaded)
     expect(find.byType(IndexedStack), findsOneWidget);

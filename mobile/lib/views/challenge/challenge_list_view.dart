@@ -5,7 +5,7 @@ import 'package:get/get.dart';
 import '../../controllers/base_controller.dart';
 import '../../models/app_models.dart';
 import '../../services/mock_data.dart';
-import '../../services/storage_service.dart';
+import '../../services/progress_service.dart';
 import '../../widgets/page_state_host.dart';
 
 enum ChallengeNodeStatus {
@@ -20,7 +20,13 @@ class ChallengeListController extends BaseController {
   final RxMap<String, int> challengeStars = <String, int>{}.obs;
 
   MockDataService get _mockData => Get.find<MockDataService>();
-  StorageService get _storage => Get.find<StorageService>();
+
+  ProgressService get _progress {
+    if (Get.isRegistered<ProgressService>()) {
+      return Get.find<ProgressService>();
+    }
+    return Get.put(ProgressService(), permanent: true);
+  }
 
   @override
   void onInit() {
@@ -29,28 +35,38 @@ class ChallengeListController extends BaseController {
   }
 
   Future<void> loadChallenges() async {
-    setLoading(message: 'Loading challenges...');
+    if (!_progress.isOnline.value) {
+      final cachedItems = _progress.getCachedChallenges();
+      if (cachedItems.isNotEmpty) {
+        final merged = _progress.applyChallengeProgressList(cachedItems);
+        challenges.assignAll(merged);
+        challengeStars.assignAll({
+          for (final item in merged) item.id: item.stars,
+        });
+        setPartialData(message: '当前为离线模式，已显示本地挑战记录。');
+        return;
+      }
+    }
+
+    setLoading(message: '加载挑战中...');
     registerRetry(loadChallenges);
 
     try {
       final items = await _mockData.fetchChallenges();
-      challenges.assignAll(items);
-
-      // Load persisted stars
-      final starsData = _storage.read<Map<String, dynamic>>('challenge_stars');
-      if (starsData != null) {
-        challengeStars.assignAll(
-          starsData.map((k, v) => MapEntry(k, (v as num).toInt())),
-        );
-      }
+      await _progress.cacheChallenges(items);
+      final merged = _progress.applyChallengeProgressList(items);
+      challenges.assignAll(merged);
+      challengeStars.assignAll({
+        for (final item in merged) item.id: item.stars,
+      });
 
       if (items.isEmpty) {
-        setEmpty(message: 'No challenges available yet.');
+        setEmpty(message: '暂无可用挑战。');
       } else {
         resetState();
       }
     } catch (e) {
-      setError(message: 'Failed to load challenges. Please try again.');
+      setError(message: '加载挑战失败，请重试。');
     }
   }
 
@@ -82,8 +98,8 @@ class ChallengeListController extends BaseController {
     final status = getNodeStatus(index);
     if (status == ChallengeNodeStatus.locked) {
       Get.snackbar(
-        'Locked',
-        'Complete the previous challenge first.',
+        '已锁定',
+        '请先完成前面的挑战。',
         snackPosition: SnackPosition.BOTTOM,
         margin: const EdgeInsets.all(16),
       );
@@ -116,7 +132,7 @@ class ChallengeListView extends GetView<ChallengeListController> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Challenges', style: theme.textTheme.titleLarge),
+        title: Text('挑战', style: theme.textTheme.titleLarge),
         centerTitle: true,
         elevation: 0,
         actions: [
@@ -124,7 +140,7 @@ class ChallengeListView extends GetView<ChallengeListController> {
             onPressed: controller.navigateToDailyChallenge,
             icon: Icon(Icons.today_outlined, size: 20.sp),
             label: Text(
-              'Daily',
+              '每日',
               style: theme.textTheme.labelLarge?.copyWith(
                 color: colorScheme.primary,
               ),
@@ -146,7 +162,7 @@ class ChallengeListView extends GetView<ChallengeListController> {
     return Obx(() {
       final challenges = controller.challenges;
       if (challenges.isEmpty) {
-        return const Center(child: Text('No challenges available.'));
+        return const Center(child: Text('暂无可用挑战。'));
       }
 
       return SingleChildScrollView(
@@ -171,14 +187,14 @@ class ChallengeListView extends GetView<ChallengeListController> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Challenge Map',
+          '挑战地图',
           style: theme.textTheme.headlineSmall?.copyWith(
             fontWeight: FontWeight.bold,
           ),
         ),
         SizedBox(height: 4.h),
         Text(
-          'Complete challenges to earn stars and XP',
+          '完成挑战以获取星星和XP',
           style: theme.textTheme.bodyMedium?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
           ),
@@ -213,7 +229,7 @@ class ChallengeListView extends GetView<ChallengeListController> {
                 context,
                 icon: Icons.check_circle_outline,
                 value: '$completed/$total',
-                label: 'Completed',
+                label: '已完成',
               ),
             ),
             Container(width: 1.w, height: 40.h, color: theme.dividerColor),
@@ -222,7 +238,7 @@ class ChallengeListView extends GetView<ChallengeListController> {
                 context,
                 icon: Icons.star_outline,
                 value: '$totalStars/$maxStars',
-                label: 'Stars',
+                label: '星星',
               ),
             ),
           ],
@@ -312,9 +328,9 @@ class ChallengeListView extends GetView<ChallengeListController> {
           colorScheme.tertiaryContainer.withValues(alpha: 0.3),
         ),
       ChallengeNodeStatus.completed => (
-          Colors.amber[700]!,
+          colorScheme.primary,
           Icons.check,
-          Colors.amber[50]!,
+          colorScheme.primaryContainer.withValues(alpha: 0.3),
         ),
     };
 
@@ -353,7 +369,7 @@ class ChallengeListView extends GetView<ChallengeListController> {
                   width: 2.w,
                   height: 40.h,
                   color: status == ChallengeNodeStatus.completed
-                      ? Colors.amber[300]
+                      ? colorScheme.primary.withValues(alpha: 0.5)
                       : colorScheme.outline.withValues(alpha: 0.2),
                 ),
             ],
@@ -431,12 +447,12 @@ class ChallengeListView extends GetView<ChallengeListController> {
                       Icon(
                         Icons.emoji_events_outlined,
                         size: 16.sp,
-                        color: Colors.amber[600],
+                        color: colorScheme.secondary,
                       ),
                       Text(
                         '${challenge.reward} XP',
                         style: theme.textTheme.labelMedium?.copyWith(
-                          color: Colors.amber[700],
+                          color: colorScheme.onSecondaryContainer,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -444,12 +460,12 @@ class ChallengeListView extends GetView<ChallengeListController> {
                         Icon(
                           Icons.check_circle,
                           size: 16.sp,
-                          color: Colors.green[600],
+                          color: colorScheme.primary,
                         ),
                         Text(
-                          'Completed',
+                          '已完成',
                           style: theme.textTheme.labelMedium?.copyWith(
-                            color: Colors.green[700],
+                            color: colorScheme.onPrimaryContainer,
                           ),
                         ),
                       ],
@@ -472,7 +488,7 @@ class ChallengeListView extends GetView<ChallengeListController> {
         return Icon(
           i < stars ? Icons.star : Icons.star_border,
           size: 16.sp,
-          color: i < stars ? Colors.amber[600] : colorScheme.outline.withValues(alpha: 0.3),
+          color: i < stars ? colorScheme.secondary : colorScheme.outline.withValues(alpha: 0.3),
         );
       }),
     );

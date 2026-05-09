@@ -1,26 +1,31 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 
-import 'package:learning_app_mobile/controllers/base_controller.dart';
-import 'package:learning_app_mobile/models/models.dart' as app_models;
-import 'package:learning_app_mobile/services/mock_data.dart';
-import 'package:learning_app_mobile/services/storage_service.dart';
-import 'package:learning_app_mobile/views/challenge/challenge_list_view.dart';
-import 'package:learning_app_mobile/views/course/course_list_view.dart';
-import 'package:learning_app_mobile/views/home/home_dashboard_view.dart';
-import 'package:learning_app_mobile/views/profile/profile_view.dart';
-import 'package:learning_app_mobile/views/social/social_view.dart';
-import 'package:learning_app_mobile/widgets/shared/empty_state.dart';
-import 'package:learning_app_mobile/widgets/shared/error_state.dart';
-import 'package:learning_app_mobile/widgets/shared/loading_state.dart';
+import 'package:codequest/controllers/base_controller.dart';
+import 'package:codequest/models/models.dart' as app_models;
+import 'package:codequest/services/mock_data.dart';
+import 'package:codequest/services/storage_service.dart';
+import 'package:codequest/views/challenge/challenge_list_view.dart';
+import 'package:codequest/views/course/course_list_view.dart';
+import 'package:codequest/views/home/home_dashboard_view.dart';
+import 'package:codequest/views/profile/profile_view.dart';
+import 'package:codequest/views/social/social_view.dart';
+import 'package:codequest/widgets/shared/empty_state.dart';
+import 'package:codequest/widgets/shared/error_state.dart';
+import 'package:codequest/widgets/shared/loading_state.dart';
 
 class _FakeStorageService extends StorageService {
   final Map<String, dynamic> _data = <String, dynamic>{};
 
   @override
-  void onInit() {}
+  // ignore: must_call_super
+  void onInit() {
+    // Skip GetStorage initialization in tests
+  }
 
   @override
   Future<void> write(String key, dynamic value) async {
@@ -126,7 +131,9 @@ class _TestHomeDashboardController extends HomeDashboardController {
   _TestHomeDashboardController() : super();
 
   @override
+  // ignore: must_call_super
   void onInit() {
+    // Skip auto-loading in tests
     registerRetry(loadDashboardData);
   }
 
@@ -156,11 +163,15 @@ class _TestCourseListController extends CourseListController {
   _TestCourseListController() : super();
 
   @override
-  void onInit() {}
+  // ignore: must_call_super
+  void onInit() {
+    // Skip auto-loading in tests
+    registerRetry(loadCourses);
+  }
 
   void setLoadingState() {
     pageState.value = PageState.loading;
-    stateMessage.value = 'Loading courses...';
+    stateMessage.value = '加载课程中...';
   }
 
   void setLoadedState() {
@@ -176,13 +187,13 @@ class _TestCourseListController extends CourseListController {
   void setEmptyState() {
     courses.clear();
     pageState.value = PageState.empty;
-    stateMessage.value = 'No courses available yet.';
+    stateMessage.value = '暂无可用课程。';
   }
 
   void setErrorState() {
     courses.clear();
     pageState.value = PageState.error;
-    stateMessage.value = 'Failed to load courses. Please try again.';
+    stateMessage.value = '加载课程失败，请重试。';
   }
 }
 
@@ -190,13 +201,15 @@ class _TestChallengeListController extends ChallengeListController {
   _TestChallengeListController() : super();
 
   @override
+  // ignore: must_call_super
   void onInit() {
+    // Skip auto-loading in tests
     registerRetry(loadChallenges);
   }
 
   void setLoadingState() {
     pageState.value = PageState.loading;
-    stateMessage.value = 'Loading challenges...';
+    stateMessage.value = '加载挑战中...';
   }
 
   void setLoadedState() {
@@ -214,7 +227,11 @@ class _TestSocialController extends SocialController {
   _TestSocialController() : super();
 
   @override
-  void onInit() {}
+  // ignore: must_call_super
+  void onInit() {
+    // Skip auto-loading in tests
+    registerRetry(loadAllData);
+  }
 
   void setLoadedState() {
     final mock = Get.find<MockDataService>();
@@ -225,12 +242,16 @@ class _TestSocialController extends SocialController {
       mock.buildFriends(count: 4).map(_withoutFriendAvatar),
     );
     leaderboard.assignAll(mock.buildLeaderboardEntries(count: 6));
+    pageState.value = PageState.initial;
+    stateMessage.value = '';
   }
 
   void setEmptyState() {
     activities.clear();
     friends.clear();
     leaderboard.clear();
+    pageState.value = PageState.empty;
+    stateMessage.value = '暂无动态。';
   }
 }
 
@@ -238,13 +259,15 @@ class _TestProfileController extends ProfileController {
   _TestProfileController() : super();
 
   @override
+  // ignore: must_call_super
   void onInit() {
+    // Skip auto-loading in tests
     registerRetry(loadProfileData);
   }
 
   void setLoadingState() {
     pageState.value = PageState.loading;
-    stateMessage.value = 'Loading profile...';
+    stateMessage.value = '加载个人资料中...';
   }
 
   void setLoadedState() {
@@ -268,7 +291,7 @@ Widget buildGoldenApp(Widget home) {
       return GetMaterialApp(
         theme: ThemeData(
           useMaterial3: true,
-          colorSchemeSeed: const Color(0xFF2196F3),
+          colorSchemeSeed: const Color(0xFF2DD4A0),
           brightness: Brightness.light,
         ),
         home: home,
@@ -290,13 +313,24 @@ void _expectNoFlutterErrors(WidgetTester tester) {
 
 const _goldenPath = '../goldens';
 
+class _TestHttpOverrides extends HttpOverrides {
+  @override
+  HttpClient createHttpClient(SecurityContext? context) {
+    return super.createHttpClient(context)
+      ..badCertificateCallback = (X509Certificate cert, String host, int port) => true;
+  }
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+  HttpOverrides.global = _TestHttpOverrides();
 
   setUp(() {
     Get.testMode = true;
     Get.reset();
-    Get.put<MockDataService>(MockDataService());
+    final mockData = MockDataService();
+    mockData.enableDelay = false;
+    Get.put<MockDataService>(mockData);
     Get.put<StorageService>(_FakeStorageService());
   });
 
@@ -342,7 +376,7 @@ void main() {
         ),
       );
 
-      expect(find.text('Retry'), findsOneWidget);
+      expect(find.text('重试'), findsOneWidget);
       _expectNoFlutterErrors(tester);
       await expectLater(
         find.byType(ScreenUtilInit),
@@ -378,11 +412,12 @@ void main() {
 
       controller.setLoadingState();
       await _pumpPhoneSized(tester, buildGoldenApp(const HomeDashboardView()));
+      await tester.pump(const Duration(milliseconds: 100));
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
       _expectNoFlutterErrors(tester);
 
       controller.setLoadedState();
-      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
       expect(find.text('今日成长'), findsOneWidget);
       expect(find.text('每日挑战'), findsOneWidget);
       expect(find.text('继续学习'), findsOneWidget);
@@ -397,24 +432,24 @@ void main() {
 
       controller.setLoadingState();
       await _pumpPhoneSized(tester, buildGoldenApp(const CourseListView()));
-      expect(find.text('Loading courses...'), findsOneWidget);
+      expect(find.text('加载课程中...'), findsOneWidget);
       _expectNoFlutterErrors(tester);
 
       controller.setLoadedState();
       await tester.pump();
-      expect(find.text('Frontend Foundations 1'), findsOneWidget);
+      expect(find.text('前端基础 1'), findsOneWidget);
       _expectNoFlutterErrors(tester);
 
       controller.setEmptyState();
       await tester.pump();
-      expect(find.text('No courses yet'), findsOneWidget);
-      expect(find.text('Refresh'), findsOneWidget);
+      expect(find.text('暂无课程'), findsOneWidget);
+      expect(find.text('刷新'), findsOneWidget);
       _expectNoFlutterErrors(tester);
 
       controller.setErrorState();
       await tester.pump();
-      expect(find.text('Something went wrong'), findsOneWidget);
-      expect(find.text('Retry'), findsOneWidget);
+      expect(find.text('出了点问题'), findsOneWidget);
+      expect(find.text('重试'), findsOneWidget);
       _expectNoFlutterErrors(tester);
     });
 
@@ -431,8 +466,8 @@ void main() {
 
       controller.setLoadedState();
       await tester.pump();
-      expect(find.text('Challenge Map'), findsOneWidget);
-      expect(find.text('Challenge 1'), findsOneWidget);
+      expect(find.text('挑战地图'), findsOneWidget);
+      expect(find.text('挑战 1'), findsOneWidget);
       _expectNoFlutterErrors(tester);
     });
 
@@ -444,19 +479,19 @@ void main() {
       controller.setLoadedState();
 
       await _pumpPhoneSized(tester, buildGoldenApp(const SocialView()));
-      expect(find.text('Social Center'), findsOneWidget);
-      expect(find.text('Peer 1'), findsOneWidget);
+      expect(find.text('社交中心'), findsOneWidget);
+      expect(find.text('用户 1'), findsOneWidget);
       _expectNoFlutterErrors(tester);
 
-      await tester.tap(find.text('Friends'));
+      await tester.tap(find.text('好友'));
       await tester.pumpAndSettle();
-      expect(find.textContaining('Friend Requests'), findsOneWidget);
-      expect(find.text('Accept'), findsWidgets);
+      expect(find.textContaining('好友请求'), findsOneWidget);
+      expect(find.text('接受'), findsWidgets);
       _expectNoFlutterErrors(tester);
 
-      await tester.tap(find.text('Leaderboard'));
+      await tester.tap(find.text('排行榜'));
       await tester.pumpAndSettle();
-      expect(find.text('Leader 1'), findsOneWidget);
+      expect(find.text('榜首 1'), findsOneWidget);
       _expectNoFlutterErrors(tester);
     });
 
@@ -471,8 +506,8 @@ void main() {
 
       controller.setLoadedState();
       await tester.pump();
-      expect(find.text('Statistics'), findsOneWidget);
-      expect(find.text('Quick Access'), findsOneWidget);
+      expect(find.text('统计数据'), findsOneWidget);
+      expect(find.text('快捷入口'), findsOneWidget);
       _expectNoFlutterErrors(tester);
     });
   });
@@ -504,7 +539,7 @@ void main() {
 
       await _pumpPhoneSized(tester, buildGoldenApp(const CourseListView()));
 
-      expect(find.text('Frontend Foundations 1'), findsOneWidget);
+      expect(find.text('前端基础 1'), findsOneWidget);
       _expectNoFlutterErrors(tester);
       await expectLater(
         find.byType(ScreenUtilInit),
@@ -521,7 +556,7 @@ void main() {
 
       await _pumpPhoneSized(tester, buildGoldenApp(const ChallengeListView()));
 
-      expect(find.text('Challenge 1'), findsOneWidget);
+      expect(find.text('挑战 1'), findsOneWidget);
       _expectNoFlutterErrors(tester);
       await expectLater(
         find.byType(ScreenUtilInit),
@@ -538,7 +573,7 @@ void main() {
 
       await _pumpPhoneSized(tester, buildGoldenApp(const SocialView()));
 
-      expect(find.text('Activity'), findsOneWidget);
+      expect(find.text('动态'), findsOneWidget);
       _expectNoFlutterErrors(tester);
       await expectLater(
         find.byType(ScreenUtilInit),
@@ -555,7 +590,7 @@ void main() {
 
       await _pumpPhoneSized(tester, buildGoldenApp(const ProfileView()));
 
-      expect(find.text('Recent Badges'), findsOneWidget);
+      expect(find.text('最近徽章'), findsOneWidget);
       _expectNoFlutterErrors(tester);
       await expectLater(
         find.byType(ScreenUtilInit),

@@ -8,7 +8,7 @@ class FriendsView extends GetView<FriendsController> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Friends'),
+        title: const Text('好友'),
         actions: [
           IconButton(
             icon: const Icon(Icons.person_add),
@@ -23,10 +23,10 @@ class FriendsView extends GetView<FriendsController> {
           return ListTile(
             leading: CircleAvatar(
               backgroundColor: Colors.primaries[index % Colors.primaries.length],
-              child: Text('F$index'),
+              child: Text('好友$index'),
             ),
-            title: Text('Friend $index'),
-            subtitle: Text('Level ${10 + index}'),
+            title: Text('好友 $index'),
+            subtitle: Text('等级 ${10 + index}'),
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
               children: [

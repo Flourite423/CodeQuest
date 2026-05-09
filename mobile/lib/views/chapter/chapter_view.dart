@@ -5,7 +5,7 @@ import 'package:get/get.dart';
 import '../../controllers/base_controller.dart';
 import '../../models/models.dart';
 import '../../services/mock_data.dart';
-import '../../services/storage_service.dart';
+import '../../services/progress_service.dart';
 import '../../widgets/page_state_host.dart';
 import '../../widgets/shared/cta_bar.dart';
 
@@ -26,7 +26,7 @@ class ChapterView extends GetView<ChapterController> {
       bottomNavigationBar: Obx(() {
         if (controller.chapter.value == null) return const SizedBox.shrink();
         return CTABar(
-          primaryLabel: controller.isCompleted.value ? 'Go to Exercise' : 'Complete Learning',
+          primaryLabel: controller.isCompleted.value ? '前往练习' : '完成学习',
           onPrimary: () => controller.onPrimaryCTA(),
         );
       }),
@@ -131,7 +131,7 @@ class _ProgressIndicator extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  isCompleted ? 'Completed' : 'In Progress',
+                  isCompleted ? '已完成' : '进行中',
                   style: theme.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.w600,
                     color: isCompleted ? colorScheme.primary : colorScheme.onSurface,
@@ -140,8 +140,8 @@ class _ProgressIndicator extends StatelessWidget {
                 SizedBox(height: 4.h),
                 Text(
                   isCompleted
-                      ? 'You have completed this chapter. Practice with exercises!'
-                      : 'Read through the content and mark as complete when ready.',
+                      ? '你已完成此章节。去练习吧！'
+                      : '阅读内容并在准备好后标记为完成。',
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: colorScheme.onSurfaceVariant,
                   ),
@@ -386,7 +386,7 @@ class _SampleCodeCard extends StatelessWidget {
             ),
             SizedBox(width: 8.w),
             Text(
-              'Sample Code',
+              '示例代码',
               style: theme.textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.w600,
               ),
@@ -453,7 +453,7 @@ class _KnowledgeSummaryCard extends StatelessWidget {
               ),
               SizedBox(width: 8.w),
               Text(
-                'Key Takeaway',
+                '关键要点',
                 style: theme.textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.w600,
                   color: colorScheme.onSecondaryContainer,
@@ -477,31 +477,54 @@ class _KnowledgeSummaryCard extends StatelessWidget {
 
 class ChapterController extends BaseController {
   final MockDataService _mockDataService = Get.find<MockDataService>();
-  final StorageService _storageService = Get.find<StorageService>();
+
+  ProgressService get _progressService {
+    if (Get.isRegistered<ProgressService>()) {
+      return Get.find<ProgressService>();
+    }
+    return Get.put(ProgressService(), permanent: true);
+  }
 
   final Rx<Chapter?> chapter = Rx<Chapter?>(null);
   final RxString chapterId = ''.obs;
+  final RxString courseId = ''.obs;
   final RxBool isCompleted = false.obs;
 
   @override
   void onInit() {
     super.onInit();
     chapterId.value = Get.parameters['id'] ?? '';
+    courseId.value = Get.parameters['courseId'] ?? 'course-1';
     if (chapterId.value.isNotEmpty) {
       loadChapter();
     } else {
-      setError(message: 'Chapter ID is missing.');
+      setError(message: '章节ID缺失。');
     }
   }
 
   Future<void> loadChapter() async {
-    setLoading(message: 'Loading chapter...');
+    if (!_progressService.isOnline.value) {
+      final cachedCourse = _progressService.getCachedCourse(courseId.value);
+      if (cachedCourse != null) {
+        final offlineChapter = cachedCourse.chapters.firstWhereOrNull(
+          (item) => item.id == chapterId.value,
+        );
+        if (offlineChapter != null) {
+          chapter.value = offlineChapter;
+          isCompleted.value = offlineChapter.isCompleted;
+          setPartialData(message: '当前为离线模式，已加载本地章节内容。');
+          return;
+        }
+      }
+    }
+
+    setLoading(message: '加载章节中...');
     registerRetry(loadChapter);
 
     try {
       final result = await _mockDataService.fetchCourse();
       if (result == null) {
-        setEmpty(message: 'Chapter not found.');
+        setEmpty(message: '未找到章节。');
         return;
       }
 
@@ -511,25 +534,29 @@ class ChapterController extends BaseController {
       );
 
       if (foundChapter == null) {
-        setEmpty(message: 'Chapter not found.');
+        setEmpty(message: '未找到章节。');
         return;
       }
 
-      chapter.value = foundChapter;
-      isCompleted.value = foundChapter.isCompleted;
+      final processedCourse = _progressService.applyCourseProgress(result);
+      await _progressService.cacheCourse(processedCourse);
+      final processedChapter = processedCourse.chapters.firstWhereOrNull(
+        (item) => item.id == chapterId.value,
+      );
 
-      // Check if user has previously marked this chapter as completed in storage
-      final completedKey = 'chapter_completed_${chapterId.value}';
-      final storedCompleted = _storageService.read<bool>(completedKey);
-      if (storedCompleted == true) {
-        isCompleted.value = true;
+      if (processedChapter == null) {
+        setEmpty(message: '未找到章节。');
+        return;
       }
+
+      chapter.value = processedChapter;
+      isCompleted.value = processedChapter.isCompleted;
 
       pageState.value = PageState.initial;
     } on MockDataException catch (e) {
       setError(message: e.message);
     } catch (e) {
-      setError(message: 'Failed to load chapter. Please try again.');
+      setError(message: '加载章节失败，请重试。');
     }
   }
 
@@ -554,23 +581,23 @@ class ChapterController extends BaseController {
               color: Theme.of(Get.context!).colorScheme.primary,
             ),
             SizedBox(width: 8.w),
-            const Text('Complete Chapter?'),
+            const Text('完成章节？'),
           ],
         ),
         content: const Text(
-          'Mark this chapter as completed? You will unlock exercises and the next chapter.',
+          '将此章节标记为已完成？你将解锁练习和下一章节。',
         ),
         actions: [
           TextButton(
             onPressed: () => Get.back(),
-            child: const Text('Cancel'),
+            child: const Text('取消'),
           ),
           FilledButton(
             onPressed: () {
               Get.back();
               markChapterComplete();
             },
-            child: const Text('Complete'),
+            child: const Text('完成'),
           ),
         ],
       ),
@@ -579,26 +606,50 @@ class ChapterController extends BaseController {
 
   Future<void> markChapterComplete() async {
     try {
-      // Persist completion state
-      final completedKey = 'chapter_completed_${chapterId.value}';
-      await _storageService.write(completedKey, true);
+      final cachedCourse = _progressService.getCachedCourse(courseId.value);
+      final totalChapters = cachedCourse?.chapters.length ?? 0;
+      final completedCount = cachedCourse?.chapters
+              .where((item) => item.isCompleted || item.id == chapterId.value)
+              .length ??
+          1;
+      final nextProgress = totalChapters > 0 ? completedCount / totalChapters : 1.0;
+
+      await _progressService.saveChapterCompleted(
+        chapterId: chapterId.value,
+        courseId: courseId.value,
+        courseProgress: nextProgress,
+      );
 
       isCompleted.value = true;
+      final current = chapter.value;
+      if (current != null) {
+        chapter.value = Chapter(
+          id: current.id,
+          title: current.title,
+          content: current.content,
+          sampleCode: current.sampleCode,
+          summary: current.summary,
+          isCompleted: true,
+          isLocked: current.isLocked,
+        );
+      }
 
       Get.snackbar(
-        'Chapter Completed',
-        'Great job! Exercises and the next chapter are now unlocked.',
+        '章节完成',
+        '太棒了！练习和下一章节现在已解锁。',
         snackPosition: SnackPosition.BOTTOM,
         duration: const Duration(seconds: 3),
         margin: EdgeInsets.all(16.w),
       );
     } catch (e) {
-      setError(message: 'Failed to save progress. Please try again.');
+      setError(message: '保存进度失败，请重试。');
     }
   }
 
   void _goToExercise() {
-    Get.toNamed('/exercise/${chapterId.value}');
+    Get.toNamed('/exercise/${chapterId.value}', parameters: <String, String>{
+      'courseId': courseId.value,
+    });
   }
 }
 

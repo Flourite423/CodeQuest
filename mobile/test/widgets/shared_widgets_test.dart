@@ -2,14 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:learning_app_mobile/widgets/shared/app_header.dart';
-import 'package:learning_app_mobile/widgets/shared/bottom_sheet_scaffold.dart';
-import 'package:learning_app_mobile/widgets/shared/cta_bar.dart';
-import 'package:learning_app_mobile/widgets/shared/empty_state.dart';
-import 'package:learning_app_mobile/widgets/shared/error_state.dart';
-import 'package:learning_app_mobile/widgets/shared/list_card.dart';
-import 'package:learning_app_mobile/widgets/shared/loading_state.dart';
-import 'package:learning_app_mobile/widgets/shared/rank_row.dart';
+import 'package:codequest/widgets/shared/app_header.dart';
+import 'package:codequest/widgets/shared/bottom_sheet_scaffold.dart';
+import 'package:codequest/widgets/shared/cta_bar.dart';
+import 'package:codequest/widgets/shared/empty_state.dart';
+import 'package:codequest/widgets/shared/error_state.dart';
+import 'package:codequest/widgets/shared/list_card.dart';
+import 'package:codequest/widgets/shared/loading_state.dart';
+import 'package:codequest/widgets/shared/rank_row.dart';
 
 Widget buildTestApp(Widget child) {
   return ScreenUtilInit(
@@ -95,9 +95,9 @@ void main() {
       ));
 
       expect(find.byIcon(Icons.error_outline), findsOneWidget);
-      expect(find.text('Something went wrong'), findsOneWidget);
+      expect(find.text('出了点问题'), findsOneWidget);
       expect(find.text('Network error occurred.'), findsOneWidget);
-      expect(find.text('Retry'), findsOneWidget);
+      expect(find.text('重试'), findsOneWidget);
     });
 
     testWidgets('triggers onRetry when retry button is tapped', (tester) async {
@@ -109,7 +109,7 @@ void main() {
         ),
       ));
 
-      await tester.tap(find.text('Retry'));
+      await tester.tap(find.text('重试'));
       await tester.pump();
       expect(tapped, isTrue);
     });

@@ -5,6 +5,8 @@ import 'package:get/get.dart';
 import '../../controllers/base_controller.dart';
 import '../../models/models.dart' as app_models;
 import '../../services/mock_data.dart';
+import '../../services/notification_service.dart';
+import '../../services/progress_service.dart';
 import '../../services/storage_service.dart';
 import '../../widgets/page_state_host.dart';
 
@@ -15,7 +17,7 @@ class SettingsView extends GetView<SettingsController> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Settings'),
+        title: const Text('设置'),
       ),
       body: Obx(() {
         return PageStateHost(
@@ -39,6 +41,8 @@ class SettingsView extends GetView<SettingsController> {
           SizedBox(height: 24.h),
           _buildAppSection(context),
           SizedBox(height: 24.h),
+          _buildNotificationSection(context),
+          SizedBox(height: 24.h),
           _buildStorageSection(context),
           SizedBox(height: 24.h),
           _buildAboutSection(context),
@@ -56,7 +60,7 @@ class SettingsView extends GetView<SettingsController> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildSectionHeader(context, 'Account'),
+        _buildSectionHeader(context, '账户'),
         Card(
           margin: EdgeInsets.symmetric(horizontal: 16.w),
           child: Column(
@@ -78,7 +82,7 @@ class SettingsView extends GetView<SettingsController> {
                         : null,
                   ),
                   title: Text(
-                    user?.nickname ?? 'Learner',
+                    user?.nickname ?? '学习者',
                     style: TextStyle(
                       fontSize: 16.sp,
                       fontWeight: FontWeight.w600,
@@ -109,7 +113,7 @@ class SettingsView extends GetView<SettingsController> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildSectionHeader(context, 'Learning'),
+        _buildSectionHeader(context, '学习'),
         Card(
           margin: EdgeInsets.symmetric(horizontal: 16.w),
           child: Column(
@@ -121,11 +125,11 @@ class SettingsView extends GetView<SettingsController> {
                     color: colorScheme.primary,
                   ),
                   title: Text(
-                    'Daily Goal',
+                    '每日目标',
                     style: TextStyle(fontSize: 16.sp),
                   ),
                   subtitle: Text(
-                    '${controller.dailyGoal.value} minutes',
+                    '${controller.dailyGoal.value} 分钟',
                     style: textTheme.bodySmall?.copyWith(
                       color: colorScheme.onSurfaceVariant,
                     ),
@@ -141,11 +145,11 @@ class SettingsView extends GetView<SettingsController> {
                   color: colorScheme.primary,
                 ),
                 title: Text(
-                  'Difficulty Preference',
+                  '难度偏好',
                   style: TextStyle(fontSize: 16.sp),
                 ),
                 subtitle: Text(
-                  'Beginner',
+                  '初级',
                   style: textTheme.bodySmall?.copyWith(
                     color: colorScheme.onSurfaceVariant,
                   ),
@@ -164,6 +168,25 @@ class SettingsView extends GetView<SettingsController> {
                 ),
                 onTap: () => _showOfflineSnackbar(context),
               ),
+              const Divider(height: 1, indent: 56),
+              ListTile(
+                leading: Icon(
+                  Icons.restart_alt,
+                  color: colorScheme.error,
+                ),
+                title: Text(
+                  '清除学习进度',
+                  style: TextStyle(fontSize: 16.sp),
+                ),
+                subtitle: Text(
+                  '清除章节、课程、挑战、每日挑战和学习统计记录',
+                  style: textTheme.bodySmall?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: controller.clearLearningProgress,
+              ),
             ],
           ),
         ),
@@ -177,7 +200,7 @@ class SettingsView extends GetView<SettingsController> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildSectionHeader(context, 'App'),
+        _buildSectionHeader(context, '应用'),
         Card(
           margin: EdgeInsets.symmetric(horizontal: 16.w),
           child: Column(
@@ -189,7 +212,7 @@ class SettingsView extends GetView<SettingsController> {
                     color: colorScheme.primary,
                   ),
                   title: Text(
-                    'Theme Mode',
+                    '主题模式',
                     style: TextStyle(fontSize: 16.sp),
                   ),
                   subtitle: Text(
@@ -211,11 +234,11 @@ class SettingsView extends GetView<SettingsController> {
                     color: colorScheme.primary,
                   ),
                   title: Text(
-                    'AI Hints',
+                    'AI 提示',
                     style: TextStyle(fontSize: 16.sp),
                   ),
                   subtitle: Text(
-                    'Show AI-powered hints during exercises',
+                    '在练习中显示 AI 驱动的提示',
                     style: TextStyle(
                       fontSize: 13.sp,
                       color: colorScheme.onSurfaceVariant,
@@ -239,7 +262,7 @@ class SettingsView extends GetView<SettingsController> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildSectionHeader(context, 'Storage'),
+        _buildSectionHeader(context, '存储'),
         Card(
           margin: EdgeInsets.symmetric(horizontal: 16.w),
           child: Column(
@@ -251,7 +274,7 @@ class SettingsView extends GetView<SettingsController> {
                     color: colorScheme.primary,
                   ),
                   title: Text(
-                    'Cache Size',
+                    '缓存大小',
                     style: TextStyle(fontSize: 16.sp),
                   ),
                   subtitle: Text(
@@ -262,7 +285,98 @@ class SettingsView extends GetView<SettingsController> {
                   ),
                   trailing: TextButton(
                     onPressed: controller.clearCache,
-                    child: const Text('Clear'),
+                    child: const Text('清除'),
+                  ),
+                );
+              }),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildNotificationSection(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildSectionHeader(context, '通知'),
+        Card(
+          margin: EdgeInsets.symmetric(horizontal: 16.w),
+          child: Column(
+            children: [
+              Obx(() {
+                return ListTile(
+                  leading: Icon(
+                    Icons.notifications_active_outlined,
+                    color: colorScheme.primary,
+                  ),
+                  title: Text(
+                    '通知权限',
+                    style: TextStyle(fontSize: 16.sp),
+                  ),
+                  subtitle: Text(
+                    controller.notificationPermissionText.value,
+                    style: textTheme.bodySmall?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  trailing: TextButton(
+                    onPressed: controller.requestNotificationPermission,
+                    child: const Text('申请'),
+                  ),
+                );
+              }),
+              const Divider(height: 1, indent: 56),
+              Obx(() {
+                return ListTile(
+                  leading: Icon(
+                    Icons.vpn_key_outlined,
+                    color: colorScheme.primary,
+                  ),
+                  title: Text(
+                    'FCM Token',
+                    style: TextStyle(fontSize: 16.sp),
+                  ),
+                  subtitle: Text(
+                    controller.notificationTokenPreview.value,
+                    style: textTheme.bodySmall?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  trailing: TextButton(
+                    onPressed: controller.refreshNotificationToken,
+                    child: const Text('刷新'),
+                  ),
+                );
+              }),
+              const Divider(height: 1, indent: 56),
+              Obx(() {
+                return ListTile(
+                  leading: Icon(
+                    Icons.campaign_outlined,
+                    color: colorScheme.primary,
+                  ),
+                  title: Text(
+                    '发送测试通知',
+                    style: TextStyle(fontSize: 16.sp),
+                  ),
+                  subtitle: Text(
+                    controller.notificationSummary.value,
+                    style: textTheme.bodySmall?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  trailing: FilledButton.tonal(
+                    onPressed: controller.sendTestNotification,
+                    child: const Text('发送'),
                   ),
                 );
               }),
@@ -279,7 +393,7 @@ class SettingsView extends GetView<SettingsController> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildSectionHeader(context, 'About'),
+        _buildSectionHeader(context, '关于'),
         Card(
           margin: EdgeInsets.symmetric(horizontal: 16.w),
           child: Column(
@@ -290,7 +404,7 @@ class SettingsView extends GetView<SettingsController> {
                   color: colorScheme.primary,
                 ),
                 title: Text(
-                  'Version',
+                  '版本',
                   style: TextStyle(fontSize: 16.sp),
                 ),
                 trailing: Text(
@@ -308,11 +422,11 @@ class SettingsView extends GetView<SettingsController> {
                   color: colorScheme.primary,
                 ),
                 title: Text(
-                  'Help & Support',
+                  '帮助与支持',
                   style: TextStyle(fontSize: 16.sp),
                 ),
                 trailing: const Icon(Icons.chevron_right),
-                onTap: () => _showComingSoonSnackbar(context, 'Help center'),
+                onTap: () => _showComingSoonSnackbar(context, '帮助中心'),
               ),
               const Divider(height: 1, indent: 56),
               ListTile(
@@ -321,11 +435,11 @@ class SettingsView extends GetView<SettingsController> {
                   color: colorScheme.primary,
                 ),
                 title: Text(
-                  'About',
+                  '关于',
                   style: TextStyle(fontSize: 16.sp),
                 ),
                 trailing: const Icon(Icons.chevron_right),
-                onTap: () => _showComingSoonSnackbar(context, 'About page'),
+                onTap: () => _showComingSoonSnackbar(context, '关于页面'),
               ),
             ],
           ),
@@ -366,7 +480,7 @@ class SettingsView extends GetView<SettingsController> {
             color: colorScheme.error,
           ),
           label: Text(
-            'Sign Out',
+            '退出登录',
             style: TextStyle(
               fontSize: 16.sp,
               fontWeight: FontWeight.w600,
@@ -411,7 +525,7 @@ class SettingsView extends GetView<SettingsController> {
               ),
               SizedBox(height: 16.h),
               Text(
-                'Daily Learning Goal',
+                '每日学习目标',
                 style: TextStyle(
                   fontSize: 20.sp,
                   fontWeight: FontWeight.bold,
@@ -419,7 +533,7 @@ class SettingsView extends GetView<SettingsController> {
               ),
               SizedBox(height: 8.h),
               Text(
-                'How many minutes do you want to learn each day?',
+                '每天想学习多少分钟？',
                 style: TextStyle(
                   fontSize: 14.sp,
                   color: colorScheme.onSurfaceVariant,
@@ -437,7 +551,7 @@ class SettingsView extends GetView<SettingsController> {
                       child: Padding(
                         padding: EdgeInsets.symmetric(horizontal: 4.w),
                         child: ChoiceChip(
-                          label: Text('$goal min'),
+                           label: Text('$goal 分钟'),
                           selected: isSelected,
                           onSelected: (_) {
                             controller.setDailyGoal(goal);
@@ -494,7 +608,7 @@ class SettingsView extends GetView<SettingsController> {
               ),
               SizedBox(height: 16.h),
               Text(
-                'Theme Mode',
+                '主题模式',
                 style: TextStyle(
                   fontSize: 20.sp,
                   fontWeight: FontWeight.bold,
@@ -504,9 +618,9 @@ class SettingsView extends GetView<SettingsController> {
               Obx(() {
                 final selectedTheme = controller.themeMode.value;
                 final themes = [
-                  _ThemeOption('system', 'System', Icons.brightness_auto),
-                  _ThemeOption('light', 'Light', Icons.brightness_7),
-                  _ThemeOption('dark', 'Dark', Icons.brightness_2),
+                  _ThemeOption('system', '系统', Icons.brightness_auto),
+                  _ThemeOption('light', '浅色', Icons.brightness_7),
+                  _ThemeOption('dark', '深色', Icons.brightness_2),
                 ];
 
                 return Column(
@@ -539,8 +653,8 @@ class SettingsView extends GetView<SettingsController> {
 
   void _showOfflineSnackbar(BuildContext context) {
     Get.snackbar(
-      'Offline',
-      'This feature requires an internet connection.',
+      '离线',
+      '此功能需要网络连接。',
       snackPosition: SnackPosition.BOTTOM,
       duration: const Duration(seconds: 2),
       margin: EdgeInsets.all(16.w),
@@ -550,8 +664,8 @@ class SettingsView extends GetView<SettingsController> {
 
   void _showComingSoonSnackbar(BuildContext context, String feature) {
     Get.snackbar(
-      'Coming Soon',
-      '$feature will be available in a future update.',
+      '即将推出',
+      '$feature 将在未来更新中提供。',
       snackPosition: SnackPosition.BOTTOM,
       duration: const Duration(seconds: 2),
       margin: EdgeInsets.all(16.w),
@@ -561,12 +675,12 @@ class SettingsView extends GetView<SettingsController> {
   String _getThemeLabel(String mode) {
     switch (mode) {
       case 'light':
-        return 'Light';
+        return '浅色';
       case 'dark':
-        return 'Dark';
+        return '深色';
       case 'system':
       default:
-        return 'System';
+        return '系统';
     }
   }
 }
@@ -580,14 +694,25 @@ class _ThemeOption {
 }
 
 class SettingsController extends BaseController {
-  final MockDataService _mockDataService = MockDataService();
+  final MockDataService _mockDataService = Get.find<MockDataService>();
   final StorageService _storageService = Get.find<StorageService>();
+  final NotificationService _notificationService = Get.find<NotificationService>();
+
+  ProgressService get _progressService {
+    if (Get.isRegistered<ProgressService>()) {
+      return Get.find<ProgressService>();
+    }
+    return Get.put(ProgressService(), permanent: true);
+  }
 
   final Rx<app_models.User?> user = Rx<app_models.User?>(null);
   final RxInt dailyGoal = 30.obs;
   final RxString themeMode = 'system'.obs;
   final RxBool aiHintsEnabled = true.obs;
   final RxString cacheSize = '0 MB'.obs;
+  final RxString notificationPermissionText = '未申请'.obs;
+  final RxString notificationTokenPreview = '尚未获取 Token'.obs;
+  final RxString notificationSummary = '可发送一条本地测试通知进行验证'.obs;
 
   static const String _dailyGoalKey = 'daily_goal_minutes';
   static const String _themeModeKey = 'theme_mode';
@@ -600,7 +725,7 @@ class SettingsController extends BaseController {
   }
 
   Future<void> loadSettings() async {
-    setLoading(message: 'Loading settings...');
+    setLoading(message: '加载设置中...');
     registerRetry(loadSettings);
 
     try {
@@ -618,12 +743,13 @@ class SettingsController extends BaseController {
         aiHintsEnabled.value = persistedAiHints ?? true;
 
         await _calculateCacheSize();
+        await _syncNotificationState();
         resetState();
       } else {
-        setEmpty(message: 'Settings not available.');
+        setEmpty(message: '设置不可用。');
       }
     } catch (e) {
-      setError(message: 'Failed to load settings. Please try again.');
+      setError(message: '加载设置失败，请重试。');
     }
   }
 
@@ -649,35 +775,97 @@ class SettingsController extends BaseController {
     cacheSize.value = '12.5 MB';
   }
 
+  Future<void> _syncNotificationState() async {
+    notificationPermissionText.value =
+        _notificationService.permissionStatusText.value;
+
+    final token = _notificationService.fcmToken.value ??
+        await _notificationService.refreshToken();
+    notificationTokenPreview.value = _formatToken(token);
+    notificationSummary.value = _notificationService.lastMessageSummary.value;
+  }
+
+  Future<void> requestNotificationPermission() async {
+    await _notificationService.requestPermission();
+    await _syncNotificationState();
+
+    Get.snackbar(
+      '通知权限',
+      notificationPermissionText.value,
+      snackPosition: SnackPosition.BOTTOM,
+      duration: const Duration(seconds: 2),
+      margin: EdgeInsets.all(16.w),
+    );
+  }
+
+  Future<void> refreshNotificationToken() async {
+    final token = await _notificationService.refreshToken();
+    notificationTokenPreview.value = _formatToken(token);
+    notificationSummary.value = _notificationService.lastMessageSummary.value;
+
+    Get.snackbar(
+      'FCM Token',
+      token == null ? '当前未获取到 Token' : 'Token 已刷新',
+      snackPosition: SnackPosition.BOTTOM,
+      duration: const Duration(seconds: 2),
+      margin: EdgeInsets.all(16.w),
+    );
+  }
+
+  Future<void> sendTestNotification() async {
+    await _notificationService.sendTestNotification();
+    await _syncNotificationState();
+
+    Get.snackbar(
+      '测试通知',
+      '已触发测试通知，请留意系统通知栏。',
+      snackPosition: SnackPosition.BOTTOM,
+      duration: const Duration(seconds: 2),
+      margin: EdgeInsets.all(16.w),
+    );
+  }
+
+  String _formatToken(String? token) {
+    if (token == null || token.isEmpty) {
+      return '尚未获取 Token';
+    }
+
+    if (token.length <= 24) {
+      return token;
+    }
+
+    return '${token.substring(0, 12)}...${token.substring(token.length - 12)}';
+  }
+
   Future<void> clearCache() async {
     final confirmed = await Get.dialog<bool>(
       AlertDialog(
-        title: const Text('Clear Cache'),
+        title: const Text('清除缓存'),
         content: const Text(
-          'This will clear all cached data including images and temporary files. Continue?',
+          '这将清除所有缓存数据，包括图片和临时文件。是否继续？',
         ),
         actions: [
           TextButton(
             onPressed: () => Get.back(result: false),
-            child: const Text('Cancel'),
+            child: const Text('取消'),
           ),
           TextButton(
             onPressed: () => Get.back(result: true),
-            child: const Text('Clear'),
+            child: const Text('清除'),
           ),
         ],
       ),
     );
 
     if (confirmed == true) {
-      setLoading(message: 'Clearing cache...');
+      setLoading(message: '清除缓存中...');
       await Future<void>.delayed(const Duration(milliseconds: 800));
       cacheSize.value = '0 MB';
       resetState();
 
       Get.snackbar(
-        'Success',
-        'Cache cleared successfully',
+        '成功',
+        '缓存清除成功',
         snackPosition: SnackPosition.BOTTOM,
         duration: const Duration(seconds: 2),
         margin: EdgeInsets.all(16.w),
@@ -685,15 +873,54 @@ class SettingsController extends BaseController {
     }
   }
 
+  Future<void> clearLearningProgress() async {
+    final confirmed = await Get.dialog<bool>(
+      AlertDialog(
+        title: const Text('清除学习进度'),
+        content: const Text('此操作会清除本地学习进度、挑战记录和统计数据，且无法撤销。是否继续？'),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(result: false),
+            child: const Text('取消'),
+          ),
+          TextButton(
+            onPressed: () => Get.back(result: true),
+            child: Text(
+              '清除',
+              style: TextStyle(color: Theme.of(Get.context!).colorScheme.error),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) {
+      return;
+    }
+
+    setLoading(message: '正在清除学习进度...');
+    await _progressService.clearLearningProgress();
+    await _calculateCacheSize();
+    resetState();
+
+    Get.snackbar(
+      '学习进度已清除',
+      '本地学习记录已重置。重新进入课程后会显示初始状态。',
+      snackPosition: SnackPosition.BOTTOM,
+      duration: const Duration(seconds: 2),
+      margin: EdgeInsets.all(16.w),
+    );
+  }
+
   void showLogoutConfirm() {
     Get.dialog(
       AlertDialog(
-        title: const Text('Sign Out'),
-        content: const Text('Are you sure you want to sign out?'),
+        title: const Text('退出登录'),
+        content: const Text('确定要退出登录吗？'),
         actions: [
           TextButton(
             onPressed: () => Get.back(),
-            child: const Text('Cancel'),
+            child: const Text('取消'),
           ),
           TextButton(
             onPressed: () {
@@ -701,7 +928,7 @@ class SettingsController extends BaseController {
               _performLogout();
             },
             child: Text(
-              'Sign Out',
+              '退出登录',
               style: TextStyle(color: Theme.of(Get.context!).colorScheme.error),
             ),
           ),
@@ -711,7 +938,7 @@ class SettingsController extends BaseController {
   }
 
   Future<void> _performLogout() async {
-    setLoading(message: 'Signing out...');
+    setLoading(message: '正在退出登录...');
     await Future<void>.delayed(const Duration(milliseconds: 500));
     await _storageService.clearAuthSession();
     Get.offAllNamed('/login');

@@ -7,7 +7,7 @@ import 'package:get/get.dart';
 import '../../controllers/base_controller.dart';
 import '../../models/app_models.dart';
 import '../../services/mock_data.dart';
-import '../../services/storage_service.dart';
+import '../../services/progress_service.dart';
 import '../../widgets/page_state_host.dart';
 import '../../widgets/shared/cta_bar.dart';
 
@@ -27,7 +27,13 @@ class DailyChallengeController extends BaseController {
   DateTime? _nextResetTime;
 
   MockDataService get _mockData => Get.find<MockDataService>();
-  StorageService get _storage => Get.find<StorageService>();
+
+  ProgressService get _progress {
+    if (Get.isRegistered<ProgressService>()) {
+      return Get.find<ProgressService>();
+    }
+    return Get.put(ProgressService(), permanent: true);
+  }
 
   @override
   void onInit() {
@@ -42,25 +48,41 @@ class DailyChallengeController extends BaseController {
   }
 
   Future<void> loadDailyChallenge() async {
-    setLoading(message: 'Loading daily challenge...');
+    if (!_progress.isOnline.value) {
+      final cachedChallenge = _progress.getCachedDailyChallenge();
+      if (cachedChallenge != null) {
+        final merged = _progress.applyDailyChallengeProgress(cachedChallenge);
+        dailyChallenge.value = merged;
+        status.value = merged.isAttempted
+            ? DailyChallengeStatus.attempted
+            : merged.isExpired
+                ? DailyChallengeStatus.expired
+                : DailyChallengeStatus.notAttempted;
+        final now = DateTime.now();
+        _nextResetTime = DateTime(now.year, now.month, now.day + 1);
+        _startCountdown();
+        setPartialData(message: '当前为离线模式，已加载本地每日挑战记录。');
+        return;
+      }
+    }
+
+    setLoading(message: '加载每日挑战中...');
     registerRetry(loadDailyChallenge);
 
     try {
       final challenge = await _mockData.fetchDailyChallenge();
       if (challenge == null) {
-        setEmpty(message: 'No daily challenge available today.');
+        setEmpty(message: '今日暂无每日挑战。');
         return;
       }
 
-      dailyChallenge.value = challenge;
+      final merged = _progress.applyDailyChallengeProgress(challenge);
+      dailyChallenge.value = merged;
+      await _progress.cacheDailyChallenge(merged);
 
-      // Load persisted attempt status
-      final lastAttemptDate = _storage.read<String>('daily_challenge_last_attempt');
-      final today = _formatDate(DateTime.now());
-
-      if (lastAttemptDate == today) {
+      if (merged.isAttempted) {
         status.value = DailyChallengeStatus.attempted;
-      } else if (challenge.isExpired) {
+      } else if (merged.isExpired) {
         status.value = DailyChallengeStatus.expired;
       } else {
         status.value = DailyChallengeStatus.notAttempted;
@@ -73,7 +95,7 @@ class DailyChallengeController extends BaseController {
 
       resetState();
     } catch (e) {
-      setError(message: 'Failed to load daily challenge. Please try again.');
+      setError(message: '加载每日挑战失败，请重试。');
     }
   }
 
@@ -105,10 +127,6 @@ class DailyChallengeController extends BaseController {
     countdownText.value = '$hours:$minutes:$seconds';
   }
 
-  String _formatDate(DateTime date) {
-    return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
-  }
-
   Future<void> startDailyChallenge() async {
     if (status.value != DailyChallengeStatus.notAttempted) return;
     if (isSubmitting.value) return;
@@ -119,27 +137,29 @@ class DailyChallengeController extends BaseController {
       // Simulate challenge attempt
       await Future.delayed(const Duration(seconds: 2));
 
-      // Mark as attempted
-      final today = _formatDate(DateTime.now());
-      await _storage.write('daily_challenge_last_attempt', today);
+      await _progress.saveDailyChallengeCompletion(
+        challengeId: dailyChallenge.value?.id ?? 'daily-1',
+      );
       status.value = DailyChallengeStatus.attempted;
 
+      final cs = Theme.of(Get.context!).colorScheme;
       Get.snackbar(
-        'Daily Challenge Complete!',
-        'Great job completing today\'s challenge!',
+        '每日挑战完成',
+        '今日挑战记录已保存，连续学习天数已更新。',
         snackPosition: SnackPosition.BOTTOM,
         margin: const EdgeInsets.all(16),
-        backgroundColor: Colors.green[50],
-        colorText: Colors.green[800],
+        backgroundColor: cs.primaryContainer,
+        colorText: cs.onPrimaryContainer,
       );
     } catch (e) {
+      final cs = Theme.of(Get.context!).colorScheme;
       Get.snackbar(
-        'Error',
-        'Failed to submit daily challenge. Please try again.',
+        '错误',
+        '提交每日挑战失败，请重试。',
         snackPosition: SnackPosition.BOTTOM,
         margin: const EdgeInsets.all(16),
-        backgroundColor: Colors.red[50],
-        colorText: Colors.red[800],
+        backgroundColor: cs.errorContainer,
+        colorText: cs.onErrorContainer,
       );
     } finally {
       isSubmitting.value = false;
@@ -148,9 +168,9 @@ class DailyChallengeController extends BaseController {
 
   String getStatusText() {
     return switch (status.value) {
-      DailyChallengeStatus.notAttempted => 'Not Attempted',
-      DailyChallengeStatus.attempted => 'Completed Today',
-      DailyChallengeStatus.expired => 'Expired',
+      DailyChallengeStatus.notAttempted => '未尝试',
+      DailyChallengeStatus.attempted => '今日已完成',
+      DailyChallengeStatus.expired => '已过期',
     };
   }
 
@@ -158,7 +178,7 @@ class DailyChallengeController extends BaseController {
     final colorScheme = Theme.of(context).colorScheme;
     return switch (status.value) {
       DailyChallengeStatus.notAttempted => colorScheme.primary,
-      DailyChallengeStatus.attempted => Colors.green[600]!,
+      DailyChallengeStatus.attempted => colorScheme.primary,
       DailyChallengeStatus.expired => colorScheme.error,
     };
   }
@@ -171,14 +191,14 @@ class DailyChallengeController extends BaseController {
     final seconds = challenge.timeLimit % 60;
 
     if (seconds > 0) {
-      return '$minutes min ${seconds}s';
+      return '$minutes 分 $seconds 秒';
     }
-    return '$minutes min';
+    return '$minutes 分钟';
   }
 
   String getNextAttemptText() {
     if (_nextResetTime == null) return '';
-    return 'Next challenge available in: ${countdownText.value}';
+    return '下一次挑战刷新时间：${countdownText.value}';
   }
 }
 
@@ -198,7 +218,7 @@ class DailyChallengeView extends GetView<DailyChallengeController> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Daily Challenge', style: theme.textTheme.titleLarge),
+        title: Text('每日挑战', style: theme.textTheme.titleLarge),
         centerTitle: true,
         elevation: 0,
       ),
@@ -221,7 +241,7 @@ class DailyChallengeView extends GetView<DailyChallengeController> {
   Widget _buildContent(BuildContext context) {
     final challenge = controller.dailyChallenge.value;
     if (challenge == null) {
-      return const Center(child: Text('No daily challenge available.'));
+      return const Center(child: Text('暂无每日挑战。'));
     }
 
     return SingleChildScrollView(
@@ -276,7 +296,7 @@ class DailyChallengeView extends GetView<DailyChallengeController> {
                 ),
                 SizedBox(width: 8.w),
                 Text(
-                  isExpired ? 'Challenge Expired' : 'Time Remaining',
+                  isExpired ? '挑战已过期' : '剩余时间',
                   style: theme.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.w600,
                     color: isExpired ? colorScheme.error : colorScheme.primary,
@@ -297,7 +317,7 @@ class DailyChallengeView extends GetView<DailyChallengeController> {
             }),
             SizedBox(height: 8.h),
             Text(
-              'Resets at midnight',
+              '午夜重置',
               style: theme.textTheme.bodySmall?.copyWith(
                 color: colorScheme.onSurfaceVariant,
               ),
@@ -329,13 +349,13 @@ class DailyChallengeView extends GetView<DailyChallengeController> {
               Container(
                 padding: EdgeInsets.all(12.w),
                 decoration: BoxDecoration(
-                  color: Colors.amber[50],
+                  color: colorScheme.secondaryContainer,
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
                   Icons.today_outlined,
                   size: 28.sp,
-                  color: Colors.amber[700],
+                  color: colorScheme.onSecondaryContainer,
                 ),
               ),
               SizedBox(width: 16.w),
@@ -367,22 +387,22 @@ class DailyChallengeView extends GetView<DailyChallengeController> {
           _buildInfoRow(
             context,
             icon: Icons.timer,
-            label: 'Time Limit',
+            label: '时间限制',
             value: controller.getTimeLimitText(),
           ),
           SizedBox(height: 12.h),
           _buildInfoRow(
             context,
             icon: Icons.repeat,
-            label: 'Frequency',
-            value: 'Once per day',
+            label: '频率',
+            value: '每日一次',
           ),
           SizedBox(height: 12.h),
           _buildInfoRow(
             context,
             icon: Icons.emoji_events,
-            label: 'Reward',
-            value: 'XP + Streak Bonus',
+            label: '奖励',
+            value: 'XP + 连续天数奖励',
           ),
         ],
       ),
@@ -473,7 +493,7 @@ class DailyChallengeView extends GetView<DailyChallengeController> {
             if (status == DailyChallengeStatus.expired) ...[
               SizedBox(height: 8.h),
               Text(
-                'This challenge has expired. Come back tomorrow!',
+                '此挑战已过期。明天再来吧！',
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
@@ -504,7 +524,7 @@ class DailyChallengeView extends GetView<DailyChallengeController> {
               Icon(Icons.info_outline, size: 20.sp, color: colorScheme.primary),
               SizedBox(width: 8.w),
               Text(
-                'Rules',
+                '规则',
                 style: theme.textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
@@ -512,10 +532,10 @@ class DailyChallengeView extends GetView<DailyChallengeController> {
             ],
           ),
           SizedBox(height: 12.h),
-          _buildRuleItem(context, '1. You can attempt the daily challenge once per day.'),
-          _buildRuleItem(context, '2. The challenge resets at midnight every day.'),
-          _buildRuleItem(context, '3. Complete within the time limit for bonus rewards.'),
-          _buildRuleItem(context, '4. Daily challenges help maintain your learning streak.'),
+          _buildRuleItem(context, '1. 每日挑战每天可尝试一次。'),
+          _buildRuleItem(context, '2. 挑战每天午夜重置。'),
+          _buildRuleItem(context, '3. 在时间限制内完成可获得额外奖励。'),
+          _buildRuleItem(context, '4. 每日挑战有助于保持你的学习连续天数。'),
         ],
       ),
     );
@@ -557,19 +577,19 @@ class DailyChallengeView extends GetView<DailyChallengeController> {
         case DailyChallengeStatus.notAttempted:
           return CTABar(
             primaryLabel: controller.isSubmitting.value
-                ? 'Starting...'
-                : 'Start Daily Challenge',
+                ? '开始中...'
+                : '开始每日挑战',
             onPrimary: controller.isSubmitting.value
                 ? () {}
                 : controller.startDailyChallenge,
           );
         case DailyChallengeStatus.attempted:
           return CTABar(
-            primaryLabel: 'Already Completed',
+            primaryLabel: '已完成',
             onPrimary: () {
               Get.snackbar(
-                'Already Completed',
-                'You have already completed today\'s challenge. Come back tomorrow!',
+                '已完成',
+                '你已完成今日挑战。明天再来吧！',
                 snackPosition: SnackPosition.BOTTOM,
                 margin: const EdgeInsets.all(16),
               );
@@ -577,11 +597,11 @@ class DailyChallengeView extends GetView<DailyChallengeController> {
           );
         case DailyChallengeStatus.expired:
           return CTABar(
-            primaryLabel: 'Challenge Expired',
+            primaryLabel: '挑战已过期',
             onPrimary: () {
               Get.snackbar(
-                'Challenge Expired',
-                'This challenge has expired. Wait for the next one!',
+                '挑战已过期',
+                '此挑战已过期。等待下一个挑战！',
                 snackPosition: SnackPosition.BOTTOM,
                 margin: const EdgeInsets.all(16),
               );

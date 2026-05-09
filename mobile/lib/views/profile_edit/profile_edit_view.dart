@@ -1,6 +1,9 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../../controllers/base_controller.dart';
 import '../../models/models.dart' as app_models;
@@ -15,11 +18,11 @@ class ProfileEditView extends GetView<ProfileEditController> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Edit Profile'),
+        title: const Text('编辑资料'),
         actions: [
           TextButton(
             onPressed: controller.saveProfile,
-            child: const Text('Save'),
+            child: const Text('保存'),
           ),
         ],
       ),
@@ -62,14 +65,18 @@ class ProfileEditView extends GetView<ProfileEditController> {
         children: [
           Obx(() {
             final avatarUrl = controller.avatarUrl.value;
+            final avatarFile = controller.avatarFile.value;
+            final isUploading = controller.isUploadingAvatar.value;
+
             return Stack(
               children: [
                 CircleAvatar(
                   radius: 60.r,
                   backgroundColor: colorScheme.primaryContainer,
-                  backgroundImage:
-                      avatarUrl != null ? NetworkImage(avatarUrl) : null,
-                  child: avatarUrl == null
+                  backgroundImage: avatarFile != null
+                      ? FileImage(avatarFile) as ImageProvider
+                      : (avatarUrl != null ? NetworkImage(avatarUrl) : null),
+                  child: avatarFile == null && avatarUrl == null
                       ? Icon(
                           Icons.person,
                           size: 60.sp,
@@ -77,6 +84,23 @@ class ProfileEditView extends GetView<ProfileEditController> {
                         )
                       : null,
                 ),
+                if (isUploading)
+                  Positioned.fill(
+                    child: CircleAvatar(
+                      radius: 60.r,
+                      backgroundColor: Colors.black.withValues(alpha: 0.5),
+                      child: SizedBox(
+                        width: 32.w,
+                        height: 32.h,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 3,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            colorScheme.onPrimary,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
                 Positioned(
                   bottom: 0,
                   right: 0,
@@ -89,7 +113,7 @@ class ProfileEditView extends GetView<ProfileEditController> {
                         size: 20.sp,
                         color: colorScheme.onPrimary,
                       ),
-                      onPressed: controller.pickAvatar,
+                      onPressed: isUploading ? null : controller.pickAvatar,
                       padding: EdgeInsets.zero,
                       constraints: const BoxConstraints(),
                     ),
@@ -99,11 +123,25 @@ class ProfileEditView extends GetView<ProfileEditController> {
             );
           }),
           SizedBox(height: 12.h),
-          TextButton.icon(
-            onPressed: controller.pickAvatar,
-            icon: const Icon(Icons.image_outlined),
-            label: const Text('Change Photo'),
-          ),
+          Obx(() {
+            final isUploading = controller.isUploadingAvatar.value;
+            return TextButton.icon(
+              onPressed: isUploading ? null : controller.pickAvatar,
+              icon: isUploading
+                  ? SizedBox(
+                      width: 18.w,
+                      height: 18.h,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          colorScheme.primary,
+                        ),
+                      ),
+                    )
+                  : const Icon(Icons.image_outlined),
+              label: Text(isUploading ? '上传中...' : '更换头像'),
+            );
+          }),
         ],
       ),
     );
@@ -116,7 +154,7 @@ class ProfileEditView extends GetView<ProfileEditController> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Basic Info',
+          '基本信息',
           style: TextStyle(
             fontSize: 14.sp,
             fontWeight: FontWeight.w600,
@@ -132,52 +170,45 @@ class ProfileEditView extends GetView<ProfileEditController> {
   }
 
   Widget _buildNicknameField(BuildContext context) {
-    return Obx(() {
-      return TextFormField(
-        controller: controller.nicknameController,
-        decoration: InputDecoration(
-          labelText: 'Nickname',
-          hintText: 'Enter your nickname',
-          prefixIcon: const Icon(Icons.person_outline),
-          errorText: controller.nicknameError.value.isEmpty
-              ? null
-              : controller.nicknameError.value,
-          contentPadding: EdgeInsets.symmetric(
-            horizontal: 16.w,
-            vertical: 14.h,
-          ),
+    return TextFormField(
+      controller: controller.nicknameController,
+      decoration: InputDecoration(
+        labelText: '昵称',
+        hintText: '请输入昵称',
+        prefixIcon: const Icon(Icons.person_outline),
+        errorText: controller.nicknameError.value.isEmpty
+            ? null
+            : controller.nicknameError.value,
+        contentPadding: EdgeInsets.symmetric(
+          horizontal: 16.w,
+          vertical: 14.h,
         ),
-        style: TextStyle(fontSize: 16.sp),
-        textInputAction: TextInputAction.next,
-        onChanged: controller.validateNickname,
-      );
-    });
+      ),
+      style: TextStyle(fontSize: 16.sp),
+      textInputAction: TextInputAction.next,
+      onChanged: controller.validateNickname,
+    );
   }
 
   Widget _buildBioField(BuildContext context) {
-    return Obx(() {
-      final bioLength = controller.bioController.text.length;
-      final maxLength = 200;
-
-      return TextFormField(
-        controller: controller.bioController,
-        decoration: InputDecoration(
-          labelText: 'Bio (Optional)',
-          hintText: 'Tell us about yourself',
-          prefixIcon: const Icon(Icons.edit_note_outlined),
-          counterText: '$bioLength/$maxLength',
-          contentPadding: EdgeInsets.symmetric(
-            horizontal: 16.w,
-            vertical: 14.h,
-          ),
+    return TextFormField(
+      controller: controller.bioController,
+      decoration: InputDecoration(
+        labelText: '个人简介（可选）',
+        hintText: '介绍一下你自己',
+        prefixIcon: const Icon(Icons.edit_note_outlined),
+        counterText: '${controller.bioController.text.length}/200',
+        contentPadding: EdgeInsets.symmetric(
+          horizontal: 16.w,
+          vertical: 14.h,
         ),
-        style: TextStyle(fontSize: 16.sp),
-        maxLines: 3,
-        maxLength: maxLength,
-        textInputAction: TextInputAction.done,
-        onChanged: controller.validateBio,
-      );
-    });
+      ),
+      style: TextStyle(fontSize: 16.sp),
+      maxLines: 3,
+      maxLength: 200,
+      textInputAction: TextInputAction.done,
+      onChanged: controller.validateBio,
+    );
   }
 
   Widget _buildDailyGoalSection(BuildContext context) {
@@ -188,7 +219,7 @@ class ProfileEditView extends GetView<ProfileEditController> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Daily Goal',
+          '每日目标',
           style: TextStyle(
             fontSize: 14.sp,
             fontWeight: FontWeight.w600,
@@ -197,7 +228,7 @@ class ProfileEditView extends GetView<ProfileEditController> {
         ),
         SizedBox(height: 8.h),
         Text(
-          'How many minutes do you want to learn each day?',
+          '每天想学习多少分钟？',
           style: textTheme.bodySmall?.copyWith(
             color: colorScheme.onSurfaceVariant,
           ),
@@ -244,7 +275,7 @@ class ProfileEditView extends GetView<ProfileEditController> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Theme',
+          '主题',
           style: TextStyle(
             fontSize: 14.sp,
             fontWeight: FontWeight.w600,
@@ -253,7 +284,7 @@ class ProfileEditView extends GetView<ProfileEditController> {
         ),
         SizedBox(height: 8.h),
         Text(
-          'Choose your preferred appearance',
+          '选择你喜欢的界面外观',
           style: textTheme.bodySmall?.copyWith(
             color: colorScheme.onSurfaceVariant,
           ),
@@ -262,9 +293,9 @@ class ProfileEditView extends GetView<ProfileEditController> {
         Obx(() {
           final selectedTheme = controller.themeMode.value;
           final themes = [
-            _ThemeOption('system', 'System', Icons.brightness_auto),
-            _ThemeOption('light', 'Light', Icons.brightness_7),
-            _ThemeOption('dark', 'Dark', Icons.brightness_2),
+            _ThemeOption('system', '跟随系统', Icons.brightness_auto),
+            _ThemeOption('light', '浅色', Icons.brightness_7),
+            _ThemeOption('dark', '深色', Icons.brightness_2),
           ];
 
           return Row(
@@ -351,7 +382,7 @@ class ProfileEditView extends GetView<ProfileEditController> {
                   ),
                 )
               : Text(
-                  'Save Changes',
+                  '保存更改',
                   style: TextStyle(
                     fontSize: 16.sp,
                     fontWeight: FontWeight.w600,
@@ -372,7 +403,7 @@ class _ThemeOption {
 }
 
 class ProfileEditController extends BaseController {
-  final MockDataService _mockDataService = MockDataService();
+  final MockDataService _mockDataService = Get.find<MockDataService>();
   final StorageService _storageService = Get.find<StorageService>();
 
   final nicknameController = TextEditingController();
@@ -380,6 +411,8 @@ class ProfileEditController extends BaseController {
 
   final Rx<app_models.User?> user = Rx<app_models.User?>(null);
   final Rx<String?> avatarUrl = Rx<String?>(null);
+  final Rx<File?> avatarFile = Rx<File?>(null);
+  final RxBool isUploadingAvatar = false.obs;
   final RxString nicknameError = ''.obs;
   final RxString bioError = ''.obs;
   final RxInt dailyGoal = 30.obs;
@@ -406,7 +439,7 @@ class ProfileEditController extends BaseController {
   }
 
   Future<void> loadProfileData() async {
-    setLoading(message: 'Loading profile...');
+    setLoading(message: '加载个人资料中...');
     registerRetry(loadProfileData);
 
     try {
@@ -432,18 +465,18 @@ class ProfileEditController extends BaseController {
         validateForm();
         resetState();
       } else {
-        setEmpty(message: 'Profile data not available.');
+        setEmpty(message: '个人资料暂不可用。');
       }
     } catch (e) {
-      setError(message: 'Failed to load profile. Please try again.');
+      setError(message: '加载个人资料失败，请重试。');
     }
   }
 
   void validateNickname(String value) {
     if (value.trim().isEmpty) {
-      nicknameError.value = 'Nickname is required';
+      nicknameError.value = '昵称不能为空';
     } else if (value.trim().length > maxNicknameLength) {
-      nicknameError.value = 'Nickname must be less than $maxNicknameLength characters';
+      nicknameError.value = '昵称不能超过 $maxNicknameLength 个字符';
     } else {
       nicknameError.value = '';
     }
@@ -452,7 +485,7 @@ class ProfileEditController extends BaseController {
 
   void validateBio(String value) {
     if (value.length > maxBioLength) {
-      bioError.value = 'Bio must be less than $maxBioLength characters';
+      bioError.value = '简介不能超过 $maxBioLength 个字符';
     } else {
       bioError.value = '';
     }
@@ -475,15 +508,145 @@ class ProfileEditController extends BaseController {
   }
 
   void pickAvatar() {
-    // Placeholder for avatar upload
-    // In a real app, this would open image picker
-    Get.snackbar(
-      'Coming Soon',
-      'Avatar upload will be available in a future update.',
-      snackPosition: SnackPosition.BOTTOM,
-      duration: const Duration(seconds: 2),
-      margin: EdgeInsets.all(16.w),
+    _showImageSourceSheet();
+  }
+
+  void _showImageSourceSheet() {
+    Get.bottomSheet(
+      Container(
+        decoration: BoxDecoration(
+          color: Get.theme.colorScheme.surface,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(16.r)),
+        ),
+        child: SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SizedBox(height: 8.h),
+              Container(
+                width: 40.w,
+                height: 4.h,
+                decoration: BoxDecoration(
+                  color: Get.theme.colorScheme.outlineVariant,
+                  borderRadius: BorderRadius.circular(2.r),
+                ),
+              ),
+              SizedBox(height: 16.h),
+              Text(
+                '更换头像',
+                style: TextStyle(
+                  fontSize: 18.sp,
+                  fontWeight: FontWeight.w600,
+                  color: Get.theme.colorScheme.onSurface,
+                ),
+              ),
+              SizedBox(height: 16.h),
+              ListTile(
+                leading: Icon(
+                  Icons.camera_alt,
+                  color: Get.theme.colorScheme.onSurface,
+                ),
+                title: Text(
+                  '拍照',
+                  style: TextStyle(
+                    fontSize: 16.sp,
+                    color: Get.theme.colorScheme.onSurface,
+                  ),
+                ),
+                onTap: () {
+                  Get.back();
+                  _pickImage(ImageSource.camera);
+                },
+              ),
+              ListTile(
+                leading: Icon(
+                  Icons.photo_library,
+                  color: Get.theme.colorScheme.onSurface,
+                ),
+                title: Text(
+                  '从相册选择',
+                  style: TextStyle(
+                    fontSize: 16.sp,
+                    color: Get.theme.colorScheme.onSurface,
+                  ),
+                ),
+                onTap: () {
+                  Get.back();
+                  _pickImage(ImageSource.gallery);
+                },
+              ),
+              SizedBox(height: 8.h),
+            ],
+          ),
+        ),
+      ),
+      isScrollControlled: true,
     );
+  }
+
+  Future<void> _pickImage(ImageSource source) async {
+    try {
+      final picker = ImagePicker();
+      final pickedFile = await picker.pickImage(
+        source: source,
+        maxWidth: 512,
+        maxHeight: 512,
+        imageQuality: 85,
+      );
+
+      if (pickedFile != null) {
+        await _uploadAvatar(File(pickedFile.path));
+      }
+    } catch (e) {
+      if (e.toString().contains('permission') ||
+          e.toString().contains('denied')) {
+        Get.snackbar(
+          '权限不足',
+          '请在系统设置中允许访问相册或相机权限。',
+          snackPosition: SnackPosition.BOTTOM,
+          duration: const Duration(seconds: 3),
+          margin: EdgeInsets.all(16.w),
+        );
+      } else {
+        Get.snackbar(
+          '选择失败',
+          '无法选择图片，请重试。',
+          snackPosition: SnackPosition.BOTTOM,
+          duration: const Duration(seconds: 2),
+          margin: EdgeInsets.all(16.w),
+        );
+      }
+    }
+  }
+
+  Future<void> _uploadAvatar(File imageFile) async {
+    isUploadingAvatar.value = true;
+
+    try {
+      // Simulate upload delay
+      await Future<void>.delayed(const Duration(seconds: 1));
+
+      // Update local state with the selected file
+      avatarFile.value = imageFile;
+
+      Get.snackbar(
+        '上传成功',
+        '头像已更新',
+        snackPosition: SnackPosition.BOTTOM,
+        duration: const Duration(seconds: 2),
+        margin: EdgeInsets.all(16.w),
+      );
+    } catch (e) {
+      Get.snackbar(
+        '上传失败',
+        '头像上传失败，请重试。',
+        snackPosition: SnackPosition.BOTTOM,
+        duration: const Duration(seconds: 3),
+        margin: EdgeInsets.all(16.w),
+      );
+    } finally {
+      isUploadingAvatar.value = false;
+    }
   }
 
   Future<void> saveProfile() async {
@@ -504,7 +667,7 @@ class ProfileEditController extends BaseController {
         id: user.value?.id ?? '',
         email: user.value?.email ?? '',
         nickname: nicknameController.text.trim(),
-        avatar: avatarUrl.value,
+        avatar: avatarUrl.value ?? avatarFile.value?.path,
         level: user.value?.level ?? 1,
         xp: user.value?.xp ?? 0,
         streak: user.value?.streak ?? 0,
@@ -515,16 +678,16 @@ class ProfileEditController extends BaseController {
 
       Get.back();
       Get.snackbar(
-        'Success',
-        'Profile updated successfully',
+        '保存成功',
+        '个人资料已更新',
         snackPosition: SnackPosition.BOTTOM,
         duration: const Duration(seconds: 2),
         margin: EdgeInsets.all(16.w),
       );
     } catch (e) {
       Get.snackbar(
-        'Error',
-        'Failed to save profile. Please try again.',
+        '错误',
+        '保存个人资料失败，请重试。',
         snackPosition: SnackPosition.BOTTOM,
         duration: const Duration(seconds: 3),
         margin: EdgeInsets.all(16.w),

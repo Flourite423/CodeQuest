@@ -13,8 +13,8 @@ class PageStateHost extends StatelessWidget {
     required this.child,
     this.onRetry,
     this.message,
-    this.emptyTitle = 'Nothing here yet',
-    this.emptyDescription = 'Content will appear here when available.',
+    this.emptyTitle = '这里还没有内容',
+    this.emptyDescription = '有内容时会显示在这里。',
     this.emptyIcon = Icons.inbox_outlined,
   });
 
@@ -38,27 +38,27 @@ class PageStateHost extends StatelessWidget {
           icon: emptyIcon,
           title: emptyTitle,
           description: message ?? emptyDescription,
-          actionLabel: onRetry == null ? null : 'Refresh',
+          actionLabel: onRetry == null ? null : '刷新',
           onAction: onRetry,
         );
       case PageState.error:
         return ErrorState(
-          message: message ?? 'Something went wrong. Please try again.',
+          message: message ?? '出了点问题，请重试。',
           onRetry: onRetry ?? () {},
         );
       case PageState.offline:
         return _OfflineState(
-          message: message ?? 'You are offline. Reconnect and try again.',
+          message: message ?? '网络已断开，请连接网络后重试。',
           onRetry: onRetry,
         );
       case PageState.authExpired:
         return _AuthExpiredState(
-          message: message ?? 'Session expired. Redirecting to login...',
+          message: message ?? '会话已过期，正在跳转登录...',
           onRetry: onRetry,
         );
       case PageState.partialData:
         return _PartialDataState(
-          message: message ?? 'Some content is currently unavailable.',
+          message: message ?? '部分内容暂时无法获取。',
           onRetry: onRetry,
           child: child,
         );
@@ -93,7 +93,7 @@ class _OfflineState extends StatelessWidget {
             ),
             SizedBox(height: 16.h),
             Text(
-              'No connection',
+              '无网络连接',
               style: theme.textTheme.titleLarge?.copyWith(
                 fontWeight: FontWeight.w600,
               ),
@@ -114,7 +114,7 @@ class _OfflineState extends StatelessWidget {
               child: FilledButton.icon(
                 onPressed: onRetry,
                 icon: const Icon(Icons.refresh),
-                label: const Text('Retry'),
+                label: const Text('重试'),
               ),
             ),
           ],
@@ -151,7 +151,7 @@ class _AuthExpiredState extends StatelessWidget {
             ),
             SizedBox(height: 16.h),
             Text(
-              'Session expired',
+              '会话已过期',
               style: theme.textTheme.titleLarge?.copyWith(
                 fontWeight: FontWeight.w600,
               ),
@@ -173,7 +173,7 @@ class _AuthExpiredState extends StatelessWidget {
                 child: FilledButton.icon(
                   onPressed: onRetry,
                   icon: const Icon(Icons.login),
-                  label: const Text('Go to login'),
+                  label: const Text('去登录'),
                 ),
               ),
             ],
@@ -231,7 +231,7 @@ class _PartialDataState extends StatelessWidget {
                 SizedBox(width: 12.w),
                 TextButton(
                   onPressed: onRetry,
-                  child: const Text('Retry'),
+                  child: const Text('重试'),
                 ),
               ],
             ],

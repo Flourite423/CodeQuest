@@ -15,9 +15,14 @@ class MockDataException implements Exception {
 
 class MockDataService extends GetxService {
   static const Duration defaultDelay = Duration(milliseconds: 350);
+  
+  // Allow disabling delay for tests
+  bool enableDelay = true;
 
-  Future<void> _simulateDelay(Duration? delay) {
-    return Future<void>.delayed(delay ?? defaultDelay);
+  Future<void> _simulateDelay(Duration? delay) async {
+    if (enableDelay) {
+      await Future<void>.delayed(delay ?? defaultDelay);
+    }
   }
 
   Never _throwScenarioError(String resource) {
@@ -67,12 +72,12 @@ class MockDataService extends GetxService {
     return User(
       id: 'user-$seed',
       email: 'learner$seed@example.com',
-      nickname: 'Learner $seed',
+      nickname: '学习者 $seed',
       avatar: 'https://example.com/avatar/$seed.png',
       level: 4 + seed,
       xp: 1200 * seed,
       streak: 2 + seed,
-      bio: 'Building steady frontend skills every day.',
+      bio: '每天都在稳步提升前端技能。',
       dailyGoal: 30 + seed * 5,
       themeMode: seed.isEven ? 'dark' : 'system',
     );
@@ -85,10 +90,10 @@ class MockDataService extends GetxService {
   Chapter buildChapter({int seed = 1}) {
     return Chapter(
       id: 'chapter-$seed',
-      title: 'Chapter $seed',
-      content: '# Chapter $seed\n\nThis chapter walks through learner-safe markdown content.',
-      sampleCode: '<section>Chapter $seed sample</section>',
-      summary: 'Core concept $seed summary',
+      title: '章节 $seed',
+      content: '# 章节 $seed\n\n本章介绍学习者友好的 Markdown 内容。',
+      sampleCode: '<section>章节 $seed 示例</section>',
+      summary: '核心概念 $seed 总结',
       isCompleted: seed == 1,
       isLocked: seed > 2,
     );
@@ -102,13 +107,13 @@ class MockDataService extends GetxService {
     final chapters = includeChapters ? buildChapters(count: 3) : <Chapter>[];
     return Course(
       id: 'course-$seed',
-      title: 'Frontend Foundations $seed',
-      summary: 'Learn layout, styling, and interaction basics in small steps.',
+      title: '前端基础 $seed',
+      summary: '循序渐进学习布局、样式和交互基础。',
       difficulty: seed.isEven ? 'intermediate' : 'beginner',
       estimatedMinutes: 90 + seed * 10,
       progress: 0.2 * seed,
       chapters: chapters,
-      description: 'Contract-aligned learner course detail mock for course $seed.',
+      description: '课程 $seed 的契约对齐学习者课程详情模拟数据。',
       coverImageUrl: 'https://example.com/course/$seed.png',
       category: category,
     );
@@ -148,12 +153,12 @@ class MockDataService extends GetxService {
     return Exercise(
       id: 'exercise-$seed',
       type: type,
-      title: 'Exercise $seed',
+      title: '练习 $seed',
       description: type == 'coding'
-          ? 'Implement the requested UI behavior using the starter template.'
-          : 'Choose the best answer for the learner-facing prompt.',
+          ? '使用起始模板实现所需的 UI 行为。'
+          : '为学习者提示选择最佳答案。',
       testCases: buildExerciseTestCases(),
-      codeTemplate: type == 'coding' ? '<main>Complete me</main>' : null,
+      codeTemplate: type == 'coding' ? '<main>完善我</main>' : null,
     );
   }
 
@@ -164,7 +169,7 @@ class MockDataService extends GetxService {
   ChallengeTask buildChallengeTask({int seed = 1}) {
     return ChallengeTask(
       id: 'challenge-task-$seed',
-      title: 'Finish stage $seed',
+      title: '完成阶段 $seed',
       isCompleted: seed == 1,
     );
   }
@@ -176,8 +181,8 @@ class MockDataService extends GetxService {
   Challenge buildChallenge({int seed = 1}) {
     return Challenge(
       id: 'challenge-$seed',
-      title: 'Challenge $seed',
-      description: 'Work through a linear set of learner tasks to earn stars.',
+      title: '挑战 $seed',
+      description: '完成一系列学习任务来赢取星星。',
       tasks: buildChallengeTasks(),
       stars: seed % 4,
       reward: seed * 150,
@@ -192,8 +197,8 @@ class MockDataService extends GetxService {
   DailyChallenge buildDailyChallenge({int seed = 1}) {
     return DailyChallenge(
       id: 'daily-$seed',
-      title: 'Daily Challenge $seed',
-      description: 'Ship one small coding win before the countdown ends.',
+      title: '每日挑战 $seed',
+      description: '在倒计时结束前完成一个小型编码任务。',
       timeLimit: 900 + seed * 60,
       isAttempted: seed.isEven,
       isExpired: seed > 2,
@@ -211,7 +216,7 @@ class MockDataService extends GetxService {
     return AIHelp(
       requestType: seed.isEven ? 'hint' : 'error_explanation',
       status: 'succeeded',
-      content: 'Try breaking the layout into smaller flex containers.',
+      content: '尝试将布局拆分为更小的弹性容器。',
     );
   }
 
@@ -220,7 +225,7 @@ class MockDataService extends GetxService {
       score: 60 + seed * 10,
       passedCases: 2 + seed,
       totalCases: 5,
-      feedback: seed.isEven ? null : 'One selector still does not match the expected layout.',
+      feedback: seed.isEven ? null : '有一个选择器仍与预期布局不匹配。',
       aiHelp: buildAiHelp(seed: seed),
     );
   }
@@ -235,7 +240,7 @@ class MockDataService extends GetxService {
   Friend buildFriend({int seed = 1}) {
     return Friend(
       id: 'friend-$seed',
-      nickname: 'Friend $seed',
+      nickname: '好友 $seed',
       avatar: 'https://example.com/friend/$seed.png',
       level: 3 + seed,
       status: seed.isEven ? 'pending' : 'accepted',
@@ -255,11 +260,11 @@ class MockDataService extends GetxService {
         2 => 'streak_reached',
         _ => 'course_completed',
       },
-      description: 'Completed a visible learner milestone #$seed.',
+      description: '完成了一个可见的学习里程碑 #$seed。',
       timestamp: DateTime.now().subtract(Duration(hours: seed * 3)),
       user: ActivityUser(
         id: 'activity-user-$seed',
-        nickname: 'Peer $seed',
+        nickname: '用户 $seed',
         avatar: 'https://example.com/peer/$seed.png',
       ),
     );
@@ -273,7 +278,7 @@ class MockDataService extends GetxService {
     return LeaderboardEntry(
       rank: seed,
       userId: 'leader-$seed',
-      nickname: 'Leader $seed',
+      nickname: '榜首 $seed',
       level: 10 - seed < 1 ? 1 : 10 - seed,
       xp: 8000 - seed * 400,
     );
@@ -289,8 +294,8 @@ class MockDataService extends GetxService {
   Badge buildBadge({int seed = 1}) {
     return Badge(
       id: 'badge-$seed',
-      name: 'Badge $seed',
-      description: 'Awarded for consistent learning progress.',
+      name: '徽章 $seed',
+      description: '因持续学习进步而授予。',
       icon: 'https://example.com/badge/$seed.png',
       earnedAt: DateTime.now().subtract(Duration(days: seed * 2)),
     );
@@ -310,7 +315,7 @@ class MockDataService extends GetxService {
         _ => 'daily',
       },
       amount: 40 + seed * 10,
-      description: 'Learner reward ledger entry $seed.',
+      description: '学习者奖励记录 $seed。',
       timestamp: DateTime.now().subtract(Duration(days: seed)),
     );
   }
@@ -500,5 +505,46 @@ class MockDataService extends GetxService {
       scenario: scenario,
       delay: delay,
     );
+  }
+
+  // ─── Friend Search & Requests ─────────────────────────────────────────────
+
+  /// Simulated sent friend request IDs to track state across the session.
+  final Set<String> _sentFriendRequestIds = <String>{};
+
+  /// Search users by nickname query. Returns users that match the query
+  /// and are not already friends.
+  Future<List<User>> searchUsers({
+    required String query,
+    Duration? delay,
+  }) async {
+    await _simulateDelay(delay);
+
+    if (query.trim().isEmpty) {
+      return <User>[];
+    }
+
+    final allUsers = buildUsers(count: 12);
+    final lowerQuery = query.toLowerCase();
+
+    return allUsers.where((user) {
+      return user.nickname.toLowerCase().contains(lowerQuery);
+    }).toList();
+  }
+
+  /// Send a friend request to a user.
+  Future<bool> sendFriendRequest({
+    required String userId,
+    Duration? delay,
+  }) async {
+    await _simulateDelay(delay);
+
+    _sentFriendRequestIds.add(userId);
+    return true;
+  }
+
+  /// Check if a friend request has already been sent to this user.
+  bool hasSentFriendRequest(String userId) {
+    return _sentFriendRequestIds.contains(userId);
   }
 }

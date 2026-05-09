@@ -17,7 +17,7 @@ class ProfileRewardsView extends GetView<ProfileRewardsController> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Rewards Center'),
+        title: const Text('奖励中心'),
         actions: [
           Obx(() => IconButton(
             icon: Badge(
@@ -32,8 +32,8 @@ class ProfileRewardsView extends GetView<ProfileRewardsController> {
         return PageStateHost(
           state: controller.pageState.value,
           onRetry: controller.retry,
-          emptyTitle: 'No Rewards Yet',
-          emptyDescription: 'Complete challenges and courses to earn rewards.',
+          emptyTitle: '暂无奖励',
+          emptyDescription: '完成挑战和课程以获取奖励。',
           emptyIcon: Icons.workspace_premium_outlined,
           child: _buildContent(context),
         );
@@ -97,14 +97,14 @@ class ProfileRewardsView extends GetView<ProfileRewardsController> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Level $level',
+                        '等级 $level',
                         style: textTheme.titleLarge?.copyWith(
                           fontWeight: FontWeight.bold,
                         ),
                       ),
                       SizedBox(height: 4.h),
                       Text(
-                        '$currentXp XP total',
+                        '$currentXp XP 总计',
                         style: textTheme.bodyMedium?.copyWith(
                           color: colorScheme.onSurfaceVariant,
                         ),
@@ -135,7 +135,7 @@ class ProfileRewardsView extends GetView<ProfileRewardsController> {
                   ),
                 ),
                 Text(
-                  '$xpToNext XP to next level',
+                  '距离下一级还需 $xpToNext XP',
                   style: textTheme.bodySmall?.copyWith(
                     color: colorScheme.primary,
                     fontWeight: FontWeight.w600,
@@ -161,7 +161,7 @@ class ProfileRewardsView extends GetView<ProfileRewardsController> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Badges',
+          '徽章',
           style: textTheme.titleMedium?.copyWith(
             fontWeight: FontWeight.w600,
           ),
@@ -196,14 +196,14 @@ class ProfileRewardsView extends GetView<ProfileRewardsController> {
           ),
           SizedBox(height: 12.h),
           Text(
-            'No Badges Yet',
+            '暂无徽章',
             style: textTheme.titleMedium?.copyWith(
               fontWeight: FontWeight.w600,
             ),
           ),
           SizedBox(height: 4.h),
           Text(
-            'Complete challenges to earn your first badge.',
+            '完成挑战以获取你的第一个徽章。',
             style: textTheme.bodyMedium?.copyWith(
               color: colorScheme.onSurfaceVariant,
             ),
@@ -304,7 +304,7 @@ class ProfileRewardsView extends GetView<ProfileRewardsController> {
           children: [
             Expanded(
               child: Text(
-                'Rewards Ledger',
+                '奖励记录',
                 style: textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.w600,
                 ),
@@ -312,7 +312,7 @@ class ProfileRewardsView extends GetView<ProfileRewardsController> {
             ),
             if (controller.hasActiveRewardFilters)
               Text(
-                '${rewards.length} results',
+                '${rewards.length} 条结果',
                 style: textTheme.bodySmall?.copyWith(
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
@@ -349,7 +349,7 @@ class ProfileRewardsView extends GetView<ProfileRewardsController> {
           ),
           SizedBox(height: 12.h),
           Text(
-            hasFilters ? 'No matching rewards' : 'No Rewards Yet',
+            hasFilters ? '无匹配奖励' : '暂无奖励',
             style: textTheme.titleMedium?.copyWith(
               fontWeight: FontWeight.w600,
             ),
@@ -357,8 +357,8 @@ class ProfileRewardsView extends GetView<ProfileRewardsController> {
           SizedBox(height: 4.h),
           Text(
             hasFilters
-                ? 'Try adjusting your filters.'
-                : 'Your reward history will appear here.',
+                ?                 '尝试调整筛选条件。'
+                : '你的奖励历史将显示于此。',
             style: textTheme.bodyMedium?.copyWith(
               color: colorScheme.onSurfaceVariant,
             ),
@@ -578,7 +578,7 @@ class BadgePreviewSheet extends StatelessWidget {
                     ),
                     SizedBox(width: 8.w),
                     Text(
-                      'Earned on ${_formatDateLong(badge.earnedAt)}',
+                      '获得于 ${_formatDateLong(badge.earnedAt)}',
                       style: textTheme.bodyMedium?.copyWith(
                         color: colorScheme.onPrimaryContainer,
                         fontWeight: FontWeight.w600,
@@ -596,14 +596,14 @@ class BadgePreviewSheet extends StatelessWidget {
                   onPressed: () {
                     // Share functionality placeholder
                     Get.snackbar(
-                      'Share',
-                      'Sharing ${badge.name}...',
+                      '分享',
+                      '分享 ${badge.name}...',
                       snackPosition: SnackPosition.BOTTOM,
                       duration: const Duration(seconds: 2),
                     );
                   },
                   icon: const Icon(Icons.share_outlined),
-                  label: const Text('Share Achievement'),
+                  label: const Text('分享成就'),
                 ),
               ),
               SizedBox(height: 8.h),
@@ -613,7 +613,7 @@ class BadgePreviewSheet extends StatelessWidget {
                 height: 52.h,
                 child: OutlinedButton(
                   onPressed: () => Get.back(),
-                  child: const Text('Close'),
+                  child: const Text('关闭'),
                 ),
               ),
             ],
@@ -625,10 +625,10 @@ class BadgePreviewSheet extends StatelessWidget {
 
   String _formatDateLong(DateTime date) {
     const months = [
-      'January', 'February', 'March', 'April', 'May', 'June',
-      'July', 'August', 'September', 'October', 'November', 'December',
+      '1月', '2月', '3月', '4月', '5月', '6月',
+      '7月', '8月', '9月', '10月', '11月', '12月',
     ];
-    return '${months[date.month - 1]} ${date.day}, ${date.year}';
+    return '${date.year}年${months[date.month - 1]}${date.day}日';
   }
 }
 
@@ -641,7 +641,7 @@ class ProfileRewardsController extends BaseController {
   final RxList<app_models.Badge> badges = <app_models.Badge>[].obs;
   final RxList<app_models.Reward> rewards = <app_models.Reward>[].obs;
 
-  final MockDataService _mockDataService = MockDataService();
+  final MockDataService _mockDataService = Get.find<MockDataService>();
 
   // ── Filter state ──────────────────────────────────
   final RxString rewardTypeFilter = ''.obs;
@@ -710,7 +710,7 @@ class ProfileRewardsController extends BaseController {
   void showRewardFilterSheet() {
     final List<FilterSection> sections = _buildFilterSections();
     FilterSheet.show(
-      title: 'Filter Rewards',
+      title: '筛选奖励',
       sections: sections,
       onApply: () {
         // Filter values are already applied via section onChanged callbacks.
@@ -722,11 +722,11 @@ class ProfileRewardsController extends BaseController {
   List<FilterSection> _buildFilterSections() {
     return [
       FilterSection(
-        title: 'Type',
+        title: '类型',
         options: const [
-          FilterOption(value: 'xp', label: 'XP'),
-          FilterOption(value: 'badge', label: 'Badge'),
-          FilterOption(value: 'achievement', label: 'Achievement'),
+          FilterOption(value: 'xp', label: '经验'),
+          FilterOption(value: 'badge', label: '徽章'),
+          FilterOption(value: 'achievement', label: '成就'),
         ],
         selectedValues: rewardTypeFilter.value.isNotEmpty
             ? {rewardTypeFilter.value}
@@ -737,12 +737,12 @@ class ProfileRewardsController extends BaseController {
         allowMultiple: false,
       ),
       FilterSection(
-        title: 'Time Range',
+        title: '时间范围',
         options: const [
-          FilterOption(value: 'today', label: 'Today'),
-          FilterOption(value: 'this_week', label: 'This Week'),
-          FilterOption(value: 'this_month', label: 'This Month'),
-          FilterOption(value: 'all_time', label: 'All Time'),
+          FilterOption(value: 'today', label: '今天'),
+          FilterOption(value: 'this_week', label: '本周'),
+          FilterOption(value: 'this_month', label: '本月'),
+          FilterOption(value: 'all_time', label: '全部'),
         ],
         selectedValues: timeRangeFilter.value.isNotEmpty
             ? {timeRangeFilter.value}
@@ -763,7 +763,7 @@ class ProfileRewardsController extends BaseController {
   // ── Data loading ──────────────────────────────────
 
   Future<void> loadRewardsData() async {
-    setLoading(message: 'Loading rewards...');
+    setLoading(message: '加载奖励中...');
     registerRetry(loadRewardsData);
 
     try {
@@ -776,12 +776,12 @@ class ProfileRewardsController extends BaseController {
       rewards.assignAll(rewardsData);
 
       if (badgesData.isEmpty && rewardsData.isEmpty) {
-        setEmpty(message: 'No rewards or badges yet. Start learning!');
+        setEmpty(message: '暂无奖励或徽章。开始学习吧！');
       } else {
         resetState();
       }
     } catch (e) {
-      setError(message: 'Failed to load rewards. Please try again.');
+      setError(message: '加载奖励失败，请重试。');
     }
   }
 

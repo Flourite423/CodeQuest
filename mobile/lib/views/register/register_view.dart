@@ -15,7 +15,7 @@ class RegisterView extends GetView<RegisterController> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Sign Up'),
+        title: const Text('注册'),
         centerTitle: true,
         elevation: 0,
       ),
@@ -38,7 +38,7 @@ class RegisterView extends GetView<RegisterController> {
         children: [
           SizedBox(height: 16.h),
           Text(
-            'Create Account',
+            '创建账号',
             style: theme.textTheme.headlineLarge?.copyWith(
               fontWeight: FontWeight.bold,
             ),
@@ -46,7 +46,7 @@ class RegisterView extends GetView<RegisterController> {
           ),
           SizedBox(height: 8.h),
           Text(
-            'Start your learning journey today',
+            '今天开始学习之旅',
             style: theme.textTheme.bodyLarge?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
             ),
@@ -58,7 +58,7 @@ class RegisterView extends GetView<RegisterController> {
           Obx(() => TextField(
             controller: controller.nicknameController,
             decoration: InputDecoration(
-              labelText: 'Nickname',
+              labelText: '昵称',
               prefixIcon: const Icon(Icons.person_outline),
               errorText: controller.nicknameError.value.isEmpty
                   ? null
@@ -76,7 +76,7 @@ class RegisterView extends GetView<RegisterController> {
           Obx(() => TextField(
             controller: controller.emailController,
             decoration: InputDecoration(
-              labelText: 'Email',
+              labelText: '邮箱',
               prefixIcon: const Icon(Icons.email_outlined),
               errorText: controller.emailError.value.isEmpty
                   ? null
@@ -95,7 +95,7 @@ class RegisterView extends GetView<RegisterController> {
           Obx(() => TextField(
             controller: controller.passwordController,
             decoration: InputDecoration(
-              labelText: 'Password',
+              labelText: '密码',
               prefixIcon: const Icon(Icons.lock_outline),
               suffixIcon: IconButton(
                 icon: Icon(
@@ -122,7 +122,7 @@ class RegisterView extends GetView<RegisterController> {
           Obx(() => TextField(
             controller: controller.confirmPasswordController,
             decoration: InputDecoration(
-              labelText: 'Confirm Password',
+              labelText: '确认密码',
               prefixIcon: const Icon(Icons.lock_outline),
               suffixIcon: IconButton(
                 icon: Icon(
@@ -162,7 +162,7 @@ class RegisterView extends GetView<RegisterController> {
                       ),
                     )
                   : const Text(
-                      'Sign Up',
+                      '注册',
                       style: TextStyle(fontSize: 16),
                     ),
             ),
@@ -174,14 +174,14 @@ class RegisterView extends GetView<RegisterController> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Text(
-                'Already have an account? ',
+                '已有账号？',
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
               ),
               TextButton(
                 onPressed: () => Get.back(),
-                child: const Text('Sign In'),
+                child: const Text('登录'),
               ),
             ],
           ),
@@ -237,37 +237,37 @@ class RegisterController extends BaseController {
 
     final nickname = nicknameController.text.trim();
     if (nickname.isEmpty) {
-      nicknameError.value = 'Nickname is required';
+      nicknameError.value = '请输入昵称';
       isValid = false;
     } else if (nickname.length < 2) {
-      nicknameError.value = 'Nickname must be at least 2 characters';
+      nicknameError.value = '昵称至少需要2个字符';
       isValid = false;
     }
 
     final email = emailController.text.trim();
     if (email.isEmpty) {
-      emailError.value = 'Email is required';
+      emailError.value = '请输入邮箱';
       isValid = false;
     } else if (!_isValidEmail(email)) {
-      emailError.value = 'Please enter a valid email';
+      emailError.value = '请输入有效的邮箱地址';
       isValid = false;
     }
 
     final password = passwordController.text;
     if (password.isEmpty) {
-      passwordError.value = 'Password is required';
+      passwordError.value = '请输入密码';
       isValid = false;
     } else if (password.length < 6) {
-      passwordError.value = 'Password must be at least 6 characters';
+      passwordError.value = '密码至少需要6个字符';
       isValid = false;
     }
 
     final confirmPassword = confirmPasswordController.text;
     if (confirmPassword.isEmpty) {
-      confirmPasswordError.value = 'Please confirm your password';
+      confirmPasswordError.value = '请确认密码';
       isValid = false;
     } else if (confirmPassword != password) {
-      confirmPasswordError.value = 'Passwords do not match';
+      confirmPasswordError.value = '两次输入的密码不一致';
       isValid = false;
     }
 
@@ -301,8 +301,8 @@ class RegisterController extends BaseController {
         } else {
           // If no token in response, redirect to login
           Get.snackbar(
-            'Success',
-            'Account created successfully. Please sign in.',
+            '成功',
+            '账号创建成功，请登录',
             snackPosition: SnackPosition.BOTTOM,
             duration: const Duration(seconds: 3),
             margin: const EdgeInsets.all(16),
@@ -312,19 +312,19 @@ class RegisterController extends BaseController {
       }
     } on dio.DioException catch (e) {
       if (e.response?.statusCode == 409) {
-        setError(message: 'An account with this email already exists.');
+        setError(message: '该邮箱已被注册');
       } else if (e.response?.statusCode == 422) {
-        setError(message: 'Invalid input. Please check your information.');
+        setError(message: '输入信息无效，请检查');
       } else if (e.type == dio.DioExceptionType.connectionTimeout ||
           e.type == dio.DioExceptionType.receiveTimeout) {
-        setError(message: 'Connection timed out. Please try again.');
+        setError(message: '连接超时，请重试');
       } else if (e.type == dio.DioExceptionType.connectionError) {
-        setError(message: 'No internet connection. Please check your network.');
+        setError(message: '无网络连接，请检查网络设置');
       } else {
-        setError(message: 'Registration failed. Please try again later.');
+        setError(message: '注册失败，请稍后重试');
       }
     } catch (e) {
-      setError(message: 'An unexpected error occurred. Please try again.');
+      setError(message: '发生未知错误，请重试');
     } finally {
       isLoading.value = false;
     }

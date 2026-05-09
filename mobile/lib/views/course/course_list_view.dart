@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 import '../../controllers/base_controller.dart';
 import '../../models/models.dart' hide Badge;
 import '../../services/mock_data.dart';
+import '../../services/progress_service.dart';
 import '../../widgets/page_state_host.dart';
 import '../../widgets/shared/filter_sheet.dart';
 
@@ -18,7 +19,7 @@ class CourseListView extends GetView<CourseListController> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Courses'),
+        title: const Text('课程'),
         actions: [
           IconButton(
             icon: const Icon(Icons.search),
@@ -38,8 +39,8 @@ class CourseListView extends GetView<CourseListController> {
           state: controller.pageState.value,
           message: controller.stateMessage.value,
           onRetry: controller.retry,
-          emptyTitle: 'No courses yet',
-          emptyDescription: 'Courses will appear here when available.',
+          emptyTitle: '暂无课程',
+          emptyDescription: '课程将在可用时显示于此。',
           emptyIcon: Icons.school_outlined,
           child: Column(
             children: [
@@ -68,7 +69,7 @@ class _SearchBar extends StatelessWidget {
         controller: controller.searchController,
         onChanged: controller.onSearchChanged,
         decoration: InputDecoration(
-          hintText: 'Search courses...',
+          hintText: '搜索课程...',
           prefixIcon: const Icon(Icons.search),
           suffixIcon: IconButton(
             icon: const Icon(Icons.clear),
@@ -121,7 +122,7 @@ class _CourseList extends StatelessWidget {
                   ),
                   SizedBox(height: 16.h),
                   Text(
-                    hasSearch ? 'No results' : 'No matching courses',
+                    hasSearch ? '无结果' : '无匹配课程',
                     style: theme.textTheme.titleLarge?.copyWith(
                       fontWeight: FontWeight.w600,
                     ),
@@ -129,8 +130,8 @@ class _CourseList extends StatelessWidget {
                   SizedBox(height: 8.h),
                   Text(
                     hasSearch
-                        ? 'Try a different search term.'
-                        : 'Try adjusting your filters.',
+                        ? '尝试不同的搜索词。'
+                        : '尝试调整筛选条件。',
                     style: theme.textTheme.bodyMedium?.copyWith(
                       color: colorScheme.onSurfaceVariant,
                     ),
@@ -337,6 +338,13 @@ class _MetaChip extends StatelessWidget {
 class CourseListController extends BaseController {
   final MockDataService _mockDataService = Get.find<MockDataService>();
 
+  ProgressService get _progressService {
+    if (Get.isRegistered<ProgressService>()) {
+      return Get.find<ProgressService>();
+    }
+    return Get.put(ProgressService(), permanent: true);
+  }
+
   final RxList<Course> courses = <Course>[].obs;
   final RxString searchQuery = ''.obs;
   final RxBool isSearchActive = false.obs;
@@ -429,7 +437,7 @@ class CourseListController extends BaseController {
   void showCourseFilterSheet() {
     final List<FilterSection> sections = _buildFilterSections();
     FilterSheet.show(
-      title: 'Filter Courses',
+      title: '筛选课程',
       sections: sections,
       onApply: () {
         // Filter values are already applied via section onChanged callbacks.
@@ -442,11 +450,11 @@ class CourseListController extends BaseController {
   List<FilterSection> _buildFilterSections() {
     return [
       FilterSection(
-        title: 'Difficulty',
+        title: '难度',
         options: const [
-          FilterOption(value: 'beginner', label: 'Beginner'),
-          FilterOption(value: 'intermediate', label: 'Intermediate'),
-          FilterOption(value: 'advanced', label: 'Advanced'),
+          FilterOption(value: 'beginner', label: '初级'),
+          FilterOption(value: 'intermediate', label: '中级'),
+          FilterOption(value: 'advanced', label: '高级'),
         ],
         selectedValues: difficultyFilter.value.isNotEmpty
             ? {difficultyFilter.value}
@@ -457,12 +465,12 @@ class CourseListController extends BaseController {
         allowMultiple: false,
       ),
       FilterSection(
-        title: 'Category',
+        title: '分类',
         options: const [
-          FilterOption(value: 'frontend', label: 'Frontend'),
-          FilterOption(value: 'backend', label: 'Backend'),
-          FilterOption(value: 'devops', label: 'DevOps'),
-          FilterOption(value: 'design', label: 'Design'),
+          FilterOption(value: 'frontend', label: '前端'),
+          FilterOption(value: 'backend', label: '后端'),
+          FilterOption(value: 'devops', label: '运维'),
+          FilterOption(value: 'design', label: '设计'),
         ],
         selectedValues: categoryFilter.value.isNotEmpty
             ? {categoryFilter.value}
@@ -473,11 +481,11 @@ class CourseListController extends BaseController {
         allowMultiple: false,
       ),
       FilterSection(
-        title: 'Progress',
+        title: '进度',
         options: const [
-          FilterOption(value: 'not_started', label: 'Not Started'),
-          FilterOption(value: 'in_progress', label: 'In Progress'),
-          FilterOption(value: 'completed', label: 'Completed'),
+          FilterOption(value: 'not_started', label: '未开始'),
+          FilterOption(value: 'in_progress', label: '进行中'),
+          FilterOption(value: 'completed', label: '已完成'),
         ],
         selectedValues: progressFilter.value.isNotEmpty
             ? {progressFilter.value}
@@ -499,22 +507,33 @@ class CourseListController extends BaseController {
   // ── Data loading ──────────────────────────────────
 
   Future<void> loadCourses() async {
-    setLoading(message: 'Loading courses...');
+    if (!_progressService.isOnline.value) {
+      final cachedCourses = _progressService.getCachedCourses();
+      if (cachedCourses.isNotEmpty) {
+        courses.value = _progressService.applyCourseProgressList(cachedCourses);
+        setPartialData(message: '当前为离线模式，已显示本地缓存课程。');
+        return;
+      }
+    }
+
+    setLoading(message: '加载课程中...');
     registerRetry(loadCourses);
 
     try {
       final result = await _mockDataService.fetchCourses();
-      courses.value = result;
+      final withProgress = _progressService.applyCourseProgressList(result);
+      await _progressService.cacheCourses(withProgress);
+      courses.value = withProgress;
 
       if (result.isEmpty) {
-        setEmpty(message: 'No courses available yet.');
+        setEmpty(message: '暂无可用课程。');
       } else {
         pageState.value = PageState.initial;
       }
     } on MockDataException catch (e) {
       setError(message: e.message);
     } catch (e) {
-      setError(message: 'Failed to load courses. Please try again.');
+      setError(message: '加载课程失败，请重试。');
     }
   }
 }

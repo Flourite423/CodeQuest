@@ -78,32 +78,32 @@ class HomeView extends GetView<HomeController> {
         _buildNavItem(
           icon: Icons.home_outlined,
           activeIcon: Icons.home,
-          label: 'Home',
+          label: '首页',
           // TODO: 接入真实未读消息数
           badgeCount: controller.homeBadgeCount.value,
         ),
         _buildNavItem(
           icon: Icons.book_outlined,
           activeIcon: Icons.book,
-          label: 'Courses',
+          label: '课程',
           badgeCount: controller.coursesBadgeCount.value,
         ),
         _buildNavItem(
           icon: Icons.emoji_events_outlined,
           activeIcon: Icons.emoji_events,
-          label: 'Challenges',
+          label: '挑战',
           badgeCount: controller.challengesBadgeCount.value,
         ),
         _buildNavItem(
           icon: Icons.groups_outlined,
           activeIcon: Icons.groups,
-          label: 'Social',
+          label: '社交',
           badgeCount: controller.socialBadgeCount.value,
         ),
         _buildNavItem(
           icon: Icons.person_outline,
           activeIcon: Icons.person,
-          label: 'Profile',
+          label: '我的',
           badgeCount: controller.profileBadgeCount.value,
         ),
       ],
@@ -210,5 +210,10 @@ class HomeBinding extends Bindings {
   @override
   void dependencies() {
     Get.lazyPut<HomeController>(() => HomeController());
+    Get.lazyPut<HomeDashboardController>(() => HomeDashboardController());
+    Get.lazyPut<CourseListController>(() => CourseListController());
+    Get.lazyPut<ChallengeListController>(() => ChallengeListController());
+    Get.lazyPut<SocialController>(() => SocialController());
+    Get.lazyPut<ProfileController>(() => ProfileController());
   }
 }

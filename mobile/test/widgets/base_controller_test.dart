@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
-import 'package:learning_app_mobile/controllers/base_controller.dart';
-import 'package:learning_app_mobile/services/storage_service.dart';
+import 'package:codequest/controllers/base_controller.dart';
+import 'package:codequest/services/storage_service.dart';
 
 class _TestController extends BaseController {}
 
@@ -10,7 +10,10 @@ class _FakeStorageService extends StorageService {
   final Map<String, dynamic> _data = <String, dynamic>{};
 
   @override
-  void onInit() {}
+  // ignore: must_call_super
+  void onInit() {
+    // Skip GetStorage initialization in tests
+  }
 
   @override
   Future<void> write(String key, dynamic value) async {

@@ -32,7 +32,7 @@ class ErrorState extends StatelessWidget {
             ),
             SizedBox(height: 16.h),
             Text(
-              'Something went wrong',
+              '出了点问题',
               style: theme.textTheme.titleLarge?.copyWith(
                 fontWeight: FontWeight.w600,
               ),
@@ -53,7 +53,7 @@ class ErrorState extends StatelessWidget {
               child: FilledButton.icon(
                 onPressed: onRetry,
                 icon: const Icon(Icons.refresh),
-                label: const Text('Retry'),
+                label: const Text('重试'),
               ),
             ),
           ],

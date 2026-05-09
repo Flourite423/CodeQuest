@@ -16,14 +16,14 @@ class ProfileStatsView extends GetView<ProfileStatsController> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Learning Stats'),
+        title: const Text('学习统计'),
       ),
       body: Obx(() {
         return PageStateHost(
           state: controller.pageState.value,
           onRetry: controller.retry,
-          emptyTitle: 'No stats yet',
-          emptyDescription: 'Start learning to see your statistics.',
+          emptyTitle: '暂无统计',
+          emptyDescription: '开始学习后即可查看统计数据。',
           emptyIcon: Icons.insights_outlined,
           child: _buildContent(context),
         );
@@ -105,11 +105,11 @@ class ProfileStatsView extends GetView<ProfileStatsController> {
   String _timeRangeLabel(TimeRange range) {
     switch (range) {
       case TimeRange.week:
-        return 'This Week';
+        return '本周';
       case TimeRange.month:
-        return 'This Month';
+        return '本月';
       case TimeRange.all:
-        return 'All Time';
+        return '全部';
     }
   }
 
@@ -119,25 +119,25 @@ class ProfileStatsView extends GetView<ProfileStatsController> {
 
     final metrics = [
       _MetricItem(
-        label: 'Study Time',
+        label: '学习时长',
         value: '${stats.studyTime}m',
         icon: Icons.timer_outlined,
         color: colorScheme.primary,
       ),
       _MetricItem(
-        label: 'Courses',
+        label: '课程',
         value: '${stats.coursesCompleted}',
         icon: Icons.menu_book_outlined,
         color: colorScheme.tertiary,
       ),
       _MetricItem(
-        label: 'Wins',
+        label: '胜利',
         value: '${stats.challengesWon}',
         icon: Icons.emoji_events_outlined,
         color: colorScheme.secondary,
       ),
       _MetricItem(
-        label: 'XP',
+        label: '经验',
         value: '${stats.totalXp}',
         icon: Icons.star_outline,
         color: const Color(0xFFFFA000),
@@ -150,7 +150,7 @@ class ProfileStatsView extends GetView<ProfileStatsController> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Core Metrics',
+            '核心指标',
             style: textTheme.titleMedium?.copyWith(
               fontWeight: FontWeight.w600,
             ),
@@ -182,7 +182,7 @@ class ProfileStatsView extends GetView<ProfileStatsController> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Learning Trend',
+            '学习趋势',
             style: textTheme.titleMedium?.copyWith(
               fontWeight: FontWeight.w600,
             ),
@@ -201,7 +201,7 @@ class ProfileStatsView extends GetView<ProfileStatsController> {
                       if (data.isEmpty) {
                         return Center(
                           child: Text(
-                            'No trend data available',
+                            '暂无趋势数据',
                             style: textTheme.bodyMedium?.copyWith(
                               color: colorScheme.onSurfaceVariant,
                             ),
@@ -225,7 +225,7 @@ class ProfileStatsView extends GetView<ProfileStatsController> {
                       ),
                       SizedBox(width: 8.w),
                       Text(
-                        'Study minutes per day',
+                        '每日学习分钟数',
                         style: textTheme.bodySmall?.copyWith(
                           color: colorScheme.onSurfaceVariant,
                         ),
@@ -252,7 +252,7 @@ class ProfileStatsView extends GetView<ProfileStatsController> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Knowledge Mastery',
+            '知识掌握度',
             style: textTheme.titleMedium?.copyWith(
               fontWeight: FontWeight.w600,
             ),
@@ -286,7 +286,7 @@ class ProfileStatsView extends GetView<ProfileStatsController> {
                         ),
                         SizedBox(height: 4.h),
                         Text(
-                          'Overall Mastery',
+                          '总体掌握度',
                           style: textTheme.bodyMedium?.copyWith(
                             color: colorScheme.onSurfaceVariant,
                           ),
@@ -294,10 +294,10 @@ class ProfileStatsView extends GetView<ProfileStatsController> {
                         SizedBox(height: 8.h),
                         Text(
                           mastery >= 0.8
-                              ? 'Excellent! You have strong command of the material.'
+                              ? '太棒了！你对材料掌握得很好。'
                               : mastery >= 0.5
-                                  ? 'Good progress. Keep practicing to improve.'
-                                  : 'Just getting started. Consistency is key.',
+                                  ? '进展不错。继续练习以提高。'
+                                  : '刚开始。坚持是关键。',
                           style: textTheme.bodySmall?.copyWith(
                             color: colorScheme.onSurfaceVariant,
                           ),
@@ -324,7 +324,7 @@ class ProfileStatsView extends GetView<ProfileStatsController> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Ranking Comparison',
+            '排名对比',
             style: textTheme.titleMedium?.copyWith(
               fontWeight: FontWeight.w600,
             ),
@@ -340,7 +340,7 @@ class ProfileStatsView extends GetView<ProfileStatsController> {
                     child: Padding(
                       padding: EdgeInsets.symmetric(vertical: 24.h),
                       child: Text(
-                        'No ranking data available',
+                        '暂无排名数据',
                         style: textTheme.bodyMedium?.copyWith(
                           color: colorScheme.onSurfaceVariant,
                         ),
@@ -620,7 +620,7 @@ class ProfileStatsController extends BaseController {
       <app_models.LeaderboardEntry>[].obs;
   final RxList<int> trendData = <int>[].obs;
 
-  final MockDataService _mockDataService = MockDataService();
+  final MockDataService _mockDataService = Get.find<MockDataService>();
 
   @override
   void onInit() {
@@ -629,7 +629,7 @@ class ProfileStatsController extends BaseController {
   }
 
   Future<void> loadStatsData() async {
-    setLoading(message: 'Loading stats...');
+    setLoading(message: '加载统计中...');
     registerRetry(loadStatsData);
 
     try {
@@ -642,10 +642,10 @@ class ProfileStatsController extends BaseController {
         _generateTrendData();
         resetState();
       } else {
-        setEmpty(message: 'No statistics available yet.');
+        setEmpty(message: '暂无统计数据。');
       }
     } catch (e) {
-      setError(message: 'Failed to load statistics. Please try again.');
+      setError(message: '加载统计数据失败，请重试。');
     }
   }
 
