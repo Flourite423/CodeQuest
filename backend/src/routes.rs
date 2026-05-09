@@ -230,7 +230,7 @@ pub fn create_router() -> Router {
                         .push(
                             Router::with_path("challenges")
                                 .get(handlers::admin::list_admin_challenges)
-                                .post(handlers::admin::create_challenge)
+                                .post(handlers::admin::create_challenge_with_status)
                                 .push(
                                     Router::with_path("{challenge_id}")
                                         .get(handlers::admin::get_admin_challenge)

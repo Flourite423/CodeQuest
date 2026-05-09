@@ -12,20 +12,39 @@ pub struct CreateFriendRequest {
 }
 
 #[handler]
-pub async fn list_friends(depot: &mut Depot) -> Result<Json<ApiResponse<Vec<FriendRelation>>>, StatusError> {
+pub async fn list_friends(req: &mut Request, depot: &mut Depot) -> Result<Json<ApiResponse<crate::models::ListResponse<FriendRelation>>>, StatusError> {
     let pool = depot.obtain::<PgPool>()
         .map_err(|_| StatusError::internal_server_error())?;
 
     let learner_id = auth::get_current_account_id(depot)?;
+    let page = req.query::<i64>("page").unwrap_or(1).max(1);
+    let page_size = req.query::<i64>("page_size").unwrap_or(20).clamp(1, 100);
+    let offset = (page - 1) * page_size;
+    
     let friends = sqlx::query_as::<_, FriendRelation>(
-        "SELECT * FROM friend_relations WHERE requester_id = $1 OR addressee_id = $1 ORDER BY created_at DESC"
+        "SELECT * FROM friend_relations WHERE requester_id = $1 OR addressee_id = $1 ORDER BY created_at DESC LIMIT $2 OFFSET $3"
     )
     .bind(learner_id)
+    .bind(page_size)
+    .bind(offset)
     .fetch_all(pool)
     .await
     .map_err(|_| StatusError::internal_server_error())?;
+    
+    let total: (i64,) = sqlx::query_as(
+        "SELECT COUNT(*) FROM friend_relations WHERE requester_id = $1 OR addressee_id = $1"
+    )
+    .bind(learner_id)
+    .fetch_one(pool)
+    .await
+    .map_err(|_| StatusError::internal_server_error())?;
 
-    Ok(Json(ApiResponse::new(friends)))
+    let response = crate::models::ListResponse {
+        items: friends,
+        meta: crate::models::ListMeta::new(page, page_size, total.0),
+    };
+
+    Ok(Json(ApiResponse::new(response)))
 }
 
 #[handler]
@@ -55,26 +74,39 @@ pub async fn create_friend_request(req: &mut Request, depot: &mut Depot) -> Resu
 }
 
 #[handler]
-pub async fn list_social_activities(req: &mut Request, depot: &mut Depot) -> Result<Json<ApiResponse<Vec<SocialActivity>>>, StatusError> {
+pub async fn list_social_activities(req: &mut Request, depot: &mut Depot) -> Result<Json<ApiResponse<crate::models::ListResponse<SocialActivity>>>, StatusError> {
     let pool = depot.obtain::<PgPool>()
         .map_err(|_| StatusError::internal_server_error())?;
 
     let learner_id = auth::get_current_account_id(depot)?;
     let page = req.query::<i64>("page").unwrap_or(1).max(1);
-    let per_page = req.query::<i64>("page_size").unwrap_or(20).clamp(1, 100);
-    let offset = (page - 1) * per_page;
+    let page_size = req.query::<i64>("page_size").unwrap_or(20).clamp(1, 100);
+    let offset = (page - 1) * page_size;
     
     let activities = sqlx::query_as::<_, SocialActivity>(
         "SELECT * FROM social_activities WHERE learner_id = $1 ORDER BY created_at DESC LIMIT $2 OFFSET $3"
     )
     .bind(learner_id)
-    .bind(per_page)
+    .bind(page_size)
     .bind(offset)
     .fetch_all(pool)
     .await
     .map_err(|_| StatusError::internal_server_error())?;
+    
+    let total: (i64,) = sqlx::query_as(
+        "SELECT COUNT(*) FROM social_activities WHERE learner_id = $1"
+    )
+    .bind(learner_id)
+    .fetch_one(pool)
+    .await
+    .map_err(|_| StatusError::internal_server_error())?;
 
-    Ok(Json(ApiResponse::new(activities)))
+    let response = crate::models::ListResponse {
+        items: activities,
+        meta: crate::models::ListMeta::new(page, page_size, total.0),
+    };
+
+    Ok(Json(ApiResponse::new(response)))
 }
 
 #[handler]

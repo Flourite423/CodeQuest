@@ -65,7 +65,7 @@ pub async fn get_submission(req: &mut Request, depot: &mut Depot) -> Result<Json
 }
 
 #[handler]
-pub async fn create_submission(req: &mut Request, depot: &mut Depot) -> Result<StatusCode, StatusError> {
+pub async fn create_submission(req: &mut Request, depot: &mut Depot) -> Result<Json<ApiResponse<Submission>>, StatusError> {
     let pool = depot.obtain::<PgPool>()
         .map_err(|_| StatusError::internal_server_error())?;
     
@@ -85,21 +85,22 @@ pub async fn create_submission(req: &mut Request, depot: &mut Depot) -> Result<S
         .await
         .map_err(|_| StatusError::bad_request().brief("Exercise not found"))?;
     
-    sqlx::query(
+    let submission = sqlx::query_as::<_, Submission>(
         "INSERT INTO submissions (id, exercise_id, learner_id, chapter_id, attempt_no, source_code, 
          judge_status, score, passed_case_count, total_case_count, content_version, rule_version) 
-         VALUES ($1, $2, $3, $4, 1, $5, 'pending', 0, 0, 0, 1, 1)"
+         VALUES ($1, $2, $3, $4, 1, $5, 'pending', 0, 0, 0, 1, 1)
+         RETURNING *"
     )
     .bind(id)
     .bind(&exercise_id)
     .bind(learner_id)
     .bind(chapter_id.0)
     .bind(&body.source_code)
-    .execute(pool)
+    .fetch_one(pool)
     .await
     .map_err(|_| StatusError::internal_server_error())?;
     
-    Ok(StatusCode::CREATED)
+    Ok(Json(ApiResponse::new(submission)))
 }
 
 #[handler]

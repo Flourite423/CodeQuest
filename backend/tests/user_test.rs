@@ -3,7 +3,7 @@ use salvo::test::{ResponseExt, TestClient};
 use serde_json::json;
 mod common;
 
-use common::{create_test_service, get_admin_token, setup_test_db};
+use common::{create_test_service, get_admin_token, get_auth_token, setup_test_db};
 
 #[tokio::test]
 async fn test_list_users() {
@@ -19,7 +19,7 @@ async fn test_list_users() {
     assert_eq!(res.status_code, Some(StatusCode::OK));
     
     let body = res.take_json::<serde_json::Value>().await.unwrap();
-    assert!(body["data"].is_array());
+    assert!(body["data"]["items"].is_array());
 }
 
 #[tokio::test]
@@ -47,7 +47,7 @@ async fn test_create_user_via_auth() {
         .await;
     
     let body = list_res.take_json::<serde_json::Value>().await.unwrap();
-    let users = body["data"].as_array().unwrap();
+    let users = body["data"]["items"].as_array().unwrap();
     
     assert!(!users.is_empty());
     
@@ -103,7 +103,7 @@ async fn test_update_user() {
         .await;
     
     let body = list_res.take_json::<serde_json::Value>().await.unwrap();
-    let users = body["data"].as_array().unwrap();
+    let users = body["data"]["items"].as_array().unwrap();
     
     if !users.is_empty() {
         let user_id = users[0]["id"].as_str().unwrap();
@@ -145,7 +145,7 @@ async fn test_delete_user() {
         .await;
     
     let body = list_res.take_json::<serde_json::Value>().await.unwrap();
-    let users = body["data"].as_array().unwrap();
+    let users = body["data"]["items"].as_array().unwrap();
     
     if !users.is_empty() {
         let user_id = users[0]["id"].as_str().unwrap();
@@ -191,7 +191,7 @@ async fn test_update_user_invalid_body() {
         .await;
     
     let body = list_res.take_json::<serde_json::Value>().await.unwrap();
-    let users = body["data"].as_array().unwrap();
+    let users = body["data"]["items"].as_array().unwrap();
     
     if !users.is_empty() {
         let user_id = users[0]["id"].as_str().unwrap();
@@ -254,7 +254,7 @@ async fn test_user_response_excludes_password_hash() {
     assert_eq!(res.status_code, Some(StatusCode::OK));
     
     let body = res.take_json::<serde_json::Value>().await.unwrap();
-    let users = body["data"].as_array().unwrap();
+    let users = body["data"]["items"].as_array().unwrap();
     
     if !users.is_empty() {
         let user = &users[0];
@@ -277,4 +277,30 @@ async fn test_me_endpoint_excludes_password_hash() {
     
     let body = res.take_json::<serde_json::Value>().await.unwrap();
     assert!(body["data"].get("password_hash").is_none(), "password_hash should not be exposed in /me response");
+}
+
+#[tokio::test]
+async fn test_learner_cannot_access_admin_endpoints() {
+    let pool = setup_test_db().await;
+    let service = create_test_service(pool);
+    let learner_token = get_auth_token(&service).await;
+    
+    let res = TestClient::get("http://127.0.0.1:8080/api/v1/admin/users")
+        .bearer_auth(&learner_token)
+        .send(&service)
+        .await;
+    
+    assert_eq!(res.status_code, Some(StatusCode::FORBIDDEN));
+}
+
+#[tokio::test]
+async fn test_unauthenticated_access_to_protected_endpoints() {
+    let pool = setup_test_db().await;
+    let service = create_test_service(pool);
+    
+    let res = TestClient::get("http://127.0.0.1:8080/api/v1/learner/courses")
+        .send(&service)
+        .await;
+    
+    assert_eq!(res.status_code, Some(StatusCode::UNAUTHORIZED));
 }

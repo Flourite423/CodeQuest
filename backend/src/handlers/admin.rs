@@ -81,11 +81,17 @@ pub struct SafeAccount {
 }
 
 #[handler]
-pub async fn list_admin_users(depot: &mut Depot) -> Result<Json<ApiResponse<Vec<SafeAccount>>>, StatusError> {
+pub async fn list_admin_users(req: &mut Request, depot: &mut Depot) -> Result<Json<ApiResponse<crate::models::ListResponse<SafeAccount>>>, StatusError> {
     let pool = depot.obtain::<PgPool>()
         .map_err(|_| StatusError::internal_server_error())?;
 
-    let users = sqlx::query_as::<_, crate::models::Account>("SELECT * FROM accounts ORDER BY created_at DESC LIMIT 100")
+    let page = req.query::<i64>("page").unwrap_or(1).max(1);
+    let page_size = req.query::<i64>("page_size").unwrap_or(20).clamp(1, 100);
+    let offset = (page - 1) * page_size;
+
+    let users = sqlx::query_as::<_, crate::models::Account>("SELECT * FROM accounts ORDER BY created_at DESC LIMIT $1 OFFSET $2")
+        .bind(page_size)
+        .bind(offset)
         .fetch_all(pool)
         .await
         .map_err(|_| StatusError::internal_server_error())?;
@@ -99,8 +105,18 @@ pub async fn list_admin_users(depot: &mut Depot) -> Result<Json<ApiResponse<Vec<
         created_at: account.created_at,
         updated_at: account.updated_at,
     }).collect();
+    
+    let total: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM accounts")
+        .fetch_one(pool)
+        .await
+        .map_err(|_| StatusError::internal_server_error())?;
 
-    Ok(Json(ApiResponse::new(safe_users)))
+    let response = crate::models::ListResponse {
+        items: safe_users,
+        meta: crate::models::ListMeta::new(page, page_size, total.0),
+    };
+
+    Ok(Json(ApiResponse::new(response)))
 }
 
 #[handler]
@@ -148,16 +164,32 @@ pub async fn create_announcement(req: &mut Request, depot: &mut Depot) -> Result
 }
 
 #[handler]
-pub async fn list_system_configs(depot: &mut Depot) -> Result<Json<ApiResponse<Vec<SystemConfig>>>, StatusError> {
+pub async fn list_system_configs(req: &mut Request, depot: &mut Depot) -> Result<Json<ApiResponse<crate::models::ListResponse<SystemConfig>>>, StatusError> {
     let pool = depot.obtain::<PgPool>()
         .map_err(|_| StatusError::internal_server_error())?;
 
-    let configs = sqlx::query_as::<_, SystemConfig>("SELECT * FROM system_configs ORDER BY updated_at DESC")
+    let page = req.query::<i64>("page").unwrap_or(1).max(1);
+    let page_size = req.query::<i64>("page_size").unwrap_or(20).clamp(1, 100);
+    let offset = (page - 1) * page_size;
+
+    let configs = sqlx::query_as::<_, SystemConfig>("SELECT * FROM system_configs ORDER BY updated_at DESC LIMIT $1 OFFSET $2")
+        .bind(page_size)
+        .bind(offset)
         .fetch_all(pool)
         .await
         .map_err(|_| StatusError::internal_server_error())?;
+    
+    let total: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM system_configs")
+        .fetch_one(pool)
+        .await
+        .map_err(|_| StatusError::internal_server_error())?;
 
-    Ok(Json(ApiResponse::new(configs)))
+    let response = crate::models::ListResponse {
+        items: configs,
+        meta: crate::models::ListMeta::new(page, page_size, total.0),
+    };
+
+    Ok(Json(ApiResponse::new(response)))
 }
 
 #[handler]
@@ -231,23 +263,32 @@ pub struct AdminListMeta {
 }
 
 #[handler]
-pub async fn list_admin_courses(depot: &mut Depot) -> Result<Json<ApiResponse<serde_json::Value>>, StatusError> {
+pub async fn list_admin_courses(req: &mut Request, depot: &mut Depot) -> Result<Json<ApiResponse<serde_json::Value>>, StatusError> {
     let pool = depot.obtain::<PgPool>()
         .map_err(|_| StatusError::internal_server_error())?;
 
-    let query = format!("{COURSE_SELECT_COLUMNS} ORDER BY created_at DESC");
+    let page = req.query::<i64>("page").unwrap_or(1).max(1);
+    let page_size = req.query::<i64>("page_size").unwrap_or(20).clamp(1, 100);
+    let offset = (page - 1) * page_size;
+
+    let query = format!("{COURSE_SELECT_COLUMNS} ORDER BY created_at DESC LIMIT $1 OFFSET $2");
     let courses = sqlx::query_as::<_, crate::models::Course>(&query)
+        .bind(page_size)
+        .bind(offset)
         .fetch_all(pool)
         .await
         .map_err(|_| StatusError::internal_server_error())?;
     
-    let total = courses.len() as i64;
+    let total: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM courses")
+        .fetch_one(pool)
+        .await
+        .map_err(|_| StatusError::internal_server_error())?;
+
+    let meta = crate::models::ListMeta::new(page, page_size, total.0);
 
     Ok(Json(ApiResponse::new(serde_json::json!({
         "items": courses,
-        "meta": {
-            "total": total
-        }
+        "meta": meta
     }))))
 }
 
@@ -393,27 +434,36 @@ pub async fn delete_course(req: &mut Request, depot: &mut Depot) -> Result<Statu
 }
 
 #[handler]
-pub async fn list_admin_challenges(depot: &mut Depot) -> Result<Json<ApiResponse<serde_json::Value>>, StatusError> {
+pub async fn list_admin_challenges(req: &mut Request, depot: &mut Depot) -> Result<Json<ApiResponse<serde_json::Value>>, StatusError> {
     let pool = depot.obtain::<PgPool>()
         .map_err(|_| StatusError::internal_server_error())?;
 
-    let challenges = sqlx::query_as::<_, crate::models::Challenge>("SELECT * FROM challenges ORDER BY created_at DESC")
+    let page = req.query::<i64>("page").unwrap_or(1).max(1);
+    let page_size = req.query::<i64>("page_size").unwrap_or(20).clamp(1, 100);
+    let offset = (page - 1) * page_size;
+
+    let challenges = sqlx::query_as::<_, crate::models::Challenge>("SELECT * FROM challenges ORDER BY created_at DESC LIMIT $1 OFFSET $2")
+        .bind(page_size)
+        .bind(offset)
         .fetch_all(pool)
         .await
         .map_err(|_| StatusError::internal_server_error())?;
     
-    let total = challenges.len() as i64;
+    let total: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM challenges")
+        .fetch_one(pool)
+        .await
+        .map_err(|_| StatusError::internal_server_error())?;
+
+    let meta = crate::models::ListMeta::new(page, page_size, total.0);
 
     Ok(Json(ApiResponse::new(serde_json::json!({
         "items": challenges,
-        "meta": {
-            "total": total
-        }
+        "meta": meta
     }))))
 }
 
 #[handler]
-pub async fn create_challenge(req: &mut Request, depot: &mut Depot) -> Result<StatusCode, StatusError> {
+pub async fn create_challenge(req: &mut Request, depot: &mut Depot) -> Result<Json<ApiResponse<crate::models::Challenge>>, StatusError> {
     let pool = depot.obtain::<PgPool>()
         .map_err(|_| StatusError::internal_server_error())?;
     
@@ -431,9 +481,10 @@ pub async fn create_challenge(req: &mut Request, depot: &mut Depot) -> Result<St
         _ => crate::models::DifficultyLevel::Easy,
     };
     
-    sqlx::query(
+    let challenge = sqlx::query_as::<_, crate::models::Challenge>(
         "INSERT INTO challenges (id, challenge_code, title, summary, difficulty, reward_xp, status) 
-         VALUES ($1, $2, $3, $4, $5, $6, 'draft')"
+         VALUES ($1, $2, $3, $4, $5, $6, 'draft')
+         RETURNING id, challenge_code, title, summary, related_course_id, difficulty::text, reward_xp, status::text, sort_order, content_version, created_at, updated_at"
     )
     .bind(id)
     .bind(body.get("challenge_code").and_then(|v| v.as_str()).unwrap_or(""))
@@ -441,14 +492,54 @@ pub async fn create_challenge(req: &mut Request, depot: &mut Depot) -> Result<St
     .bind(body.get("summary").and_then(|v| v.as_str()).unwrap_or(""))
     .bind(difficulty_enum)
     .bind(body.get("reward_xp").and_then(|v| v.as_i64()).unwrap_or(0) as i32)
-    .execute(pool)
+    .fetch_one(pool)
     .await
     .map_err(|e| {
         eprintln!("Database error creating challenge: {:?}", e);
         StatusError::internal_server_error()
     })?;
     
-    Ok(StatusCode::CREATED)
+    Ok(Json(ApiResponse::new(challenge)))
+}
+
+#[handler]
+pub async fn create_challenge_with_status(req: &mut Request, depot: &mut Depot) -> Result<(StatusCode, Json<ApiResponse<crate::models::Challenge>>), StatusError> {
+    let pool = depot.obtain::<PgPool>()
+        .map_err(|_| StatusError::internal_server_error())?;
+    
+    let body = req.parse_json::<serde_json::Value>().await
+        .map_err(|_| StatusError::bad_request().brief("Invalid request body"))?;
+    
+    let id = Uuid::new_v4();
+    let difficulty = body.get("difficulty").and_then(|v| v.as_str()).unwrap_or("easy");
+    let difficulty_enum = match difficulty {
+        "beginner" => crate::models::DifficultyLevel::Beginner,
+        "intermediate" => crate::models::DifficultyLevel::Intermediate,
+        "easy" => crate::models::DifficultyLevel::Easy,
+        "medium" => crate::models::DifficultyLevel::Medium,
+        "hard" => crate::models::DifficultyLevel::Hard,
+        _ => crate::models::DifficultyLevel::Easy,
+    };
+    
+    let challenge = sqlx::query_as::<_, crate::models::Challenge>(
+        "INSERT INTO challenges (id, challenge_code, title, summary, difficulty, reward_xp, status) 
+         VALUES ($1, $2, $3, $4, $5, $6, 'draft')
+         RETURNING id, challenge_code, title, summary, related_course_id, difficulty::text, reward_xp, status::text, sort_order, content_version, created_at, updated_at"
+    )
+    .bind(id)
+    .bind(body.get("challenge_code").and_then(|v| v.as_str()).unwrap_or(""))
+    .bind(body.get("title").and_then(|v| v.as_str()).unwrap_or(""))
+    .bind(body.get("summary").and_then(|v| v.as_str()).unwrap_or(""))
+    .bind(difficulty_enum)
+    .bind(body.get("reward_xp").and_then(|v| v.as_i64()).unwrap_or(0) as i32)
+    .fetch_one(pool)
+    .await
+    .map_err(|e| {
+        eprintln!("Database error creating challenge: {:?}", e);
+        StatusError::internal_server_error()
+    })?;
+    
+    Ok((StatusCode::CREATED, Json(ApiResponse::new(challenge))))
 }
 
 #[handler]
@@ -537,27 +628,36 @@ pub async fn delete_challenge(req: &mut Request, depot: &mut Depot) -> Result<St
 }
 
 #[handler]
-pub async fn list_admin_exercises(depot: &mut Depot) -> Result<Json<ApiResponse<serde_json::Value>>, StatusError> {
+pub async fn list_admin_exercises(req: &mut Request, depot: &mut Depot) -> Result<Json<ApiResponse<serde_json::Value>>, StatusError> {
     let pool = depot.obtain::<PgPool>()
         .map_err(|_| StatusError::internal_server_error())?;
 
-    let exercises = sqlx::query_as::<_, crate::models::Exercise>("SELECT * FROM exercises ORDER BY created_at DESC")
+    let page = req.query::<i64>("page").unwrap_or(1).max(1);
+    let page_size = req.query::<i64>("page_size").unwrap_or(20).clamp(1, 100);
+    let offset = (page - 1) * page_size;
+
+    let exercises = sqlx::query_as::<_, crate::models::Exercise>("SELECT * FROM exercises ORDER BY created_at DESC LIMIT $1 OFFSET $2")
+        .bind(page_size)
+        .bind(offset)
         .fetch_all(pool)
         .await
         .map_err(|_| StatusError::internal_server_error())?;
     
-    let total = exercises.len() as i64;
+    let total: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM exercises")
+        .fetch_one(pool)
+        .await
+        .map_err(|_| StatusError::internal_server_error())?;
+
+    let meta = crate::models::ListMeta::new(page, page_size, total.0);
 
     Ok(Json(ApiResponse::new(serde_json::json!({
         "items": exercises,
-        "meta": {
-            "total": total
-        }
+        "meta": meta
     }))))
 }
 
 #[handler]
-pub async fn create_exercise(req: &mut Request, depot: &mut Depot) -> Result<StatusCode, StatusError> {
+pub async fn create_exercise(req: &mut Request, depot: &mut Depot) -> Result<Json<ApiResponse<crate::models::Exercise>>, StatusError> {
     let pool = depot.obtain::<PgPool>()
         .map_err(|_| StatusError::internal_server_error())?;
     
@@ -568,20 +668,21 @@ pub async fn create_exercise(req: &mut Request, depot: &mut Depot) -> Result<Sta
     let chapter_id = body.get("chapter_id").and_then(|v| v.as_str())
         .and_then(|s| Uuid::parse_str(s).ok());
     
-    sqlx::query(
+    let exercise = sqlx::query_as::<_, crate::models::Exercise>(
         "INSERT INTO exercises (id, chapter_id, exercise_code, title, difficulty, status) 
-         VALUES ($1, $2, $3, $4, $5, 'draft')"
+         VALUES ($1, $2, $3, $4, $5, 'draft')
+         RETURNING *"
     )
     .bind(id)
     .bind(chapter_id)
     .bind(body.get("exercise_code").and_then(|v| v.as_str()).unwrap_or(""))
     .bind(body.get("title").and_then(|v| v.as_str()).unwrap_or(""))
     .bind(body.get("difficulty").and_then(|v| v.as_str()).unwrap_or(""))
-    .execute(pool)
+    .fetch_one(pool)
     .await
     .map_err(|_| StatusError::internal_server_error())?;
     
-    Ok(StatusCode::CREATED)
+    Ok(Json(ApiResponse::new(exercise)))
 }
 
 #[handler]
@@ -798,16 +899,32 @@ pub async fn update_moderation_case(req: &mut Request, _depot: &mut Depot) -> Re
 }
 
 #[handler]
-pub async fn list_announcements(depot: &mut Depot) -> Result<Json<ApiResponse<Vec<Announcement>>>, StatusError> {
+pub async fn list_announcements(req: &mut Request, depot: &mut Depot) -> Result<Json<ApiResponse<crate::models::ListResponse<Announcement>>>, StatusError> {
     let pool = depot.obtain::<PgPool>()
         .map_err(|_| StatusError::internal_server_error())?;
 
-    let announcements = sqlx::query_as::<_, Announcement>("SELECT * FROM announcements ORDER BY created_at DESC")
+    let page = req.query::<i64>("page").unwrap_or(1).max(1);
+    let page_size = req.query::<i64>("page_size").unwrap_or(20).clamp(1, 100);
+    let offset = (page - 1) * page_size;
+
+    let announcements = sqlx::query_as::<_, Announcement>("SELECT * FROM announcements ORDER BY created_at DESC LIMIT $1 OFFSET $2")
+        .bind(page_size)
+        .bind(offset)
         .fetch_all(pool)
         .await
         .map_err(|_| StatusError::internal_server_error())?;
+    
+    let total: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM announcements")
+        .fetch_one(pool)
+        .await
+        .map_err(|_| StatusError::internal_server_error())?;
 
-    Ok(Json(ApiResponse::new(announcements)))
+    let response = crate::models::ListResponse {
+        items: announcements,
+        meta: crate::models::ListMeta::new(page, page_size, total.0),
+    };
+
+    Ok(Json(ApiResponse::new(response)))
 }
 
 #[handler]

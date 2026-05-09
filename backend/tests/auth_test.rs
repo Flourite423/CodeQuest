@@ -89,6 +89,51 @@ async fn test_auth_refresh() {
 }
 
 #[tokio::test]
+async fn test_auth_login_wrong_password() {
+    let pool = setup_test_db().await;
+    let service = create_test_service(pool);
+    
+    let res = TestClient::post("http://127.0.0.1:8080/api/v1/auth/learner/login")
+        .json(&json!({
+            "email": "test@example.com",
+            "password": "wrongpassword"
+        }))
+        .send(&service)
+        .await;
+    
+    assert_eq!(res.status_code, Some(StatusCode::UNAUTHORIZED));
+}
+
+#[tokio::test]
+async fn test_auth_register_and_login() {
+    let pool = setup_test_db().await;
+    let service = create_test_service(pool);
+    
+    let register_res = TestClient::post("http://127.0.0.1:8080/api/v1/auth/register")
+        .json(&json!({
+            "email": "newuser@example.com",
+            "password": "newpassword123",
+            "nickname": "NewUser",
+            "device_id": "test-device",
+            "platform": "web"
+        }))
+        .send(&service)
+        .await;
+    
+    assert_eq!(register_res.status_code, Some(StatusCode::CREATED));
+    
+    let login_res = TestClient::post("http://127.0.0.1:8080/api/v1/auth/learner/login")
+        .json(&json!({
+            "email": "newuser@example.com",
+            "password": "newpassword123"
+        }))
+        .send(&service)
+        .await;
+    
+    assert_eq!(login_res.status_code, Some(StatusCode::OK));
+}
+
+#[tokio::test]
 async fn test_get_current_user_without_auth() {
     let pool = setup_test_db().await;
     let service = create_test_service(pool);
@@ -98,6 +143,57 @@ async fn test_get_current_user_without_auth() {
         .await;
     
     assert_eq!(res.status_code, Some(StatusCode::UNAUTHORIZED));
+}
+
+#[tokio::test]
+async fn test_register_duplicate_email() {
+    let pool = setup_test_db().await;
+    let service = create_test_service(pool);
+    
+    let register_res = TestClient::post("http://127.0.0.1:8080/api/v1/auth/register")
+        .json(&json!({
+            "email": "dupuser@example.com",
+            "password": "password123",
+            "nickname": "DupUser",
+            "device_id": "test-device",
+            "platform": "web"
+        }))
+        .send(&service)
+        .await;
+    
+    assert_eq!(register_res.status_code, Some(StatusCode::CREATED));
+    
+    let dup_res = TestClient::post("http://127.0.0.1:8080/api/v1/auth/register")
+        .json(&json!({
+            "email": "dupuser@example.com",
+            "password": "password123",
+            "nickname": "DupUser2",
+            "device_id": "test-device",
+            "platform": "web"
+        }))
+        .send(&service)
+        .await;
+    
+    assert_eq!(dup_res.status_code, Some(StatusCode::CONFLICT));
+}
+
+#[tokio::test]
+async fn test_register_invalid_platform() {
+    let pool = setup_test_db().await;
+    let service = create_test_service(pool);
+    
+    let res = TestClient::post("http://127.0.0.1:8080/api/v1/auth/register")
+        .json(&json!({
+            "email": "invalid@example.com",
+            "password": "password123",
+            "nickname": "Invalid",
+            "device_id": "test-device",
+            "platform": "invalid_platform"
+        }))
+        .send(&service)
+        .await;
+    
+    assert_eq!(res.status_code, Some(StatusCode::BAD_REQUEST));
 }
 
 #[tokio::test]

@@ -17,7 +17,7 @@ async fn test_get_global_leaderboard() {
     
     assert_eq!(res.status_code, Some(StatusCode::OK));
     let body = res.take_json::<serde_json::Value>().await.unwrap();
-    assert!(body["data"].is_array());
+    assert!(body["data"]["items"].is_array());
 }
 
 #[tokio::test]
@@ -33,7 +33,7 @@ async fn test_get_friends_leaderboard() {
     
     assert_eq!(res.status_code, Some(StatusCode::OK));
     let body = res.take_json::<serde_json::Value>().await.unwrap();
-    assert!(body["data"].is_array());
+    assert!(body["data"]["items"].is_array());
 }
 
 #[tokio::test]
@@ -49,5 +49,5 @@ async fn test_get_course_leaderboard() {
     
     assert_eq!(res.status_code, Some(StatusCode::OK));
     let body = res.take_json::<serde_json::Value>().await.unwrap();
-    assert!(body["data"].is_array());
+    assert!(body["data"]["items"].is_array());
 }

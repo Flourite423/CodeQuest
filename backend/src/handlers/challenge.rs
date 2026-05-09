@@ -44,13 +44,16 @@ pub async fn list_challenges(req: &mut Request, depot: &mut Depot) -> Result<Jso
     .await
     .map_err(|_| StatusError::internal_server_error())?;
     
-    let total = challenges.len() as i64;
+    let total: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM challenges WHERE status = 'published'")
+        .fetch_one(pool)
+        .await
+        .map_err(|_| StatusError::internal_server_error())?;
+    
+    let meta = crate::models::ListMeta::new(page, per_page, total.0);
     
     Ok(Json(ApiResponse::new(serde_json::json!({
         "items": challenges,
-        "meta": {
-            "total": total
-        }
+        "meta": meta
     }))))
 }
 
@@ -163,7 +166,7 @@ pub struct AttemptChallengeRequest {
 }
 
 #[handler]
-pub async fn attempt_challenge(req: &mut Request, depot: &mut Depot) -> Result<StatusCode, StatusError> {
+pub async fn attempt_challenge(req: &mut Request, depot: &mut Depot) -> Result<Json<ApiResponse<crate::models::ChallengeAttempt>>, StatusError> {
     let pool = depot.obtain::<PgPool>()
         .map_err(|_| StatusError::internal_server_error())?;
     
@@ -176,18 +179,20 @@ pub async fn attempt_challenge(req: &mut Request, depot: &mut Depot) -> Result<S
     let learner_id = auth::get_current_account_id(depot)?;
     let challenge_uuid = Uuid::parse_str(&challenge_id)
         .map_err(|_| StatusError::bad_request().brief("Invalid challenge_id"))?;
+    let attempt_id = Uuid::new_v4();
     
-    sqlx::query(
+    let attempt = sqlx::query_as::<_, crate::models::ChallengeAttempt>(
         "INSERT INTO challenge_attempts (id, challenge_id, learner_id, status, best_star, started_at, completed_at) 
-         VALUES ($1, $2, $3, 'completed', $4, NOW(), NOW())"
+         VALUES ($1, $2, $3, 'completed', $4, NOW(), NOW())
+         RETURNING *"
     )
-    .bind(Uuid::new_v4())
+    .bind(attempt_id)
     .bind(challenge_uuid)
     .bind(learner_id)
     .bind(body.score)
-    .execute(pool)
+    .fetch_one(pool)
     .await
     .map_err(|_| StatusError::internal_server_error())?;
     
-    Ok(StatusCode::CREATED)
+    Ok(Json(ApiResponse::new(attempt)))
 }

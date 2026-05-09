@@ -479,6 +479,31 @@ pub struct ResponseMeta {
     pub server_time: DateTime<Utc>,
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ListResponse<T> {
+    pub items: Vec<T>,
+    pub meta: ListMeta,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ListMeta {
+    pub page: i64,
+    pub page_size: i64,
+    pub total: i64,
+    pub has_more: bool,
+}
+
+impl ListMeta {
+    pub fn new(page: i64, page_size: i64, total: i64) -> Self {
+        Self {
+            page,
+            page_size,
+            total,
+            has_more: page * page_size < total,
+        }
+    }
+}
+
 impl ResponseMeta {
     pub fn new() -> Self {
         Self {

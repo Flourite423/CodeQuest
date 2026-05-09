@@ -69,6 +69,9 @@ pub async fn get_rewards(depot: &mut Depot) -> Result<Json<ApiResponse<serde_jso
     .await
     .map_err(|_| StatusError::internal_server_error())?;
     
+    let total = badges.len() as i64;
+    let meta = crate::models::ListMeta::new(1, total.max(1), total);
+
     Ok(Json(ApiResponse::new(serde_json::json!({
         "summary": {
             "total_xp": total_xp.0,
@@ -76,8 +79,6 @@ pub async fn get_rewards(depot: &mut Depot) -> Result<Json<ApiResponse<serde_jso
         },
         "badges": badges,
         "xp_ledger": xp_records,
-        "meta": {
-            "total": badges.len() as i64
-        }
+        "meta": meta
     }))))
 }

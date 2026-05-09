@@ -253,7 +253,7 @@ pub struct SubmitDailyChallengeRequest {
 }
 
 #[handler]
-pub async fn submit_daily_challenge(req: &mut Request, depot: &mut Depot) -> Result<StatusCode, StatusError> {
+pub async fn submit_daily_challenge(req: &mut Request, depot: &mut Depot) -> Result<Json<ApiResponse<DailyChallengeRecord>>, StatusError> {
     let pool = depot.obtain::<PgPool>()
         .map_err(|_| StatusError::internal_server_error())?;
     
@@ -268,19 +268,20 @@ pub async fn submit_daily_challenge(req: &mut Request, depot: &mut Depot) -> Res
     let challenge_uuid = Uuid::parse_str(&challenge_id)
         .map_err(|_| StatusError::bad_request().brief("Invalid challenge_id"))?;
     
-    sqlx::query(
+    let record = sqlx::query_as::<_, DailyChallengeRecord>(
         "INSERT INTO daily_challenge_records (id, daily_challenge_id, learner_id, status, 
          score, elapsed_seconds, streak_after_completion, completed_at) 
-         VALUES ($1, $2, $3, 'passed', $4, $5, 1, NOW())"
+         VALUES ($1, $2, $3, 'passed', $4, $5, 1, NOW())
+         RETURNING *"
     )
     .bind(id)
     .bind(challenge_uuid)
     .bind(learner_id)
     .bind(body.score)
     .bind(body.elapsed_seconds)
-    .execute(pool)
+    .fetch_one(pool)
     .await
     .map_err(|_| StatusError::internal_server_error())?;
     
-    Ok(StatusCode::CREATED)
+    Ok(Json(ApiResponse::new(record)))
 }
