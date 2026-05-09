@@ -120,26 +120,6 @@ pub async fn list_admin_users(req: &mut Request, depot: &mut Depot) -> Result<Js
 }
 
 #[handler]
-pub async fn get_admin_stats(depot: &mut Depot) -> Result<Json<ApiResponse<serde_json::Value>>, StatusError> {
-    let pool = depot.obtain::<PgPool>()
-        .map_err(|_| StatusError::internal_server_error())?;
-
-    let users: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM accounts")
-        .fetch_one(pool)
-        .await
-        .map_err(|_| StatusError::internal_server_error())?;
-    let courses: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM courses")
-        .fetch_one(pool)
-        .await
-        .map_err(|_| StatusError::internal_server_error())?;
-
-    Ok(Json(ApiResponse::new(serde_json::json!({
-        "total_users": users.0,
-        "total_courses": courses.0
-    }))))
-}
-
-#[handler]
 pub async fn create_announcement(req: &mut Request, depot: &mut Depot) -> Result<Json<ApiResponse<Announcement>>, StatusError> {
     let pool = depot.obtain::<PgPool>()
         .map_err(|_| StatusError::internal_server_error())?;
@@ -686,24 +666,6 @@ pub async fn create_exercise(req: &mut Request, depot: &mut Depot) -> Result<Jso
 }
 
 #[handler]
-pub async fn get_admin_exercise(req: &mut Request, depot: &mut Depot) -> Result<Json<ApiResponse<crate::models::Exercise>>, StatusError> {
-    let pool = depot.obtain::<PgPool>()
-        .map_err(|_| StatusError::internal_server_error())?;
-    
-    let id = req.param::<String>("exercise_id")
-        .ok_or_else(StatusError::bad_request)?;
-    
-    let exercise = sqlx::query_as::<_, crate::models::Exercise>("SELECT * FROM exercises WHERE id = $1")
-        .bind(&id)
-        .fetch_optional(pool)
-        .await
-        .map_err(|_| StatusError::internal_server_error())?
-        .ok_or_else(StatusError::not_found)?;
-    
-    Ok(Json(ApiResponse::new(exercise)))
-}
-
-#[handler]
 pub async fn update_exercise(req: &mut Request, depot: &mut Depot) -> Result<StatusCode, StatusError> {
     let pool = depot.obtain::<PgPool>()
         .map_err(|_| StatusError::internal_server_error())?;
@@ -731,23 +693,6 @@ pub async fn update_exercise(req: &mut Request, depot: &mut Depot) -> Result<Sta
     .map_err(|_| StatusError::internal_server_error())?;
     
     Ok(StatusCode::OK)
-}
-
-#[handler]
-pub async fn delete_exercise(req: &mut Request, depot: &mut Depot) -> Result<StatusCode, StatusError> {
-    let pool = depot.obtain::<PgPool>()
-        .map_err(|_| StatusError::internal_server_error())?;
-    
-    let id = req.param::<String>("exercise_id")
-        .ok_or_else(StatusError::bad_request)?;
-    
-    sqlx::query("DELETE FROM exercises WHERE id = $1")
-        .bind(&id)
-        .execute(pool)
-        .await
-        .map_err(|_| StatusError::internal_server_error())?;
-    
-    Ok(StatusCode::NO_CONTENT)
 }
 
 #[handler]

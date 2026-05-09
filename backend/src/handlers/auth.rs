@@ -513,35 +513,7 @@ pub async fn admin_login(req: &mut Request, depot: &mut Depot) -> Result<Json<Ap
     Ok(Json(ApiResponse::new(response)))
 }
 
-#[handler]
-pub async fn login(req: &mut Request, depot: &mut Depot) -> Result<Json<ApiResponse<LoginResponse>>, StatusError> {
-    let body: LoginRequest = req
-        .parse_json()
-        .await
-        .map_err(|_| StatusError::bad_request().brief("Invalid request body"))?;
 
-    if body.verification_code.len() != 6 || !body.verification_code.chars().all(|c| c.is_ascii_digit()) {
-        return Err(StatusError::unauthorized().brief("Invalid verification code format"));
-    }
-
-    let pool = depot.obtain::<PgPool>().map_err(|_| StatusError::internal_server_error())?;
-    let cfg = depot.obtain::<AppConfig>().map_err(|_| StatusError::internal_server_error())?;
-
-    let pseudo_email = format!("{}@legacy.local", body.phone);
-    let response = authenticate_user(
-        pool,
-        cfg,
-        &pseudo_email,
-        "legacy-passcode",
-        "learner",
-        "legacy-device",
-        None,
-        "ios",
-    )
-    .await?;
-
-    Ok(Json(ApiResponse::new(response)))
-}
 
 #[handler]
 pub async fn logout(req: &mut Request, depot: &mut Depot) -> Result<StatusCode, StatusError> {

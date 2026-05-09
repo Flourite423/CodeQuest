@@ -47,9 +47,17 @@ pub struct LearnerCourseListResponse {
     pub meta: CourseListMeta,
 }
 
-pub async fn list_published_courses(pool: &PgPool, page: i64, per_page: i64) -> Result<Vec<Course>, sqlx::Error> {
+pub async fn list_published_courses(pool: &PgPool, page: i64, per_page: i64, sort_by: Option<&str>, sort_order: Option<&str>) -> Result<Vec<Course>, sqlx::Error> {
     let offset = (page - 1) * per_page;
-    let query = format!("{COURSE_SELECT_COLUMNS} WHERE status = 'published' ORDER BY sort_order LIMIT $1 OFFSET $2");
+    let sort_column = match sort_by {
+        Some("title") => "title",
+        Some("created_at") => "created_at",
+        Some("updated_at") => "updated_at",
+        Some("published_at") => "published_at",
+        _ => "sort_order",
+    };
+    let order = if sort_order == Some("asc") { "ASC" } else { "DESC" };
+    let query = format!("{COURSE_SELECT_COLUMNS} WHERE status = 'published' ORDER BY {} {} LIMIT $1 OFFSET $2", sort_column, order);
     sqlx::query_as::<_, Course>(&query)
     .bind(per_page)
     .bind(offset)
@@ -69,8 +77,10 @@ pub async fn list_published_courses_with_meta(
     pool: &PgPool,
     page: i64,
     per_page: i64,
+    sort_by: Option<&str>,
+    sort_order: Option<&str>,
 ) -> Result<LearnerCourseListResponse, sqlx::Error> {
-    let items = list_published_courses(pool, page, per_page).await?
+    let items = list_published_courses(pool, page, per_page, sort_by, sort_order).await?
         .into_iter()
         .filter_map(|course| {
             course.published_at.map(|published_at| LearnerCourseListItem {

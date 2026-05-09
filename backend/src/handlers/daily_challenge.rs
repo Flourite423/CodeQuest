@@ -103,39 +103,6 @@ pub async fn create_daily_challenge(req: &mut Request, depot: &mut Depot) -> Res
 }
 
 #[handler]
-pub async fn attempt_daily_challenge(req: &mut Request, depot: &mut Depot) -> Result<StatusCode, StatusError> {
-    let pool = depot.obtain::<PgPool>()
-        .map_err(|_| StatusError::internal_server_error())?;
-    
-    let challenge_id = req.param::<String>("id")
-        .ok_or_else(StatusError::bad_request)?;
-    
-    let body: AttemptDailyChallengeRequest = req.parse_json().await
-        .map_err(|_| StatusError::bad_request().brief("Invalid request body"))?;
-    
-    let id = Uuid::new_v4();
-    let learner_id = auth::get_current_account_id(depot)?;
-    let challenge_uuid = Uuid::parse_str(&challenge_id)
-        .map_err(|_| StatusError::bad_request().brief("Invalid challenge_id"))?;
-    
-    sqlx::query(
-        "INSERT INTO daily_challenge_records (id, daily_challenge_id, learner_id, status, 
-         score, elapsed_seconds, streak_after_completion, completed_at) 
-         VALUES ($1, $2, $3, 'passed', $4, $5, 1, NOW())"
-    )
-    .bind(id)
-    .bind(challenge_uuid)
-    .bind(learner_id)
-    .bind(body.score)
-    .bind(body.elapsed_seconds)
-    .execute(pool)
-    .await
-    .map_err(|_| StatusError::internal_server_error())?;
-    
-    Ok(StatusCode::CREATED)
-}
-
-#[handler]
 pub async fn get_daily_challenge_records(req: &mut Request, depot: &mut Depot) -> Result<Json<ApiResponse<Vec<DailyChallengeRecord>>>, StatusError> {
     let pool = depot.obtain::<PgPool>()
         .map_err(|_| StatusError::internal_server_error())?;

@@ -37,8 +37,10 @@ pub async fn list_courses(req: &mut Request, depot: &mut Depot) -> Result<Json<A
     
     let page = req.query::<i64>("page").unwrap_or(1).max(1);
     let per_page = req.query::<i64>("page_size").unwrap_or(20).clamp(1, 100);
+    let sort_by = req.query::<String>("sort_by");
+    let sort_order = req.query::<String>("sort_order");
     
-    let courses = course_service::list_published_courses_with_meta(pool, page, per_page)
+    let courses = course_service::list_published_courses_with_meta(pool, page, per_page, sort_by.as_deref(), sort_order.as_deref())
         .await
         .map_err(|_| StatusError::internal_server_error())?;
     
@@ -46,7 +48,7 @@ pub async fn list_courses(req: &mut Request, depot: &mut Depot) -> Result<Json<A
 }
 
 #[handler]
-pub async fn get_course(req: &mut Request, depot: &mut Depot) -> Result<Json<ApiResponse<Course>>, StatusError> {
+pub async fn get_course(req: &mut Request, depot: &mut Depot) -> Result<Json<ApiResponse<serde_json::Value>>, StatusError> {
     let pool = depot.obtain::<PgPool>()
         .map_err(|_| StatusError::internal_server_error())?;
     
@@ -60,7 +62,20 @@ pub async fn get_course(req: &mut Request, depot: &mut Depot) -> Result<Json<Api
         .map_err(|_| StatusError::internal_server_error())?
         .ok_or_else(StatusError::not_found)?;
     
-    Ok(Json(ApiResponse::new(course)))
+    let chapters = sqlx::query_as::<_, crate::models::Chapter>(
+        "SELECT * FROM chapters WHERE course_id = $1 AND status = 'published' ORDER BY order_index ASC"
+    )
+    .bind(id)
+    .fetch_all(pool)
+    .await
+    .map_err(|_| StatusError::internal_server_error())?;
+    
+    let mut course_value = serde_json::to_value(course).map_err(|_| StatusError::internal_server_error())?;
+    if let Some(obj) = course_value.as_object_mut() {
+        obj.insert("chapters".to_string(), serde_json::to_value(chapters).map_err(|_| StatusError::internal_server_error())?);
+    }
+    
+    Ok(Json(ApiResponse::new(course_value)))
 }
 
 #[handler]
