@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 
+const loading = ref(false)
+const error = ref('')
+
 const stats = ref([
   { title: '总用户数', value: '1,234', icon: 'User', color: '#409EFF' },
   { title: '总课程数', value: '56', icon: 'Reading', color: '#67C23A' },
@@ -15,47 +18,77 @@ const recentActivities = ref([
   { user: '用户4', action: '完成了课程', target: 'Rust 基础', time: '15 分钟前' },
   { user: '用户5', action: '加入了挑战', target: '每周挑战', time: '20 分钟前' },
 ])
+
+const fetchData = async () => {
+  loading.value = true
+  error.value = ''
+  try {
+    // TODO: Replace with actual API call
+    await new Promise(resolve => setTimeout(resolve, 500))
+  } catch (e) {
+    error.value = '加载数据失败，请重试'
+  } finally {
+    loading.value = false
+  }
+}
+
+fetchData()
 </script>
 
 <template>
   <div class="dashboard">
     <h1>数据看板</h1>
-    
-    <el-row :gutter="20" class="stats-row">
-      <el-col :span="6" v-for="stat in stats" :key="stat.title">
-        <el-card class="stat-card">
-          <div class="stat-content">
-            <el-icon :size="40" :color="stat.color">
-              <component :is="stat.icon" />
-            </el-icon>
-            <div class="stat-info">
-              <p class="stat-value">{{ stat.value }}</p>
-              <p class="stat-title">{{ stat.title }}</p>
-            </div>
-          </div>
-        </el-card>
-      </el-col>
-    </el-row>
 
-    <el-card class="activity-card">
-      <template #header>
-        <span>最近动态</span>
-      </template>
-      <el-timeline>
-        <el-timeline-item
-          v-for="(activity, index) in recentActivities"
-          :key="index"
-          :type="index === 0 ? 'primary' : ''"
-        >
-          <p>
-            <strong>{{ activity.user }}</strong>
-            {{ activity.action }}
-            <el-tag size="small">{{ activity.target }}</el-tag>
-          </p>
-          <p class="activity-time">{{ activity.time }}</p>
-        </el-timeline-item>
-      </el-timeline>
-    </el-card>
+    <!-- Loading State -->
+    <div v-if="loading" class="state-container">
+      <el-skeleton :rows="3" animated />
+    </div>
+
+    <!-- Error State -->
+    <div v-else-if="error" class="state-container">
+      <el-icon class="state-icon" color="#F56C6C"><Warning /></el-icon>
+      <p class="state-text">{{ error }}</p>
+      <el-button type="primary" @click="fetchData">重试</el-button>
+    </div>
+
+    <!-- Content -->
+    <template v-else>
+      <el-row :gutter="20" class="stats-row">
+        <el-col :span="6" v-for="stat in stats" :key="stat.title">
+          <el-card class="stat-card">
+            <div class="stat-content">
+              <el-icon :size="40" :color="stat.color">
+                <component :is="stat.icon" />
+              </el-icon>
+              <div class="stat-info">
+                <p class="stat-value">{{ stat.value }}</p>
+                <p class="stat-title">{{ stat.title }}</p>
+              </div>
+            </div>
+          </el-card>
+        </el-col>
+      </el-row>
+
+      <el-card class="activity-card">
+        <template #header>
+          <span>最近动态</span>
+        </template>
+        <el-timeline>
+          <el-timeline-item
+            v-for="(activity, index) in recentActivities"
+            :key="index"
+            :type="index === 0 ? 'primary' : ''"
+          >
+            <p>
+              <strong>{{ activity.user }}</strong>
+              {{ activity.action }}
+              <el-tag size="small">{{ activity.target }}</el-tag>
+            </p>
+            <p class="activity-time">{{ activity.time }}</p>
+          </el-timeline-item>
+        </el-timeline>
+      </el-card>
+    </template>
   </div>
 </template>
 
@@ -77,7 +110,7 @@ const recentActivities = ref([
     align-items: center;
     gap: 16px;
   }
-  
+
   .stat-info {
     .stat-value {
       font-size: 24px;
@@ -85,7 +118,7 @@ const recentActivities = ref([
       color: #303133;
       margin: 0;
     }
-    
+
     .stat-title {
       font-size: 14px;
       color: #909399;

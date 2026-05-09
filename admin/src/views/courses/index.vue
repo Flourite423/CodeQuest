@@ -2,6 +2,9 @@
 import { ref } from 'vue'
 import { Plus } from '@element-plus/icons-vue'
 
+const loading = ref(false)
+const error = ref('')
+
 const courses = ref([
   { id: 1, title: 'Flutter 基础', description: '从零学习 Flutter', status: 'published', students: 234 },
   { id: 2, title: 'Rust 基础', description: '掌握 Rust 编程', status: 'published', students: 156 },
@@ -25,6 +28,21 @@ const handleSave = () => {
   dialogVisible.value = false
   editingCourse.value = null
 }
+
+const fetchData = async () => {
+  loading.value = true
+  error.value = ''
+  try {
+    // TODO: Replace with actual API call
+    await new Promise(resolve => setTimeout(resolve, 500))
+  } catch (e) {
+    error.value = '加载数据失败，请重试'
+  } finally {
+    loading.value = false
+  }
+}
+
+fetchData()
 </script>
 
 <template>
@@ -34,25 +52,47 @@ const handleSave = () => {
       <el-button type="primary" :icon="Plus">新建课程</el-button>
     </div>
 
-    <el-table :data="courses" style="width: 100%">
-      <el-table-column prop="id" label="课程ID" width="80" />
-      <el-table-column prop="title" label="课程名称" />
-      <el-table-column prop="description" label="课程简介" />
-      <el-table-column prop="status" label="状态">
-        <template #default="{ row }">
-          <el-tag :type="row.status === 'published' ? 'success' : 'info'">
-            {{ row.status === 'published' ? '已发布' : '草稿' }}
-          </el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column prop="students" label="学员数" width="100" />
-      <el-table-column label="操作" width="150">
-        <template #default="{ row }">
-          <el-button size="small" @click="handleEdit(row)">编辑</el-button>
-          <el-button size="small" type="danger" @click="handleDelete(row)">删除</el-button>
-        </template>
-      </el-table-column>
-    </el-table>
+    <!-- Loading State -->
+    <div v-if="loading" class="state-container">
+      <el-skeleton :rows="5" animated />
+    </div>
+
+    <!-- Error State -->
+    <div v-else-if="error" class="state-container">
+      <el-icon class="state-icon" color="#F56C6C"><Warning /></el-icon>
+      <p class="state-text">{{ error }}</p>
+      <el-button type="primary" @click="fetchData">重试</el-button>
+    </div>
+
+    <!-- Empty State -->
+    <div v-else-if="courses.length === 0" class="state-container">
+      <el-icon class="state-icon" color="#909399"><Document /></el-icon>
+      <p class="state-text">暂无课程数据</p>
+      <el-button type="primary" :icon="Plus">新建课程</el-button>
+    </div>
+
+    <!-- Content -->
+    <template v-else>
+      <el-table :data="courses" style="width: 100%" v-loading="loading">
+        <el-table-column prop="id" label="课程ID" width="80" />
+        <el-table-column prop="title" label="课程名称" />
+        <el-table-column prop="description" label="课程简介" />
+        <el-table-column prop="status" label="状态">
+          <template #default="{ row }">
+            <el-tag :type="row.status === 'published' ? 'success' : 'info'">
+              {{ row.status === 'published' ? '已发布' : '草稿' }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column prop="students" label="学员数" width="100" />
+        <el-table-column label="操作" width="150">
+          <template #default="{ row }">
+            <el-button size="small" @click="handleEdit(row)">编辑</el-button>
+            <el-button size="small" type="danger" @click="handleDelete(row)">删除</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+    </template>
 
     <el-dialog v-model="dialogVisible" title="编辑课程" width="500px">
       <el-form v-if="editingCourse" :model="editingCourse" label-width="100px">
@@ -84,7 +124,7 @@ const handleSave = () => {
     justify-content: space-between;
     align-items: center;
     margin-bottom: 24px;
-    
+
     h1 {
       margin: 0;
     }

@@ -2,10 +2,13 @@
 import { ref } from 'vue'
 import { Plus } from '@element-plus/icons-vue'
 
+const loading = ref(false)
+const error = ref('')
+
 const challenges = ref([
-  { id: 1, title: '每日编程', type: 'daily', difficulty: 'easy', xpReward: 100, status: 'active' },
-  { id: 2, title: '每周挑战', type: 'weekly', difficulty: 'medium', xpReward: 500, status: 'active' },
-  { id: 3, title: '月度马拉松', type: 'monthly', difficulty: 'hard', xpReward: 2000, status: 'upcoming' },
+  { id: 1, title: '每日编程', type: 'daily', difficulty: 'easy', xpReward: 100, status: 'published' },
+  { id: 2, title: '每周挑战', type: 'weekly', difficulty: 'medium', xpReward: 500, status: 'published' },
+  { id: 3, title: '月度马拉松', type: 'monthly', difficulty: 'hard', xpReward: 2000, status: 'draft' },
 ])
 
 const dialogVisible = ref(false)
@@ -20,6 +23,21 @@ const handleSave = () => {
   dialogVisible.value = false
   editingChallenge.value = null
 }
+
+const fetchData = async () => {
+  loading.value = true
+  error.value = ''
+  try {
+    // TODO: Replace with actual API call
+    await new Promise(resolve => setTimeout(resolve, 500))
+  } catch (e) {
+    error.value = '加载数据失败，请重试'
+  } finally {
+    loading.value = false
+  }
+}
+
+fetchData()
 </script>
 
 <template>
@@ -29,31 +47,53 @@ const handleSave = () => {
       <el-button type="primary" :icon="Plus">新建挑战</el-button>
     </div>
 
-    <el-table :data="challenges" style="width: 100%">
-      <el-table-column prop="id" label="挑战ID" width="80" />
-      <el-table-column prop="title" label="挑战名称" />
-      <el-table-column prop="type" label="类型" />
-      <el-table-column prop="difficulty" label="难度">
-        <template #default="{ row }">
-          <el-tag :type="row.difficulty === 'easy' ? 'success' : row.difficulty === 'medium' ? 'warning' : 'danger'">
-            {{ row.difficulty === 'easy' ? '简单' : row.difficulty === 'medium' ? '中等' : '困难' }}
-          </el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column prop="xpReward" label="奖励经验" width="100" />
-      <el-table-column prop="status" label="状态">
-        <template #default="{ row }">
-          <el-tag :type="row.status === 'active' ? 'success' : 'info'">
-            {{ row.status === 'active' ? '进行中' : '即将开始' }}
-          </el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column label="操作" width="150">
-        <template #default="{ row }">
-          <el-button size="small" @click="handleEdit(row)">编辑</el-button>
-        </template>
-      </el-table-column>
-    </el-table>
+    <!-- Loading State -->
+    <div v-if="loading" class="state-container">
+      <el-skeleton :rows="5" animated />
+    </div>
+
+    <!-- Error State -->
+    <div v-else-if="error" class="state-container">
+      <el-icon class="state-icon" color="#F56C6C"><Warning /></el-icon>
+      <p class="state-text">{{ error }}</p>
+      <el-button type="primary" @click="fetchData">重试</el-button>
+    </div>
+
+    <!-- Empty State -->
+    <div v-else-if="challenges.length === 0" class="state-container">
+      <el-icon class="state-icon" color="#909399"><Document /></el-icon>
+      <p class="state-text">暂无挑战数据</p>
+      <el-button type="primary" :icon="Plus">新建挑战</el-button>
+    </div>
+
+    <!-- Content -->
+    <template v-else>
+      <el-table :data="challenges" style="width: 100%" v-loading="loading">
+        <el-table-column prop="id" label="挑战ID" width="80" />
+        <el-table-column prop="title" label="挑战名称" />
+        <el-table-column prop="type" label="类型" />
+        <el-table-column prop="difficulty" label="难度">
+          <template #default="{ row }">
+            <el-tag :type="row.difficulty === 'easy' ? 'success' : row.difficulty === 'medium' ? 'warning' : 'danger'">
+              {{ row.difficulty === 'easy' ? '简单' : row.difficulty === 'medium' ? '中等' : '困难' }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column prop="xpReward" label="奖励经验" width="100" />
+        <el-table-column prop="status" label="状态">
+          <template #default="{ row }">
+            <el-tag :type="row.status === 'published' ? 'success' : row.status === 'draft' ? 'info' : 'warning'">
+              {{ row.status === 'published' ? '已发布' : row.status === 'draft' ? '草稿' : '已归档' }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" width="150">
+          <template #default="{ row }">
+            <el-button size="small" @click="handleEdit(row)">编辑</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+    </template>
 
     <el-dialog v-model="dialogVisible" title="编辑挑战" width="500px">
       <el-form v-if="editingChallenge" :model="editingChallenge" label-width="100px">
@@ -74,6 +114,13 @@ const handleSave = () => {
             <el-option label="困难" value="hard" />
           </el-select>
         </el-form-item>
+        <el-form-item label="状态">
+          <el-select v-model="editingChallenge.status">
+            <el-option label="草稿" value="draft" />
+            <el-option label="已发布" value="published" />
+            <el-option label="已归档" value="archived" />
+          </el-select>
+        </el-form-item>
       </el-form>
       <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>
@@ -90,7 +137,7 @@ const handleSave = () => {
     justify-content: space-between;
     align-items: center;
     margin-bottom: 24px;
-    
+
     h1 {
       margin: 0;
     }
