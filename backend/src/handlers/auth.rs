@@ -8,7 +8,7 @@ use sqlx::PgPool;
 use uuid::Uuid;
 
 use crate::config::AppConfig;
-use crate::models::{Account, AccountStatus, AdminProfile, ApiResponse, LearnerProfile, RoleType};
+use crate::models::{Account, AdminProfile, ApiResponse, LearnerProfile, RoleType};
 
 fn hash_password(password: &str) -> Result<String, bcrypt::BcryptError> {
     bcrypt::hash(password, bcrypt::DEFAULT_COST)
@@ -637,8 +637,13 @@ where
     D: serde::Deserializer<'de>,
 {
     let email: String = serde::Deserialize::deserialize(deserializer)?;
-    if email.contains('@') && email.len() >= 5 {
-        Ok(email)
+    if email.contains('@')
+        && email.len() >= 5
+        && email.len() <= 254
+        && !email.starts_with('@')
+        && !email.ends_with('@')
+    {
+        Ok(email.to_lowercase())
     } else {
         Err(serde::de::Error::custom("Invalid email format"))
     }
@@ -649,9 +654,16 @@ where
     D: serde::Deserializer<'de>,
 {
     let password: String = serde::Deserialize::deserialize(deserializer)?;
-    if password.len() >= 8 {
+    if password.len() >= 8
+        && password.len() <= 128
+        && password.chars().any(|c| c.is_ascii_uppercase())
+        && password.chars().any(|c| c.is_ascii_lowercase())
+        && password.chars().any(|c| c.is_ascii_digit())
+    {
         Ok(password)
     } else {
-        Err(serde::de::Error::custom("Password must be at least 8 characters"))
+        Err(serde::de::Error::custom(
+            "Password must be 8-128 characters with at least one uppercase, one lowercase, and one digit",
+        ))
     }
 }

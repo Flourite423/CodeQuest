@@ -44,8 +44,8 @@ pub async fn setup_test_db() -> PgPool {
 }
 
 async fn seed_test_accounts(pool: &PgPool) {
-    let learner_hash = bcrypt::hash("password123", bcrypt::DEFAULT_COST).unwrap_or_default();
-    let admin_hash = bcrypt::hash("admin123", bcrypt::DEFAULT_COST).unwrap_or_default();
+    let learner_hash = bcrypt::hash("Password123", bcrypt::DEFAULT_COST).unwrap_or_default();
+    let admin_hash = bcrypt::hash("Admin123", bcrypt::DEFAULT_COST).unwrap_or_default();
 
     let _ = sqlx::query(
         "INSERT INTO accounts (id, email, password_hash, default_role, account_status)
@@ -102,7 +102,7 @@ pub async fn get_auth_token(service: &Service) -> String {
     let mut res = TestClient::post("http://127.0.0.1:8080/api/v1/auth/learner/login")
         .json(&serde_json::json!({
             "email": "test@example.com",
-            "password": "password123"
+            "password": "Password123"
         }))
         .send(service)
         .await;
@@ -116,7 +116,7 @@ pub async fn get_admin_token(service: &Service) -> String {
     let mut res = TestClient::post("http://127.0.0.1:8080/api/v1/auth/admin/login")
         .json(&serde_json::json!({
             "email": "admin@example.com",
-            "password": "admin123"
+            "password": "Admin123"
         }))
         .send(service)
         .await;

@@ -236,8 +236,8 @@ async fn seed_contract_data(pool: &PgPool) -> SeedData {
     let admin_id = Uuid::new_v4();
     let published_course_id = Uuid::new_v4();
     let now = Utc::now();
-    let learner_password_hash = bcrypt::hash("password123", bcrypt::DEFAULT_COST).expect("hash learner password");
-    let admin_password_hash = bcrypt::hash("admin12345", bcrypt::DEFAULT_COST).expect("hash admin password");
+    let learner_password_hash = bcrypt::hash("Password123", bcrypt::DEFAULT_COST).expect("hash learner password");
+    let admin_password_hash = bcrypt::hash("Admin12345", bcrypt::DEFAULT_COST).expect("hash admin password");
 
     sqlx::query(
         "INSERT INTO accounts (id, email, password_hash, default_role, account_status, created_at, updated_at)
@@ -322,7 +322,7 @@ async fn learner_token(service: &Service) -> String {
     let mut response = TestClient::post("http://127.0.0.1:8080/api/v1/auth/learner/login")
         .json(&json!({
             "email": "contract-learner@example.com",
-            "password": "password123",
+            "password": "Password123",
             "device_id": "device-learner-1",
             "platform": "ios"
         }))
@@ -344,7 +344,7 @@ async fn admin_token(service: &Service) -> String {
     let mut response = TestClient::post("http://127.0.0.1:8080/api/v1/auth/admin/login")
         .json(&json!({
             "email": "admin@example.com",
-            "password": "admin12345",
+            "password": "Admin12345",
             "device_id": "device-admin-1",
             "platform": "web"
         }))
@@ -512,7 +512,7 @@ async fn contract_post_auth_register_matches_openapi() {
     let mut response = TestClient::post("http://127.0.0.1:8080/api/v1/auth/register")
         .json(&json!({
             "email": "new-contract-user@example.com",
-            "password": "password123",
+            "password": "Password123",
             "nickname": "New Learner",
             "device_id": "device-register-1",
             "platform": "ios"
@@ -537,7 +537,7 @@ async fn contract_post_auth_learner_login_matches_openapi() {
     let mut response = TestClient::post("http://127.0.0.1:8080/api/v1/auth/learner/login")
         .json(&json!({
             "email": "contract-learner@example.com",
-            "password": "password123",
+            "password": "Password123",
             "device_id": "device-login-1",
             "platform": "ios"
         }))

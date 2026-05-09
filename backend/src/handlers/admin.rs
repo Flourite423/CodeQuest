@@ -237,11 +237,6 @@ pub async fn get_user_stats(depot: &mut Depot) -> Result<Json<ApiResponse<serde_
     }))))
 }
 
-#[derive(Debug, serde::Serialize)]
-pub struct AdminListMeta {
-    pub total: i64,
-}
-
 #[handler]
 pub async fn list_admin_courses(req: &mut Request, depot: &mut Depot) -> Result<Json<ApiResponse<serde_json::Value>>, StatusError> {
     let pool = depot.obtain::<PgPool>()

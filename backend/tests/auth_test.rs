@@ -13,7 +13,7 @@ async fn test_auth_login_success() {
     let mut res = TestClient::post("http://127.0.0.1:8080/api/v1/auth/learner/login")
         .json(&json!({
             "email": "test@example.com",
-            "password": "password123"
+            "password": "Password123"
         }))
         .send(&service)
         .await;
@@ -67,7 +67,7 @@ async fn test_auth_refresh() {
     let mut login_res = TestClient::post("http://127.0.0.1:8080/api/v1/auth/learner/login")
         .json(&json!({
             "email": "test@example.com",
-            "password": "password123"
+            "password": "Password123"
         }))
         .send(&service)
         .await;
@@ -96,7 +96,7 @@ async fn test_auth_login_wrong_password() {
     let res = TestClient::post("http://127.0.0.1:8080/api/v1/auth/learner/login")
         .json(&json!({
             "email": "test@example.com",
-            "password": "wrongpassword"
+            "password": "WrongPassword123"
         }))
         .send(&service)
         .await;
@@ -112,7 +112,7 @@ async fn test_auth_register_and_login() {
     let register_res = TestClient::post("http://127.0.0.1:8080/api/v1/auth/register")
         .json(&json!({
             "email": "newuser@example.com",
-            "password": "newpassword123",
+            "password": "NewPassword123",
             "nickname": "NewUser",
             "device_id": "test-device",
             "platform": "web"
@@ -125,7 +125,7 @@ async fn test_auth_register_and_login() {
     let login_res = TestClient::post("http://127.0.0.1:8080/api/v1/auth/learner/login")
         .json(&json!({
             "email": "newuser@example.com",
-            "password": "newpassword123"
+            "password": "NewPassword123"
         }))
         .send(&service)
         .await;
@@ -153,7 +153,7 @@ async fn test_register_duplicate_email() {
     let register_res = TestClient::post("http://127.0.0.1:8080/api/v1/auth/register")
         .json(&json!({
             "email": "dupuser@example.com",
-            "password": "password123",
+            "password": "Password123",
             "nickname": "DupUser",
             "device_id": "test-device",
             "platform": "web"
@@ -166,7 +166,7 @@ async fn test_register_duplicate_email() {
     let dup_res = TestClient::post("http://127.0.0.1:8080/api/v1/auth/register")
         .json(&json!({
             "email": "dupuser@example.com",
-            "password": "password123",
+            "password": "Password123",
             "nickname": "DupUser2",
             "device_id": "test-device",
             "platform": "web"
@@ -185,7 +185,7 @@ async fn test_register_invalid_platform() {
     let res = TestClient::post("http://127.0.0.1:8080/api/v1/auth/register")
         .json(&json!({
             "email": "invalid@example.com",
-            "password": "password123",
+            "password": "Password123",
             "nickname": "Invalid",
             "device_id": "test-device",
             "platform": "invalid_platform"
@@ -204,7 +204,7 @@ async fn test_get_current_user_with_auth() {
     let mut login_res = TestClient::post("http://127.0.0.1:8080/api/v1/auth/learner/login")
         .json(&json!({
             "email": "test@example.com",
-            "password": "password123"
+            "password": "Password123"
         }))
         .send(&service)
         .await;

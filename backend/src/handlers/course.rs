@@ -1,7 +1,7 @@
 use salvo::prelude::*;
 use sqlx::PgPool;
 use crate::handlers::auth;
-use crate::models::{ApiResponse, Course};
+use crate::models::ApiResponse;
 use crate::services::course_service;
 use uuid::Uuid;
 use serde::Deserialize;

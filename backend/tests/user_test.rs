@@ -31,7 +31,7 @@ async fn test_create_user_via_auth() {
     let register_res = TestClient::post("http://127.0.0.1:8080/api/v1/auth/register")
         .json(&json!({
             "email": "test_user@example.com",
-            "password": "password123",
+            "password": "Password123",
             "nickname": "TestUser",
             "device_id": "test-device",
             "platform": "web"
@@ -87,7 +87,7 @@ async fn test_update_user() {
     let register_res = TestClient::post("http://127.0.0.1:8080/api/v1/auth/register")
         .json(&json!({
             "email": "test_update@example.com",
-            "password": "password123",
+            "password": "Password123",
             "nickname": "TestUpdate",
             "device_id": "test-device",
             "platform": "web"
@@ -129,7 +129,7 @@ async fn test_delete_user() {
     let register_res = TestClient::post("http://127.0.0.1:8080/api/v1/auth/register")
         .json(&json!({
             "email": "test_delete@example.com",
-            "password": "password123",
+            "password": "Password123",
             "nickname": "TestDelete",
             "device_id": "test-device",
             "platform": "web"
@@ -175,7 +175,7 @@ async fn test_update_user_invalid_body() {
     let register_res = TestClient::post("http://127.0.0.1:8080/api/v1/auth/register")
         .json(&json!({
             "email": "test_invalid@example.com",
-            "password": "password123",
+            "password": "Password123",
             "nickname": "TestInvalid",
             "device_id": "test-device",
             "platform": "web"
@@ -216,7 +216,7 @@ async fn test_login_nonexistent_user_returns_401() {
     let login_res = TestClient::post("http://127.0.0.1:8080/api/v1/auth/learner/login")
         .json(&json!({
             "email": "nonexistent@example.com",
-            "password": "password123"
+            "password": "Password123"
         }))
         .send(&service)
         .await;
@@ -232,7 +232,7 @@ async fn test_admin_login_nonexistent_returns_401() {
     let login_res = TestClient::post("http://127.0.0.1:8080/api/v1/auth/admin/login")
         .json(&json!({
             "email": "nonexistent@example.com",
-            "password": "password123"
+            "password": "Password123"
         }))
         .send(&service)
         .await;
