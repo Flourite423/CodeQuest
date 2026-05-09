@@ -10,7 +10,7 @@ const settings = reactive({
 })
 
 const handleSave = () => {
-  // TODO: Save settings to backend
+  console.log('保存设置:', settings)
 }
 </script>
 

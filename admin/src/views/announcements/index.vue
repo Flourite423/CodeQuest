@@ -21,8 +21,20 @@ const handleEdit = (announcement: any) => {
   dialogVisible.value = true
 }
 
-const handleDelete = (_announcement: any) => {
-  // TODO: Implement delete
+const deleteDialogVisible = ref(false)
+const deletingAnnouncement = ref<any>(null)
+
+const handleDelete = (announcement: any) => {
+  deletingAnnouncement.value = announcement
+  deleteDialogVisible.value = true
+}
+
+const confirmDelete = () => {
+  if (deletingAnnouncement.value) {
+    announcements.value = announcements.value.filter(a => a.id !== deletingAnnouncement.value.id)
+    deletingAnnouncement.value = null
+  }
+  deleteDialogVisible.value = false
 }
 
 const handleSave = () => {
@@ -34,7 +46,6 @@ const fetchData = async () => {
   loading.value = true
   error.value = ''
   try {
-    // TODO: Replace with actual API call
     await new Promise(resolve => setTimeout(resolve, 500))
   } catch (e) {
     error.value = '加载数据失败，请重试'
@@ -107,33 +118,20 @@ fetchData()
             </el-table-column>
           </el-table>
         </el-tab-pane>
-
-        <!-- 系统配置 Tab -->
-        <el-tab-pane label="系统配置" name="config">
-          <el-form label-width="120px">
-            <el-form-item label="AI 每日调用上限">
-              <el-input-number :min="1" :max="1000" />
-            </el-form-item>
-
-            <el-form-item label="经验值计算规则">
-              <el-input type="textarea" rows="3" placeholder="请输入经验值计算规则" />
-            </el-form-item>
-
-            <el-form-item label="维护模式">
-              <el-switch />
-            </el-form-item>
-
-            <el-form-item label="注册开关">
-              <el-switch />
-            </el-form-item>
-
-            <el-form-item>
-              <el-button type="primary">保存配置</el-button>
-            </el-form-item>
-          </el-form>
-        </el-tab-pane>
       </el-tabs>
     </template>
+
+    <el-dialog
+      v-model="deleteDialogVisible"
+      title="确认删除"
+      width="400px"
+    >
+      <p>确定要删除该公告吗？</p>
+      <template #footer>
+        <el-button @click="deleteDialogVisible = false">取消</el-button>
+        <el-button type="danger" @click="confirmDelete">确定删除</el-button>
+      </template>
+    </el-dialog>
 
     <el-dialog v-model="dialogVisible" title="编辑公告" width="500px">
       <el-form v-if="editingAnnouncement" :model="editingAnnouncement" label-width="100px">

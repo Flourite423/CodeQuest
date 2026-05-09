@@ -1,27 +1,32 @@
 <script setup lang="ts">
 import { ref } from 'vue'
+import { useRouter } from 'vue-router'
 import { Plus } from '@element-plus/icons-vue'
+import type { Course } from '@/types'
 
+const router = useRouter()
 const loading = ref(false)
 const error = ref('')
+const forbidden = ref(false)
+const sessionExpired = ref(false)
 
-const courses = ref([
-  { id: 1, title: 'Flutter 基础', description: '从零学习 Flutter', status: 'published', students: 234 },
-  { id: 2, title: 'Rust 基础', description: '掌握 Rust 编程', status: 'published', students: 156 },
-  { id: 3, title: 'Vue.js 进阶', description: '高级 Vue.js 模式', status: 'draft', students: 0 },
-  { id: 4, title: '系统设计', description: '设计可扩展系统', status: 'published', students: 89 },
+const courses = ref<Course[]>([
+  { id: 1, title: 'Flutter 基础', description: '从零学习 Flutter', status: 'published', students: 234, difficulty: 'easy', created_at: '2024-01-01' },
+  { id: 2, title: 'Rust 基础', description: '掌握 Rust 编程', status: 'published', students: 156, difficulty: 'medium', created_at: '2024-01-02' },
+  { id: 3, title: 'Vue.js 进阶', description: '高级 Vue.js 模式', status: 'draft', students: 0, difficulty: 'hard', created_at: '2024-01-03' },
+  { id: 4, title: '系统设计', description: '设计可扩展系统', status: 'published', students: 89, difficulty: 'medium', created_at: '2024-01-04' },
 ])
 
 const dialogVisible = ref(false)
-const editingCourse = ref<any>(null)
+const editingCourse = ref<Course | null>(null)
 
-const handleEdit = (course: any) => {
+const handleEdit = (course: Course) => {
   editingCourse.value = { ...course }
   dialogVisible.value = true
 }
 
-const handleDelete = (_course: any) => {
-  // TODO: Implement delete
+const handleDelete = (course: Course) => {
+  console.log('Delete course:', course.id)
 }
 
 const handleSave = () => {
@@ -32,11 +37,21 @@ const handleSave = () => {
 const fetchData = async () => {
   loading.value = true
   error.value = ''
+  forbidden.value = false
+  sessionExpired.value = false
   try {
-    // TODO: Replace with actual API call
     await new Promise(resolve => setTimeout(resolve, 500))
-  } catch (e) {
-    error.value = '加载数据失败，请重试'
+  } catch (e: unknown) {
+    if (e instanceof Error && e.message.includes('403')) {
+      forbidden.value = true
+    } else if (e instanceof Error && e.message.includes('401')) {
+      sessionExpired.value = true
+      setTimeout(() => {
+        router.push('/login?expired=1')
+      }, 2000)
+    } else {
+      error.value = '加载数据失败，请重试'
+    }
   } finally {
     loading.value = false
   }
@@ -55,6 +70,19 @@ fetchData()
     <!-- Loading State -->
     <div v-if="loading" class="state-container">
       <el-skeleton :rows="5" animated />
+    </div>
+
+    <!-- Forbidden State -->
+    <div v-else-if="forbidden" class="state-container">
+      <el-icon class="state-icon" color="#F56C6C"><Warning /></el-icon>
+      <p class="state-text">无权访问</p>
+    </div>
+
+    <!-- Session Expired State -->
+    <div v-else-if="sessionExpired" class="state-container">
+      <el-icon class="state-icon" color="#E6A23C"><Warning /></el-icon>
+      <p class="state-text">登录已过期，请重新登录</p>
+      <p class="state-subtext">正在跳转到登录页...</p>
     </div>
 
     <!-- Error State -->

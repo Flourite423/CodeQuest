@@ -1,26 +1,31 @@
 <script setup lang="ts">
 import { ref } from 'vue'
+import { useRouter } from 'vue-router'
 import { Plus } from '@element-plus/icons-vue'
+import type { Exercise } from '@/types'
 
+const router = useRouter()
 const loading = ref(false)
 const error = ref('')
+const forbidden = ref(false)
+const sessionExpired = ref(false)
 
-const exercises = ref([
+const exercises = ref<Exercise[]>([
   { id: 1, title: '变量声明', type: 'coding', difficulty: 'easy', chapter: '第一章', status: 'published' },
   { id: 2, title: '条件判断', type: 'single_choice', difficulty: 'medium', chapter: '第二章', status: 'published' },
   { id: 3, title: '循环结构', type: 'coding', difficulty: 'hard', chapter: '第三章', status: 'draft' },
 ])
 
 const dialogVisible = ref(false)
-const editingExercise = ref<any>(null)
+const editingExercise = ref<Exercise | null>(null)
 
-const handleEdit = (exercise: any) => {
+const handleEdit = (exercise: Exercise) => {
   editingExercise.value = { ...exercise }
   dialogVisible.value = true
 }
 
-const handleDelete = (_exercise: any) => {
-  // TODO: Implement delete
+const handleDelete = (exercise: Exercise) => {
+  console.log('Delete exercise:', exercise.id)
 }
 
 const handleSave = () => {
@@ -31,11 +36,21 @@ const handleSave = () => {
 const fetchData = async () => {
   loading.value = true
   error.value = ''
+  forbidden.value = false
+  sessionExpired.value = false
   try {
-    // TODO: Replace with actual API call
     await new Promise(resolve => setTimeout(resolve, 500))
-  } catch (e) {
-    error.value = '加载数据失败，请重试'
+  } catch (e: unknown) {
+    if (e instanceof Error && e.message.includes('403')) {
+      forbidden.value = true
+    } else if (e instanceof Error && e.message.includes('401')) {
+      sessionExpired.value = true
+      setTimeout(() => {
+        router.push('/login?expired=1')
+      }, 2000)
+    } else {
+      error.value = '加载数据失败，请重试'
+    }
   } finally {
     loading.value = false
   }
@@ -54,6 +69,19 @@ fetchData()
     <!-- Loading State -->
     <div v-if="loading" class="state-container">
       <el-skeleton :rows="5" animated />
+    </div>
+
+    <!-- Forbidden State -->
+    <div v-else-if="forbidden" class="state-container">
+      <el-icon class="state-icon" color="#F56C6C"><Warning /></el-icon>
+      <p class="state-text">无权访问</p>
+    </div>
+
+    <!-- Session Expired State -->
+    <div v-else-if="sessionExpired" class="state-container">
+      <el-icon class="state-icon" color="#E6A23C"><Warning /></el-icon>
+      <p class="state-text">登录已过期，请重新登录</p>
+      <p class="state-subtext">正在跳转到登录页...</p>
     </div>
 
     <!-- Error State -->

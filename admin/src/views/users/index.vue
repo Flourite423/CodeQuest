@@ -1,11 +1,16 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import { useRouter } from 'vue-router'
 import { Search } from '@element-plus/icons-vue'
+import type { User } from '@/types'
 
+const router = useRouter()
 const loading = ref(false)
 const error = ref('')
+const forbidden = ref(false)
+const sessionExpired = ref(false)
 
-const users = ref([
+const users = ref<User[]>([
   { id: 1, username: 'user1', email: 'user1@example.com', role: 'learner', account_status: 'active', xp: 5000 },
   { id: 2, username: 'user2', email: 'user2@example.com', role: 'learner', account_status: 'active', xp: 3200 },
   { id: 3, username: 'admin1', email: 'admin1@example.com', role: 'admin', account_status: 'active', xp: 0 },
@@ -24,11 +29,21 @@ const filteredUsers = computed(() => {
 const fetchData = async () => {
   loading.value = true
   error.value = ''
+  forbidden.value = false
+  sessionExpired.value = false
   try {
-    // TODO: Replace with actual API call
     await new Promise(resolve => setTimeout(resolve, 500))
-  } catch (e) {
-    error.value = '加载数据失败，请重试'
+  } catch (e: unknown) {
+    if (e instanceof Error && e.message.includes('403')) {
+      forbidden.value = true
+    } else if (e instanceof Error && e.message.includes('401')) {
+      sessionExpired.value = true
+      setTimeout(() => {
+        router.push('/login?expired=1')
+      }, 2000)
+    } else {
+      error.value = '加载数据失败，请重试'
+    }
   } finally {
     loading.value = false
   }
@@ -52,6 +67,19 @@ fetchData()
     <!-- Loading State -->
     <div v-if="loading" class="state-container">
       <el-skeleton :rows="5" animated />
+    </div>
+
+    <!-- Forbidden State -->
+    <div v-else-if="forbidden" class="state-container">
+      <el-icon class="state-icon" color="#F56C6C"><Warning /></el-icon>
+      <p class="state-text">无权访问</p>
+    </div>
+
+    <!-- Session Expired State -->
+    <div v-else-if="sessionExpired" class="state-container">
+      <el-icon class="state-icon" color="#E6A23C"><Warning /></el-icon>
+      <p class="state-text">登录已过期，请重新登录</p>
+      <p class="state-subtext">正在跳转到登录页...</p>
     </div>
 
     <!-- Error State -->

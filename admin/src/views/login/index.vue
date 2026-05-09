@@ -1,13 +1,15 @@
 <script setup lang="ts">
-import { reactive, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { reactive, ref, onMounted } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { User, Lock } from '@element-plus/icons-vue'
 import type { FormInstance, FormRules } from 'element-plus'
 
 const router = useRouter()
+const route = useRoute()
 const authStore = useAuthStore()
 const loading = ref(false)
+const sessionExpired = ref(false)
 
 const formRef = ref<FormInstance>()
 const form = reactive({
@@ -25,12 +27,19 @@ const rules: FormRules = {
   ],
 }
 
+onMounted(() => {
+  if (route.query.expired === '1') {
+    sessionExpired.value = true
+  }
+})
+
 const handleLogin = async () => {
   if (!formRef.value) return
 
   await formRef.value.validate((valid) => {
     if (valid) {
       loading.value = true
+      sessionExpired.value = false
       setTimeout(() => {
         authStore.setToken('mock_admin_token')
         authStore.setUser({ username: form.username, role: 'admin' })
@@ -51,6 +60,14 @@ const handleLogin = async () => {
           <p>管理员登录</p>
         </div>
       </template>
+
+      <el-alert
+        v-if="sessionExpired"
+        title="登录已过期，请重新登录"
+        type="warning"
+        :closable="false"
+        class="session-alert"
+      />
 
       <el-form
         ref="formRef"
@@ -103,20 +120,24 @@ const handleLogin = async () => {
 
 .login-card {
   width: 400px;
-  
+
   .login-header {
     text-align: center;
-    
+
     h2 {
       margin: 0;
       color: #303133;
     }
-    
+
     p {
       margin: 8px 0 0;
       color: #909399;
     }
   }
+}
+
+.session-alert {
+  margin-bottom: 16px;
 }
 
 .login-button {

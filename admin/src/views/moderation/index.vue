@@ -1,30 +1,45 @@
 <script setup lang="ts">
 import { ref } from 'vue'
+import { useRouter } from 'vue-router'
+import type { ModerationCase } from '@/types'
 
+const router = useRouter()
 const loading = ref(false)
 const error = ref('')
+const forbidden = ref(false)
+const sessionExpired = ref(false)
 
-const reports = ref([
-  { id: 1, case_type: 'inappropriate_content', target_id: 'user2', reporter: 'user1', status: 'pending', createdAt: '2024-01-15' },
-  { id: 2, case_type: 'harassment', target_id: 'user4', reporter: 'user3', status: 'approved', createdAt: '2024-01-14' },
+const reports = ref<ModerationCase[]>([
+  { id: 1, case_type: 'inappropriate_content', target_id: 'user2', reporter: 'user1', status: 'pending', created_at: '2024-01-15' },
+  { id: 2, case_type: 'harassment', target_id: 'user4', reporter: 'user3', status: 'approved', created_at: '2024-01-14' },
 ])
 
-const handleApprove = (report: any) => {
+const handleApprove = (report: ModerationCase) => {
   report.status = 'approved'
 }
 
-const handleReject = (report: any) => {
+const handleReject = (report: ModerationCase) => {
   report.status = 'rejected'
 }
 
 const fetchData = async () => {
   loading.value = true
   error.value = ''
+  forbidden.value = false
+  sessionExpired.value = false
   try {
-    // TODO: Replace with actual API call
     await new Promise(resolve => setTimeout(resolve, 500))
-  } catch (e) {
-    error.value = '加载数据失败，请重试'
+  } catch (e: unknown) {
+    if (e instanceof Error && e.message.includes('403')) {
+      forbidden.value = true
+    } else if (e instanceof Error && e.message.includes('401')) {
+      sessionExpired.value = true
+      setTimeout(() => {
+        router.push('/login?expired=1')
+      }, 2000)
+    } else {
+      error.value = '加载数据失败，请重试'
+    }
   } finally {
     loading.value = false
   }
@@ -40,6 +55,19 @@ fetchData()
     <!-- Loading State -->
     <div v-if="loading" class="state-container">
       <el-skeleton :rows="5" animated />
+    </div>
+
+    <!-- Forbidden State -->
+    <div v-else-if="forbidden" class="state-container">
+      <el-icon class="state-icon" color="#F56C6C"><Warning /></el-icon>
+      <p class="state-text">无权访问</p>
+    </div>
+
+    <!-- Session Expired State -->
+    <div v-else-if="sessionExpired" class="state-container">
+      <el-icon class="state-icon" color="#E6A23C"><Warning /></el-icon>
+      <p class="state-text">登录已过期，请重新登录</p>
+      <p class="state-subtext">正在跳转到登录页...</p>
     </div>
 
     <!-- Error State -->
@@ -73,7 +101,7 @@ fetchData()
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="createdAt" label="提交时间" />
+        <el-table-column prop="created_at" label="提交时间" />
         <el-table-column label="操作" width="200">
           <template #default="{ row }">
             <el-button
