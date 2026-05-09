@@ -2,24 +2,24 @@
 import { ref } from 'vue'
 
 const stats = ref([
-  { title: 'Total Users', value: '1,234', icon: 'User', color: '#409EFF' },
-  { title: 'Total Courses', value: '56', icon: 'Reading', color: '#67C23A' },
-  { title: 'Active Challenges', value: '12', icon: 'Trophy', color: '#E6A23C' },
-  { title: 'Today\'s Sessions', value: '89', icon: 'View', color: '#F56C6C' },
+  { title: '总用户数', value: '1,234', icon: 'User', color: '#409EFF' },
+  { title: '总课程数', value: '56', icon: 'Reading', color: '#67C23A' },
+  { title: '今日活跃', value: '89', icon: 'View', color: '#E6A23C' },
+  { title: '待审核数', value: '12', icon: 'Warning', color: '#F56C6C' },
 ])
 
 const recentActivities = ref([
-  { user: 'User 1', action: 'completed course', target: 'Flutter Basics', time: '2 min ago' },
-  { user: 'User 2', action: 'joined challenge', target: 'Daily Coding', time: '5 min ago' },
-  { user: 'User 3', action: 'earned badge', target: 'First Streak', time: '10 min ago' },
-  { user: 'User 4', action: 'completed course', target: 'Rust Fundamentals', time: '15 min ago' },
-  { user: 'User 5', action: 'joined challenge', target: 'Weekly Challenge', time: '20 min ago' },
+  { user: '用户1', action: '完成了课程', target: 'Flutter 基础', time: '2 分钟前' },
+  { user: '用户2', action: '加入了挑战', target: '每日编程', time: '5 分钟前' },
+  { user: '用户3', action: '获得了徽章', target: '首次连胜', time: '10 分钟前' },
+  { user: '用户4', action: '完成了课程', target: 'Rust 基础', time: '15 分钟前' },
+  { user: '用户5', action: '加入了挑战', target: '每周挑战', time: '20 分钟前' },
 ])
 </script>
 
 <template>
   <div class="dashboard">
-    <h1>Dashboard</h1>
+    <h1>数据看板</h1>
     
     <el-row :gutter="20" class="stats-row">
       <el-col :span="6" v-for="stat in stats" :key="stat.title">
@@ -39,7 +39,7 @@ const recentActivities = ref([
 
     <el-card class="activity-card">
       <template #header>
-        <span>Recent Activities</span>
+        <span>最近动态</span>
       </template>
       <el-timeline>
         <el-timeline-item

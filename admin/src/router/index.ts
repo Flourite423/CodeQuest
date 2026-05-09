@@ -19,43 +19,43 @@ const router = createRouter({
           path: 'dashboard',
           name: 'Dashboard',
           component: () => import('@/views/dashboard/index.vue'),
-          meta: { title: 'Dashboard', icon: 'Odometer' },
+          meta: { title: '数据看板', icon: 'Odometer' },
         },
         {
           path: 'courses',
           name: 'Courses',
           component: () => import('@/views/courses/index.vue'),
-          meta: { title: 'Courses', icon: 'Reading' },
+          meta: { title: '课程管理', icon: 'Reading' },
         },
         {
           path: 'challenges',
           name: 'Challenges',
           component: () => import('@/views/challenges/index.vue'),
-          meta: { title: 'Challenges', icon: 'Trophy' },
+          meta: { title: '挑战管理', icon: 'Trophy' },
         },
         {
           path: 'users',
           name: 'Users',
           component: () => import('@/views/users/index.vue'),
-          meta: { title: 'Users', icon: 'User' },
+          meta: { title: '用户管理', icon: 'User' },
         },
         {
-          path: 'leaderboard',
-          name: 'Leaderboard',
-          component: () => import('@/views/leaderboard/index.vue'),
-          meta: { title: 'Leaderboard', icon: 'Medal' },
+          path: 'practice',
+          name: 'Practice',
+          component: () => import('@/views/practice/index.vue'),
+          meta: { title: '题目管理', icon: 'EditPen' },
         },
         {
           path: 'moderation',
           name: 'Moderation',
           component: () => import('@/views/moderation/index.vue'),
-          meta: { title: 'Moderation', icon: 'Warning' },
+          meta: { title: '内容审核', icon: 'Warning' },
         },
         {
-          path: 'settings',
-          name: 'Settings',
-          component: () => import('@/views/settings/index.vue'),
-          meta: { title: 'Settings', icon: 'Setting' },
+          path: 'announcements',
+          name: 'Announcements',
+          component: () => import('@/views/announcements/index.vue'),
+          meta: { title: '公告与配置', icon: 'Bell' },
         },
       ],
     },
@@ -67,7 +67,7 @@ const router = createRouter({
   ],
 })
 
-router.beforeEach((to, from, next) => {
+router.beforeEach((to, _from, next) => {
   const authStore = useAuthStore()
   
   if (!to.meta.public && !authStore.isAuthenticated) {

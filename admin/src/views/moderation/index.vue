@@ -13,22 +13,22 @@ const handleResolve = (report: any) => {
 
 <template>
   <div class="moderation">
-    <h1>Moderation</h1>
+    <h1>内容审核</h1>
 
     <el-table :data="reports" style="width: 100%">
-      <el-table-column prop="id" label="ID" width="80" />
-      <el-table-column prop="reporter" label="Reporter" />
-      <el-table-column prop="reported" label="Reported User" />
-      <el-table-column prop="reason" label="Reason" />
-      <el-table-column prop="status" label="Status">
+      <el-table-column prop="id" label="审核ID" width="80" />
+      <el-table-column prop="reporter" label="举报人" />
+      <el-table-column prop="reported" label="被举报用户" />
+      <el-table-column prop="reason" label="原因" />
+      <el-table-column prop="status" label="状态">
         <template #default="{ row }">
           <el-tag :type="row.status === 'pending' ? 'warning' : 'success'">
-            {{ row.status }}
+            {{ row.status === 'pending' ? '待处理' : '已处理' }}
           </el-tag>
         </template>
       </el-table-column>
-      <el-table-column prop="createdAt" label="Created At" />
-      <el-table-column label="Actions" width="150">
+      <el-table-column prop="createdAt" label="提交时间" />
+      <el-table-column label="操作" width="150">
         <template #default="{ row }">
           <el-button 
             v-if="row.status === 'pending'"
@@ -36,7 +36,7 @@ const handleResolve = (report: any) => {
             type="success"
             @click="handleResolve(row)"
           >
-            Resolve
+            处理
           </el-button>
         </template>
       </el-table-column>

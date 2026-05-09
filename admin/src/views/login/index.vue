@@ -2,6 +2,7 @@
 import { reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { User, Lock } from '@element-plus/icons-vue'
 import type { FormInstance, FormRules } from 'element-plus'
 
 const router = useRouter()
@@ -16,17 +17,17 @@ const form = reactive({
 
 const rules: FormRules = {
   username: [
-    { required: true, message: 'Please input username', trigger: 'blur' },
+    { required: true, message: '请输入邮箱地址', trigger: 'blur' },
   ],
   password: [
-    { required: true, message: 'Please input password', trigger: 'blur' },
-    { min: 6, message: 'Password length should be at least 6', trigger: 'blur' },
+    { required: true, message: '请输入登录密码', trigger: 'blur' },
+    { min: 6, message: '密码长度至少6位', trigger: 'blur' },
   ],
 }
 
 const handleLogin = async () => {
   if (!formRef.value) return
-  
+
   await formRef.value.validate((valid) => {
     if (valid) {
       loading.value = true
@@ -46,8 +47,8 @@ const handleLogin = async () => {
     <el-card class="login-card">
       <template #header>
         <div class="login-header">
-          <h2>Learning Admin</h2>
-          <p>Management System</p>
+          <h2>前端学习平台 - 管理后台</h2>
+          <p>管理员登录</p>
         </div>
       </template>
 
@@ -58,19 +59,19 @@ const handleLogin = async () => {
         label-position="top"
         @submit.prevent="handleLogin"
       >
-        <el-form-item label="Username" prop="username">
+        <el-form-item label="邮箱地址" prop="username">
           <el-input
             v-model="form.username"
-            placeholder="Enter username"
+            placeholder="请输入邮箱地址"
             :prefix-icon="User"
           />
         </el-form-item>
 
-        <el-form-item label="Password" prop="password">
+        <el-form-item label="登录密码" prop="password">
           <el-input
             v-model="form.password"
             type="password"
-            placeholder="Enter password"
+            placeholder="请输入登录密码"
             :prefix-icon="Lock"
             show-password
           />
@@ -83,7 +84,7 @@ const handleLogin = async () => {
             class="login-button"
             @click="handleLogin"
           >
-            Sign In
+            登录
           </el-button>
         </el-form-item>
       </el-form>

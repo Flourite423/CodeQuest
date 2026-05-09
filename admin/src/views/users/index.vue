@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
+import { Search } from '@element-plus/icons-vue'
 
 const users = ref([
   { id: 1, username: 'user1', phone: '13800138001', role: 'learner', status: 'active', xp: 5000 },
@@ -11,8 +12,8 @@ const searchQuery = ref('')
 
 const filteredUsers = computed(() => {
   if (!searchQuery.value) return users.value
-  return users.value.filter(u => 
-    u.username.includes(searchQuery.value) || 
+  return users.value.filter(u =>
+    u.username.includes(searchQuery.value) ||
     u.phone.includes(searchQuery.value)
   )
 })
@@ -21,38 +22,38 @@ const filteredUsers = computed(() => {
 <template>
   <div class="users">
     <div class="header">
-      <h1>Users</h1>
+      <h1>用户管理</h1>
       <el-input
         v-model="searchQuery"
-        placeholder="Search users..."
+        placeholder="搜索昵称或邮箱..."
         :prefix-icon="Search"
         style="width: 300px"
       />
     </div>
 
     <el-table :data="filteredUsers" style="width: 100%">
-      <el-table-column prop="id" label="ID" width="80" />
-      <el-table-column prop="username" label="Username" />
-      <el-table-column prop="phone" label="Phone" />
-      <el-table-column prop="role" label="Role">
+      <el-table-column prop="id" label="用户ID" width="80" />
+      <el-table-column prop="username" label="昵称" />
+      <el-table-column prop="phone" label="手机号" />
+      <el-table-column prop="role" label="角色">
         <template #default="{ row }">
           <el-tag :type="row.role === 'admin' ? 'danger' : 'primary'">
-            {{ row.role }}
+            {{ row.role === 'admin' ? '管理员' : '学员' }}
           </el-tag>
         </template>
       </el-table-column>
-      <el-table-column prop="status" label="Status">
+      <el-table-column prop="status" label="账号状态">
         <template #default="{ row }">
           <el-tag :type="row.status === 'active' ? 'success' : 'danger'">
-            {{ row.status }}
+            {{ row.status === 'active' ? '正常' : '已禁用' }}
           </el-tag>
         </template>
       </el-table-column>
-      <el-table-column prop="xp" label="XP" width="100" />
-      <el-table-column label="Actions" width="150">
-        <template #default="{ row }">
-          <el-button size="small">View</el-button>
-          <el-button size="small" type="danger">Ban</el-button>
+      <el-table-column prop="xp" label="经验值" width="100" />
+      <el-table-column label="操作" width="150">
+        <template #default="{ row: _row }">
+          <el-button size="small">查看</el-button>
+          <el-button size="small" type="danger">禁用</el-button>
         </template>
       </el-table-column>
     </el-table>
