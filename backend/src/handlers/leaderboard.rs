@@ -69,7 +69,7 @@ pub async fn get_global_leaderboard(req: &mut Request, depot: &mut Depot) -> Res
     let offset = (page - 1) * page_size;
     
     let entries = sqlx::query_as::<_, LeaderboardSnapshot>(
-        "SELECT * FROM leaderboard_snapshots 
+        "SELECT id, board_type::text AS board_type, period_key, learner_id, score, rank_position, generated_at FROM leaderboard_snapshots 
          WHERE board_type = 'total' AND period_key = $1 
          ORDER BY rank_position LIMIT $2 OFFSET $3"
     )
@@ -110,7 +110,7 @@ pub async fn get_friends_leaderboard(req: &mut Request, depot: &mut Depot) -> Re
     let offset = (page - 1) * page_size;
     
     let entries = sqlx::query_as::<_, LeaderboardSnapshot>(
-        "SELECT * FROM leaderboard_snapshots 
+        "SELECT id, board_type::text AS board_type, period_key, learner_id, score, rank_position, generated_at FROM leaderboard_snapshots 
          WHERE board_type = 'total' AND period_key = $1 AND learner_id = $2
          ORDER BY rank_position LIMIT $3 OFFSET $4"
     )
@@ -153,7 +153,7 @@ pub async fn get_course_leaderboard(req: &mut Request, depot: &mut Depot) -> Res
     let offset = (page - 1) * page_size;
     
     let entries = sqlx::query_as::<_, LeaderboardSnapshot>(
-        "SELECT * FROM leaderboard_snapshots 
+        "SELECT id, board_type::text AS board_type, period_key, learner_id, score, rank_position, generated_at FROM leaderboard_snapshots 
          WHERE board_type = 'total' AND period_key = $1 
          ORDER BY rank_position LIMIT $2 OFFSET $3"
     )

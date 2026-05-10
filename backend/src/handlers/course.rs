@@ -63,7 +63,7 @@ pub async fn get_course(req: &mut Request, depot: &mut Depot) -> Result<Json<Api
         .ok_or_else(StatusError::not_found)?;
     
     let chapters = sqlx::query_as::<_, crate::models::Chapter>(
-        "SELECT * FROM chapters WHERE course_id = $1 AND status = 'published' ORDER BY order_index ASC"
+        "SELECT id, course_id, chapter_code, title, summary, learning_content_markdown, sample_code, estimated_minutes, order_index, unlock_rule::text AS unlock_rule, status::text AS status, content_version, created_at, updated_at FROM chapters WHERE course_id = $1 AND status = 'published' ORDER BY order_index ASC"
     )
     .bind(id)
     .fetch_all(pool)

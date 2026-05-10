@@ -22,7 +22,7 @@ pub async fn list_friends(req: &mut Request, depot: &mut Depot) -> Result<Json<A
     let offset = (page - 1) * page_size;
     
     let friends = sqlx::query_as::<_, FriendRelation>(
-        "SELECT * FROM friend_relations WHERE requester_id = $1 OR addressee_id = $1 ORDER BY created_at DESC LIMIT $2 OFFSET $3"
+        "SELECT id, requester_id, addressee_id, status::text AS status, created_at, responded_at FROM friend_relations WHERE requester_id = $1 OR addressee_id = $1 ORDER BY created_at DESC LIMIT $2 OFFSET $3"
     )
     .bind(learner_id)
     .bind(page_size)
@@ -84,7 +84,7 @@ pub async fn list_social_activities(req: &mut Request, depot: &mut Depot) -> Res
     let offset = (page - 1) * page_size;
     
     let activities = sqlx::query_as::<_, SocialActivity>(
-        "SELECT * FROM social_activities WHERE learner_id = $1 ORDER BY created_at DESC LIMIT $2 OFFSET $3"
+        "SELECT id, learner_id, activity_type::text AS activity_type, visibility::text AS visibility, payload_json, created_at FROM social_activities WHERE learner_id = $1 ORDER BY created_at DESC LIMIT $2 OFFSET $3"
     )
     .bind(learner_id)
     .bind(page_size)
@@ -116,7 +116,7 @@ pub async fn list_friend_requests(depot: &mut Depot) -> Result<Json<ApiResponse<
 
     let learner_id = auth::get_current_account_id(depot)?;
     let requests = sqlx::query_as::<_, FriendRelation>(
-        "SELECT * FROM friend_relations WHERE addressee_id = $1 AND status = 'pending' ORDER BY created_at DESC"
+        "SELECT id, requester_id, addressee_id, status::text AS status, created_at, responded_at FROM friend_relations WHERE addressee_id = $1 AND status = 'pending' ORDER BY created_at DESC"
     )
     .bind(learner_id)
     .fetch_all(pool)
@@ -152,7 +152,7 @@ pub async fn update_friend_request(req: &mut Request, depot: &mut Depot) -> Resu
     .map_err(|_| StatusError::internal_server_error())?;
 
     let relation = sqlx::query_as::<_, FriendRelation>(
-        "SELECT * FROM friend_relations WHERE id = $1"
+        "SELECT id, requester_id, addressee_id, status::text AS status, created_at, responded_at FROM friend_relations WHERE id = $1"
     )
     .bind(&request_id)
     .fetch_optional(pool)

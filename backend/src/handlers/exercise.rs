@@ -41,7 +41,7 @@ pub async fn list_exercises(req: &mut Request, depot: &mut Depot) -> Result<Json
     let status_filter = req.query::<String>("status").unwrap_or_else(|| "published".to_string());
     
     let exercises = sqlx::query_as::<_, Exercise>(
-        "SELECT * FROM exercises WHERE chapter_id = $1 AND status = $2 ORDER BY created_at"
+        "SELECT id, chapter_id, exercise_code, title, prompt, exercise_type::text AS exercise_type, starter_code, language::text AS language, difficulty::text AS difficulty, pass_score, max_attempts_per_day, status::text AS status, content_version, created_at, updated_at FROM exercises WHERE chapter_id = $1 AND status = $2 ORDER BY created_at"
     )
     .bind(&chapter_id)
     .bind(&status_filter)
@@ -61,7 +61,7 @@ pub async fn get_exercise(req: &mut Request, depot: &mut Depot) -> Result<Json<A
         .or_else(|| req.param::<String>("id"))
         .ok_or_else(StatusError::bad_request)?;
     
-    let exercise = sqlx::query_as::<_, Exercise>("SELECT * FROM exercises WHERE id = $1")
+    let exercise = sqlx::query_as::<_, Exercise>("SELECT id, chapter_id, exercise_code, title, prompt, exercise_type::text AS exercise_type, starter_code, language::text AS language, difficulty::text AS difficulty, pass_score, max_attempts_per_day, status::text AS status, content_version, created_at, updated_at FROM exercises WHERE id = $1")
         .bind(&id)
         .fetch_optional(pool)
         .await

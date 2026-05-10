@@ -11,7 +11,7 @@ pub async fn get_xp_ledger(depot: &mut Depot) -> Result<Json<ApiResponse<Vec<XpL
 
     let learner_id = auth::get_current_account_id(depot)?;
     let records = sqlx::query_as::<_, XpLedger>(
-        "SELECT * FROM xp_ledger WHERE learner_id = $1 ORDER BY created_at DESC"
+        "SELECT id, learner_id, source_type::text AS source_type, source_id, delta_xp, balance_after, created_at FROM xp_ledger WHERE learner_id = $1 ORDER BY created_at DESC"
     )
     .bind(learner_id)
     .fetch_all(pool)
@@ -28,7 +28,7 @@ pub async fn get_learner_badges(depot: &mut Depot) -> Result<Json<ApiResponse<Ve
 
     let learner_id = auth::get_current_account_id(depot)?;
     let badges = sqlx::query_as::<_, LearnerBadge>(
-        "SELECT * FROM learner_badges WHERE learner_id = $1 ORDER BY awarded_at DESC"
+        "SELECT id, learner_id, badge_id, award_source_type::text AS award_source_type, award_source_id, awarded_at FROM learner_badges WHERE learner_id = $1 ORDER BY awarded_at DESC"
     )
     .bind(learner_id)
     .fetch_all(pool)
@@ -54,7 +54,7 @@ pub async fn get_rewards(depot: &mut Depot) -> Result<Json<ApiResponse<serde_jso
     .map_err(|_| StatusError::internal_server_error())?;
     
     let badges = sqlx::query_as::<_, LearnerBadge>(
-        "SELECT * FROM learner_badges WHERE learner_id = $1 ORDER BY awarded_at DESC"
+        "SELECT id, learner_id, badge_id, award_source_type::text AS award_source_type, award_source_id, awarded_at FROM learner_badges WHERE learner_id = $1 ORDER BY awarded_at DESC"
     )
     .bind(learner_id)
     .fetch_all(pool)
@@ -62,7 +62,7 @@ pub async fn get_rewards(depot: &mut Depot) -> Result<Json<ApiResponse<serde_jso
     .map_err(|_| StatusError::internal_server_error())?;
     
     let xp_records = sqlx::query_as::<_, XpLedger>(
-        "SELECT * FROM xp_ledger WHERE learner_id = $1 ORDER BY created_at DESC LIMIT 10"
+        "SELECT id, learner_id, source_type::text AS source_type, source_id, delta_xp, balance_after, created_at FROM xp_ledger WHERE learner_id = $1 ORDER BY created_at DESC LIMIT 10"
     )
     .bind(learner_id)
     .fetch_all(pool)

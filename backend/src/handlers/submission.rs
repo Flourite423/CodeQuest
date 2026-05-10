@@ -30,7 +30,7 @@ pub async fn get_submission(req: &mut Request, depot: &mut Depot) -> Result<Json
         .or_else(|| req.param::<String>("id"))
         .ok_or_else(StatusError::bad_request)?;
     
-    let submission = sqlx::query_as::<_, Submission>("SELECT * FROM submissions WHERE id = $1")
+    let submission = sqlx::query_as::<_, Submission>("SELECT id, exercise_id, learner_id, chapter_id, attempt_no, source_code, judge_status::text AS judge_status, score, passed_case_count, total_case_count, error_summary, runtime_ms, content_version, rule_version, submitted_at, completed_at FROM submissions WHERE id = $1")
         .bind(&id)
         .fetch_optional(pool)
         .await
@@ -65,7 +65,7 @@ pub async fn create_submission(req: &mut Request, depot: &mut Depot) -> Result<J
         "INSERT INTO submissions (id, exercise_id, learner_id, chapter_id, attempt_no, source_code, 
          judge_status, score, passed_case_count, total_case_count, content_version, rule_version) 
          VALUES ($1, $2, $3, $4, 1, $5, 'pending', 0, 0, 0, 1, 1)
-         RETURNING *"
+         RETURNING id, exercise_id, learner_id, chapter_id, attempt_no, source_code, judge_status::text AS judge_status, score, passed_case_count, total_case_count, error_summary, runtime_ms, content_version, rule_version, submitted_at, completed_at"
     )
     .bind(id)
     .bind(&exercise_id)

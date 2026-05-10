@@ -7,7 +7,7 @@ pub async fn list_progress_by_learner(
     learner_id: Uuid,
 ) -> Result<Vec<CourseProgress>, sqlx::Error> {
     sqlx::query_as::<_, CourseProgress>(
-        "SELECT * FROM course_progress WHERE learner_id = $1 ORDER BY updated_at DESC"
+        "SELECT id, learner_id, course_id, completed_chapter_count, total_chapter_count, completed_exercise_count, progress_percent, last_studied_chapter_id, status::text AS status, started_at, completed_at, updated_at FROM course_progress WHERE learner_id = $1 ORDER BY updated_at DESC"
     )
     .bind(learner_id)
     .fetch_all(pool)
@@ -20,7 +20,7 @@ pub async fn find_progress_by_learner_and_course(
     course_id: Uuid,
 ) -> Result<Option<CourseProgress>, sqlx::Error> {
     sqlx::query_as::<_, CourseProgress>(
-        "SELECT * FROM course_progress WHERE learner_id = $1 AND course_id = $2"
+        "SELECT id, learner_id, course_id, completed_chapter_count, total_chapter_count, completed_exercise_count, progress_percent, last_studied_chapter_id, status::text AS status, started_at, completed_at, updated_at FROM course_progress WHERE learner_id = $1 AND course_id = $2"
     )
     .bind(learner_id)
     .bind(course_id)

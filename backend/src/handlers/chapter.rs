@@ -38,7 +38,7 @@ pub async fn list_chapters(req: &mut Request, depot: &mut Depot) -> Result<Json<
     let status_filter = req.query::<String>("status").unwrap_or_else(|| "published".to_string());
     
     let chapters = sqlx::query_as::<_, Chapter>(
-        "SELECT * FROM chapters WHERE course_id = $1 AND status = $2 ORDER BY order_index"
+        "SELECT id, course_id, chapter_code, title, summary, learning_content_markdown, sample_code, estimated_minutes, order_index, unlock_rule::text AS unlock_rule, status::text AS status, content_version, created_at, updated_at FROM chapters WHERE course_id = $1 AND status = $2 ORDER BY order_index"
     )
     .bind(&course_id)
     .bind(&status_filter)
@@ -58,7 +58,7 @@ pub async fn get_chapter(req: &mut Request, depot: &mut Depot) -> Result<Json<Ap
         .or_else(|| req.param::<String>("id"))
         .ok_or_else(StatusError::bad_request)?;
     
-    let chapter = sqlx::query_as::<_, Chapter>("SELECT * FROM chapters WHERE id = $1")
+    let chapter = sqlx::query_as::<_, Chapter>("SELECT id, course_id, chapter_code, title, summary, learning_content_markdown, sample_code, estimated_minutes, order_index, unlock_rule::text AS unlock_rule, status::text AS status, content_version, created_at, updated_at FROM chapters WHERE id = $1")
         .bind(&id)
         .fetch_optional(pool)
         .await

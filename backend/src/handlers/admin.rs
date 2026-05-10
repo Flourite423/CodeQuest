@@ -45,7 +45,7 @@ async fn fetch_admin_course_detail(pool: &PgPool, course_id: Uuid) -> Result<ser
         .ok_or_else(StatusError::not_found)?;
 
     let chapters = sqlx::query_as::<_, crate::models::Chapter>(
-        "SELECT * FROM chapters WHERE course_id = $1 ORDER BY order_index ASC"
+        "SELECT id, course_id, chapter_code, title, summary, learning_content_markdown, sample_code, estimated_minutes, order_index, unlock_rule::text AS unlock_rule, status::text AS status, content_version, created_at, updated_at FROM chapters WHERE course_id = $1 ORDER BY order_index ASC"
     )
     .bind(course_id)
     .fetch_all(pool)
@@ -272,7 +272,8 @@ pub async fn create_announcement(req: &mut Request, depot: &mut Depot) -> Result
 
     let announcement = sqlx::query_as::<_, Announcement>(
         "INSERT INTO announcements (id, title, body_markdown, audience, status, created_by) \
-        VALUES ($1, $2, $3, $4, 'draft', $5) RETURNING *"
+        VALUES ($1, $2, $3, $4, 'draft', $5) \
+        RETURNING id, title, body_markdown, audience::text AS audience, status::text AS status, published_at, expires_at, created_by, created_at, updated_at"
     )
     .bind(Uuid::new_v4())
     .bind(&body.title)
@@ -295,7 +296,7 @@ pub async fn list_system_configs(req: &mut Request, depot: &mut Depot) -> Result
     let page_size = req.query::<i64>("page_size").unwrap_or(20).clamp(1, 100);
     let offset = (page - 1) * page_size;
 
-    let configs = sqlx::query_as::<_, SystemConfig>("SELECT * FROM system_configs ORDER BY updated_at DESC LIMIT $1 OFFSET $2")
+    let configs = sqlx::query_as::<_, SystemConfig>("SELECT id, config_key, config_scope::text AS config_scope, value_json, status::text AS status, updated_by, updated_at FROM system_configs ORDER BY updated_at DESC LIMIT $1 OFFSET $2")
         .bind(page_size)
         .bind(offset)
         .fetch_all(pool)
@@ -576,7 +577,7 @@ pub async fn list_admin_challenges(req: &mut Request, depot: &mut Depot) -> Resu
     let page_size = req.query::<i64>("page_size").unwrap_or(20).clamp(1, 100);
     let offset = (page - 1) * page_size;
 
-    let challenges = sqlx::query_as::<_, crate::models::Challenge>("SELECT * FROM challenges ORDER BY created_at DESC LIMIT $1 OFFSET $2")
+    let challenges = sqlx::query_as::<_, crate::models::Challenge>("SELECT id, challenge_code, title, summary, related_course_id, difficulty::text AS difficulty, reward_xp, status::text AS status, sort_order, content_version, published_at, created_at, updated_at FROM challenges ORDER BY created_at DESC LIMIT $1 OFFSET $2")
         .bind(page_size)
         .bind(offset)
         .fetch_all(pool)
@@ -684,7 +685,7 @@ pub async fn get_admin_challenge(req: &mut Request, depot: &mut Depot) -> Result
     let id = req.param::<String>("challenge_id")
         .ok_or_else(StatusError::bad_request)?;
     
-    let challenge = sqlx::query_as::<_, crate::models::Challenge>("SELECT * FROM challenges WHERE id = $1")
+    let challenge = sqlx::query_as::<_, crate::models::Challenge>("SELECT id, challenge_code, title, summary, related_course_id, difficulty::text AS difficulty, reward_xp, status::text AS status, sort_order, content_version, published_at, created_at, updated_at FROM challenges WHERE id = $1")
         .bind(&id)
         .fetch_optional(pool)
         .await
@@ -770,7 +771,7 @@ pub async fn list_admin_exercises(req: &mut Request, depot: &mut Depot) -> Resul
     let page_size = req.query::<i64>("page_size").unwrap_or(20).clamp(1, 100);
     let offset = (page - 1) * page_size;
 
-    let exercises = sqlx::query_as::<_, crate::models::Exercise>("SELECT * FROM exercises ORDER BY created_at DESC LIMIT $1 OFFSET $2")
+    let exercises = sqlx::query_as::<_, crate::models::Exercise>("SELECT id, chapter_id, exercise_code, title, prompt, exercise_type::text AS exercise_type, starter_code, language::text AS language, difficulty::text AS difficulty, pass_score, max_attempts_per_day, status::text AS status, content_version, created_at, updated_at FROM exercises ORDER BY created_at DESC LIMIT $1 OFFSET $2")
         .bind(page_size)
         .bind(offset)
         .fetch_all(pool)
@@ -805,7 +806,7 @@ pub async fn create_exercise(req: &mut Request, depot: &mut Depot) -> Result<Jso
     let exercise = sqlx::query_as::<_, crate::models::Exercise>(
         "INSERT INTO exercises (id, chapter_id, exercise_code, title, difficulty, status) 
          VALUES ($1, $2, $3, $4, $5, 'draft')
-         RETURNING *"
+         RETURNING id, chapter_id, exercise_code, title, prompt, exercise_type::text AS exercise_type, starter_code, language::text AS language, difficulty::text AS difficulty, pass_score, max_attempts_per_day, status::text AS status, content_version, created_at, updated_at"
     )
     .bind(id)
     .bind(chapter_id)
@@ -1243,7 +1244,7 @@ pub async fn list_announcements(req: &mut Request, depot: &mut Depot) -> Result<
     let page_size = req.query::<i64>("page_size").unwrap_or(20).clamp(1, 100);
     let offset = (page - 1) * page_size;
 
-    let announcements = sqlx::query_as::<_, Announcement>("SELECT * FROM announcements ORDER BY created_at DESC LIMIT $1 OFFSET $2")
+    let announcements = sqlx::query_as::<_, Announcement>("SELECT id, title, body_markdown, audience::text AS audience, status::text AS status, published_at, expires_at, created_by, created_at, updated_at FROM announcements ORDER BY created_at DESC LIMIT $1 OFFSET $2")
         .bind(page_size)
         .bind(offset)
         .fetch_all(pool)
@@ -1271,7 +1272,7 @@ pub async fn get_announcement(req: &mut Request, depot: &mut Depot) -> Result<Js
     let id = req.param::<String>("announcement_id")
         .ok_or_else(StatusError::bad_request)?;
 
-    let announcement = sqlx::query_as::<_, Announcement>("SELECT * FROM announcements WHERE id = $1")
+    let announcement = sqlx::query_as::<_, Announcement>("SELECT id, title, body_markdown, audience::text AS audience, status::text AS status, published_at, expires_at, created_by, created_at, updated_at FROM announcements WHERE id = $1")
         .bind(&id)
         .fetch_optional(pool)
         .await
@@ -1359,7 +1360,8 @@ pub async fn create_config(req: &mut Request, depot: &mut Depot) -> Result<Json<
 
     let config = sqlx::query_as::<_, SystemConfig>(
         "INSERT INTO system_configs (config_key, config_scope, value_json, status, updated_by) \
-        VALUES ($1, $2, $3, $4, $5) RETURNING *"
+        VALUES ($1, $2, $3, $4, $5) \
+        RETURNING id, config_key, config_scope::text AS config_scope, value_json, status::text AS status, updated_by, updated_at"
     )
     .bind(&body.config_key)
     .bind(&body.config_scope)
@@ -1381,7 +1383,7 @@ pub async fn get_config(req: &mut Request, depot: &mut Depot) -> Result<Json<Api
     let config_key = req.param::<String>("config_key")
         .ok_or_else(StatusError::bad_request)?;
 
-    let config = sqlx::query_as::<_, SystemConfig>("SELECT * FROM system_configs WHERE config_key = $1")
+    let config = sqlx::query_as::<_, SystemConfig>("SELECT id, config_key, config_scope::text AS config_scope, value_json, status::text AS status, updated_by, updated_at FROM system_configs WHERE config_key = $1")
         .bind(&config_key)
         .fetch_optional(pool)
         .await

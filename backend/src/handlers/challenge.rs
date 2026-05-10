@@ -184,7 +184,7 @@ pub async fn attempt_challenge(req: &mut Request, depot: &mut Depot) -> Result<J
     let attempt = sqlx::query_as::<_, crate::models::ChallengeAttempt>(
         "INSERT INTO challenge_attempts (id, challenge_id, learner_id, status, best_star, started_at, completed_at) 
          VALUES ($1, $2, $3, 'completed', $4, NOW(), NOW())
-         RETURNING *"
+         RETURNING id, challenge_id, learner_id, best_star, status::text AS status, started_at, completed_at, reward_claimed_at, updated_at"
     )
     .bind(attempt_id)
     .bind(challenge_uuid)
