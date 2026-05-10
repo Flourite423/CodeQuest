@@ -48,10 +48,9 @@ const handleSave = () => {
 }
 
 const configForm = ref({
-  aiEnabled: true,
-  aiModel: 'gpt-4',
-  pointsPerExercise: 10,
-  pointsPerChallenge: 100,
+  aiDailyLimit: 50,
+  aiPromptRules: '',
+  xpCalculationRules: '',
   maintenanceMode: false,
   allowRegistration: true,
 })
@@ -164,23 +163,16 @@ fetchData()
         <!-- 系统配置 Tab -->
         <el-tab-pane label="系统配置" name="config">
           <el-form :model="configForm" label-width="200px">
-            <el-form-item label="AI 功能">
-              <el-switch v-model="configForm.aiEnabled" />
+            <el-form-item label="AI 每日调用上限">
+              <el-input-number v-model="configForm.aiDailyLimit" :min="1" :max="1000" />
             </el-form-item>
 
-            <el-form-item label="AI 模型">
-              <el-select v-model="configForm.aiModel">
-                <el-option label="GPT-4" value="gpt-4" />
-                <el-option label="GPT-3.5" value="gpt-3.5" />
-              </el-select>
+            <el-form-item label="AI 提示规则">
+              <el-input type="textarea" v-model="configForm.aiPromptRules" rows="3" />
             </el-form-item>
 
-            <el-form-item label="每题积分">
-              <el-input-number v-model="configForm.pointsPerExercise" :min="1" :max="100" />
-            </el-form-item>
-
-            <el-form-item label="挑战积分">
-              <el-input-number v-model="configForm.pointsPerChallenge" :min="1" :max="1000" />
+            <el-form-item label="经验值计算规则">
+              <el-input type="textarea" v-model="configForm.xpCalculationRules" rows="3" />
             </el-form-item>
 
             <el-form-item label="维护模式">
