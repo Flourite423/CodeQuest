@@ -51,7 +51,10 @@ const handleLogout = () => {
 <template>
   <el-container class="layout-container">
     <!-- 侧边栏 - 宽度220px -->
-    <el-aside width="220px" class="sidebar">
+    <el-aside
+      width="220px"
+      class="sidebar"
+    >
       <div class="logo">
         <span>前端学习平台</span>
       </div>
@@ -62,7 +65,11 @@ const handleLogout = () => {
         text-color="#bfcbd9"
         active-text-color="#409EFF"
       >
-        <el-menu-item v-for="item in menuItems" :key="item.path" :index="item.path">
+        <el-menu-item
+          v-for="item in menuItems"
+          :key="item.path"
+          :index="item.path"
+        >
           <el-icon>
             <component :is="item.icon" />
           </el-icon>
@@ -94,7 +101,9 @@ const handleLogout = () => {
             </span>
             <template #dropdown>
               <el-dropdown-menu>
-                <el-dropdown-item command="logout">退出登录</el-dropdown-item>
+                <el-dropdown-item command="logout">
+                  退出登录
+                </el-dropdown-item>
               </el-dropdown-menu>
             </template>
           </el-dropdown>

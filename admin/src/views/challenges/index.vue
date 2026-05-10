@@ -153,93 +153,219 @@ fetchData()
   <div class="challenges">
     <div class="header">
       <h1>挑战管理</h1>
-      <el-button type="primary" :icon="Plus" @click="handleCreate">新建挑战</el-button>
+      <el-button
+        type="primary"
+        :icon="Plus"
+        @click="handleCreate"
+      >
+        新建挑战
+      </el-button>
     </div>
 
     <!-- Loading State -->
-    <div v-if="loading" class="state-container">
-      <el-skeleton :rows="5" animated />
+    <div
+      v-if="loading"
+      class="state-container"
+    >
+      <el-skeleton
+        :rows="5"
+        animated
+      />
     </div>
 
     <!-- Forbidden State -->
-    <div v-else-if="forbidden" class="state-container">
-      <el-icon class="state-icon" color="#F56C6C"><Warning /></el-icon>
-      <p class="state-text">无权访问</p>
+    <div
+      v-else-if="forbidden"
+      class="state-container"
+    >
+      <el-icon
+        class="state-icon"
+        color="#F56C6C"
+      >
+        <Warning />
+      </el-icon>
+      <p class="state-text">
+        无权访问
+      </p>
     </div>
 
     <!-- Session Expired State -->
-    <div v-else-if="sessionExpired" class="state-container">
-      <el-icon class="state-icon" color="#E6A23C"><Warning /></el-icon>
-      <p class="state-text">登录已过期，请重新登录</p>
-      <p class="state-subtext">正在跳转到登录页...</p>
+    <div
+      v-else-if="sessionExpired"
+      class="state-container"
+    >
+      <el-icon
+        class="state-icon"
+        color="#E6A23C"
+      >
+        <Warning />
+      </el-icon>
+      <p class="state-text">
+        登录已过期，请重新登录
+      </p>
+      <p class="state-subtext">
+        正在跳转到登录页...
+      </p>
     </div>
 
     <!-- Error State -->
-    <div v-else-if="error" class="state-container">
-      <el-icon class="state-icon" color="#F56C6C"><Warning /></el-icon>
-      <p class="state-text">{{ error }}</p>
-      <el-button type="primary" @click="fetchData">重试</el-button>
+    <div
+      v-else-if="error"
+      class="state-container"
+    >
+      <el-icon
+        class="state-icon"
+        color="#F56C6C"
+      >
+        <Warning />
+      </el-icon>
+      <p class="state-text">
+        {{ error }}
+      </p>
+      <el-button
+        type="primary"
+        @click="fetchData"
+      >
+        重试
+      </el-button>
     </div>
 
     <!-- Empty State -->
-    <div v-else-if="challenges.length === 0" class="state-container">
-      <el-icon class="state-icon" color="#909399"><Document /></el-icon>
-      <p class="state-text">暂无挑战数据</p>
-      <el-button type="primary" :icon="Plus" @click="handleCreate">新建挑战</el-button>
+    <div
+      v-else-if="challenges.length === 0"
+      class="state-container"
+    >
+      <el-icon
+        class="state-icon"
+        color="#909399"
+      >
+        <Document />
+      </el-icon>
+      <p class="state-text">
+        暂无挑战数据
+      </p>
+      <el-button
+        type="primary"
+        :icon="Plus"
+        @click="handleCreate"
+      >
+        新建挑战
+      </el-button>
     </div>
 
     <!-- Content -->
     <template v-else>
-      <el-table :data="challenges" style="width: 100%" v-loading="loading">
-        <el-table-column prop="title" label="挑战名称" />
-        <el-table-column prop="difficulty" label="难度">
+      <el-table
+        v-loading="loading"
+        :data="challenges"
+        style="width: 100%"
+      >
+        <el-table-column
+          prop="title"
+          label="挑战名称"
+        />
+        <el-table-column
+          prop="difficulty"
+          label="难度"
+        >
           <template #default="{ row }">
             <el-tag :type="getDifficultyType(row.difficulty)">
               {{ getDifficultyLabel(row.difficulty) }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="reward_xp" label="奖励经验" width="100" />
-        <el-table-column prop="status" label="状态">
+        <el-table-column
+          prop="reward_xp"
+          label="奖励经验"
+          width="100"
+        />
+        <el-table-column
+          prop="status"
+          label="状态"
+        >
           <template #default="{ row }">
             <el-tag :type="getStatusType(row.status)">
               {{ getStatusLabel(row.status) }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="200">
+        <el-table-column
+          label="操作"
+          width="200"
+        >
           <template #default="{ row }">
-            <el-button size="small" @click="handleEdit(row)">编辑</el-button>
-            <el-button size="small" type="danger" @click="handleDelete(row)">删除</el-button>
+            <el-button
+              size="small"
+              @click="handleEdit(row)"
+            >
+              编辑
+            </el-button>
+            <el-button
+              size="small"
+              type="danger"
+              @click="handleDelete(row)"
+            >
+              删除
+            </el-button>
           </template>
         </el-table-column>
       </el-table>
     </template>
 
-    <el-dialog v-model="dialogVisible" :title="isCreating ? '新建挑战' : '编辑挑战'" width="500px">
-      <el-form v-if="editingChallenge" :model="editingChallenge" label-width="100px">
+    <el-dialog
+      v-model="dialogVisible"
+      :title="isCreating ? '新建挑战' : '编辑挑战'"
+      width="500px"
+    >
+      <el-form
+        v-if="editingChallenge"
+        :model="editingChallenge"
+        label-width="100px"
+      >
         <el-form-item label="挑战名称">
           <el-input v-model="editingChallenge.title" />
         </el-form-item>
         <el-form-item label="难度">
           <el-select v-model="editingChallenge.difficulty">
-            <el-option label="初级" value="beginner" />
-            <el-option label="中级" value="intermediate" />
+            <el-option
+              label="初级"
+              value="beginner"
+            />
+            <el-option
+              label="中级"
+              value="intermediate"
+            />
           </el-select>
         </el-form-item>
         <el-form-item label="奖励经验">
-          <el-input-number v-model="editingChallenge.reward_xp" :min="0" />
+          <el-input-number
+            v-model="editingChallenge.reward_xp"
+            :min="0"
+          />
         </el-form-item>
         <el-form-item label="状态">
           <el-select v-model="editingChallenge.status">
-            <el-option label="草稿" value="draft" />
-            <el-option label="已发布" value="published" />
+            <el-option
+              label="草稿"
+              value="draft"
+            />
+            <el-option
+              label="已发布"
+              value="published"
+            />
           </el-select>
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="dialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="handleSave">保存</el-button>
+        <el-button @click="dialogVisible = false">
+          取消
+        </el-button>
+        <el-button
+          type="primary"
+          @click="handleSave"
+        >
+          保存
+        </el-button>
       </template>
     </el-dialog>
   </div>

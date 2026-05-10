@@ -171,110 +171,263 @@ fetchData()
     <div class="header">
       <h1>题目管理</h1>
       <div class="header-actions">
-        <el-select v-model="filterType" placeholder="类型" clearable style="width: 120px; margin-right: 12px;">
-          <el-option label="编程题" value="coding" />
-          <el-option label="单选题" value="single_choice" />
+        <el-select
+          v-model="filterType"
+          placeholder="类型"
+          clearable
+          style="width: 120px; margin-right: 12px;"
+        >
+          <el-option
+            label="编程题"
+            value="coding"
+          />
+          <el-option
+            label="单选题"
+            value="single_choice"
+          />
         </el-select>
-        <el-select v-model="filterDifficulty" placeholder="难度" clearable style="width: 120px; margin-right: 12px;">
-          <el-option label="初级" value="beginner" />
-          <el-option label="中级" value="intermediate" />
+        <el-select
+          v-model="filterDifficulty"
+          placeholder="难度"
+          clearable
+          style="width: 120px; margin-right: 12px;"
+        >
+          <el-option
+            label="初级"
+            value="beginner"
+          />
+          <el-option
+            label="中级"
+            value="intermediate"
+          />
         </el-select>
-        <el-button type="primary" :icon="Plus" @click="handleCreate">新建题目</el-button>
+        <el-button
+          type="primary"
+          :icon="Plus"
+          @click="handleCreate"
+        >
+          新建题目
+        </el-button>
       </div>
     </div>
 
     <!-- Loading State -->
-    <div v-if="loading" class="state-container">
-      <el-skeleton :rows="5" animated />
+    <div
+      v-if="loading"
+      class="state-container"
+    >
+      <el-skeleton
+        :rows="5"
+        animated
+      />
     </div>
 
     <!-- Forbidden State -->
-    <div v-else-if="forbidden" class="state-container">
-      <el-icon class="state-icon" color="#F56C6C"><Warning /></el-icon>
-      <p class="state-text">无权访问</p>
+    <div
+      v-else-if="forbidden"
+      class="state-container"
+    >
+      <el-icon
+        class="state-icon"
+        color="#F56C6C"
+      >
+        <Warning />
+      </el-icon>
+      <p class="state-text">
+        无权访问
+      </p>
     </div>
 
     <!-- Session Expired State -->
-    <div v-else-if="sessionExpired" class="state-container">
-      <el-icon class="state-icon" color="#E6A23C"><Warning /></el-icon>
-      <p class="state-text">登录已过期，请重新登录</p>
-      <p class="state-subtext">正在跳转到登录页...</p>
+    <div
+      v-else-if="sessionExpired"
+      class="state-container"
+    >
+      <el-icon
+        class="state-icon"
+        color="#E6A23C"
+      >
+        <Warning />
+      </el-icon>
+      <p class="state-text">
+        登录已过期，请重新登录
+      </p>
+      <p class="state-subtext">
+        正在跳转到登录页...
+      </p>
     </div>
 
     <!-- Error State -->
-    <div v-else-if="error" class="state-container">
-      <el-icon class="state-icon" color="#F56C6C"><Warning /></el-icon>
-      <p class="state-text">{{ error }}</p>
-      <el-button type="primary" @click="fetchData">重试</el-button>
+    <div
+      v-else-if="error"
+      class="state-container"
+    >
+      <el-icon
+        class="state-icon"
+        color="#F56C6C"
+      >
+        <Warning />
+      </el-icon>
+      <p class="state-text">
+        {{ error }}
+      </p>
+      <el-button
+        type="primary"
+        @click="fetchData"
+      >
+        重试
+      </el-button>
     </div>
 
     <!-- Empty State -->
-    <div v-else-if="filteredExercises.length === 0" class="state-container">
-      <el-icon class="state-icon" color="#909399"><Document /></el-icon>
-      <p class="state-text">暂无题目数据</p>
-      <el-button type="primary" :icon="Plus" @click="handleCreate">新建题目</el-button>
+    <div
+      v-else-if="filteredExercises.length === 0"
+      class="state-container"
+    >
+      <el-icon
+        class="state-icon"
+        color="#909399"
+      >
+        <Document />
+      </el-icon>
+      <p class="state-text">
+        暂无题目数据
+      </p>
+      <el-button
+        type="primary"
+        :icon="Plus"
+        @click="handleCreate"
+      >
+        新建题目
+      </el-button>
     </div>
 
     <!-- Content -->
     <template v-else>
-      <el-table :data="filteredExercises" style="width: 100%" v-loading="loading">
-        <el-table-column prop="title" label="题目名称" />
-        <el-table-column prop="type" label="类型">
+      <el-table
+        v-loading="loading"
+        :data="filteredExercises"
+        style="width: 100%"
+      >
+        <el-table-column
+          prop="title"
+          label="题目名称"
+        />
+        <el-table-column
+          prop="type"
+          label="类型"
+        >
           <template #default="{ row }">
             <el-tag>{{ getTypeLabel(row.type) }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="difficulty" label="难度">
+        <el-table-column
+          prop="difficulty"
+          label="难度"
+        >
           <template #default="{ row }">
             <el-tag :type="getDifficultyType(row.difficulty)">
               {{ getDifficultyLabel(row.difficulty) }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="status" label="状态">
+        <el-table-column
+          prop="status"
+          label="状态"
+        >
           <template #default="{ row }">
             <el-tag :type="getStatusType(row.status)">
               {{ getStatusLabel(row.status) }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="created_at" label="创建时间" />
-        <el-table-column label="操作" width="200">
+        <el-table-column
+          prop="created_at"
+          label="创建时间"
+        />
+        <el-table-column
+          label="操作"
+          width="200"
+        >
           <template #default="{ row }">
-            <el-button size="small" @click="handleEdit(row)">编辑</el-button>
-            <el-button size="small" type="danger" @click="handleDelete(row)">删除</el-button>
+            <el-button
+              size="small"
+              @click="handleEdit(row)"
+            >
+              编辑
+            </el-button>
+            <el-button
+              size="small"
+              type="danger"
+              @click="handleDelete(row)"
+            >
+              删除
+            </el-button>
           </template>
         </el-table-column>
       </el-table>
     </template>
 
-    <el-dialog v-model="dialogVisible" :title="isCreating ? '新建题目' : '编辑题目'" width="500px">
-      <el-form v-if="editingExercise" :model="editingExercise" label-width="100px">
+    <el-dialog
+      v-model="dialogVisible"
+      :title="isCreating ? '新建题目' : '编辑题目'"
+      width="500px"
+    >
+      <el-form
+        v-if="editingExercise"
+        :model="editingExercise"
+        label-width="100px"
+      >
         <el-form-item label="题目名称">
           <el-input v-model="editingExercise.title" />
         </el-form-item>
         <el-form-item label="类型">
           <el-select v-model="editingExercise.type">
-            <el-option label="编程题" value="coding" />
-            <el-option label="单选题" value="single_choice" />
+            <el-option
+              label="编程题"
+              value="coding"
+            />
+            <el-option
+              label="单选题"
+              value="single_choice"
+            />
           </el-select>
         </el-form-item>
         <el-form-item label="难度">
           <el-select v-model="editingExercise.difficulty">
-            <el-option label="初级" value="beginner" />
-            <el-option label="中级" value="intermediate" />
+            <el-option
+              label="初级"
+              value="beginner"
+            />
+            <el-option
+              label="中级"
+              value="intermediate"
+            />
           </el-select>
         </el-form-item>
         <el-form-item label="状态">
           <el-select v-model="editingExercise.status">
-            <el-option label="草稿" value="draft" />
-            <el-option label="已发布" value="published" />
+            <el-option
+              label="草稿"
+              value="draft"
+            />
+            <el-option
+              label="已发布"
+              value="published"
+            />
           </el-select>
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="dialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="handleSave">保存</el-button>
+        <el-button @click="dialogVisible = false">
+          取消
+        </el-button>
+        <el-button
+          type="primary"
+          @click="handleSave"
+        >
+          保存
+        </el-button>
       </template>
     </el-dialog>
   </div>

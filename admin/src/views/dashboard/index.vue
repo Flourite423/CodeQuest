@@ -57,42 +57,99 @@ fetchData()
     <h1>数据看板</h1>
 
     <!-- Loading State -->
-    <div v-if="loading" class="state-container">
-      <el-skeleton :rows="3" animated />
+    <div
+      v-if="loading"
+      class="state-container"
+    >
+      <el-skeleton
+        :rows="3"
+        animated
+      />
     </div>
 
     <!-- Forbidden State -->
-    <div v-else-if="forbidden" class="state-container">
-      <el-icon class="state-icon" color="#F56C6C"><Warning /></el-icon>
-      <p class="state-text">无权访问</p>
+    <div
+      v-else-if="forbidden"
+      class="state-container"
+    >
+      <el-icon
+        class="state-icon"
+        color="#F56C6C"
+      >
+        <Warning />
+      </el-icon>
+      <p class="state-text">
+        无权访问
+      </p>
     </div>
 
     <!-- Session Expired State -->
-    <div v-else-if="sessionExpired" class="state-container">
-      <el-icon class="state-icon" color="#E6A23C"><Warning /></el-icon>
-      <p class="state-text">登录已过期，请重新登录</p>
-      <p class="state-subtext">正在跳转到登录页...</p>
+    <div
+      v-else-if="sessionExpired"
+      class="state-container"
+    >
+      <el-icon
+        class="state-icon"
+        color="#E6A23C"
+      >
+        <Warning />
+      </el-icon>
+      <p class="state-text">
+        登录已过期，请重新登录
+      </p>
+      <p class="state-subtext">
+        正在跳转到登录页...
+      </p>
     </div>
 
     <!-- Error State -->
-    <div v-else-if="error" class="state-container">
-      <el-icon class="state-icon" color="#F56C6C"><Warning /></el-icon>
-      <p class="state-text">{{ error }}</p>
-      <el-button type="primary" @click="fetchData">重试</el-button>
+    <div
+      v-else-if="error"
+      class="state-container"
+    >
+      <el-icon
+        class="state-icon"
+        color="#F56C6C"
+      >
+        <Warning />
+      </el-icon>
+      <p class="state-text">
+        {{ error }}
+      </p>
+      <el-button
+        type="primary"
+        @click="fetchData"
+      >
+        重试
+      </el-button>
     </div>
 
     <!-- Content -->
     <template v-else>
-      <el-row :gutter="20" class="stats-row">
-        <el-col :span="6" v-for="stat in stats" :key="stat.title">
+      <el-row
+        :gutter="20"
+        class="stats-row"
+      >
+        <el-col
+          v-for="stat in stats"
+          :key="stat.title"
+          :span="6"
+        >
           <el-card class="stat-card">
             <div class="stat-content">
-              <el-icon :size="40" :color="stat.color">
+              <el-icon
+                :size="40"
+                :color="stat.color"
+              >
                 <component :is="stat.icon" />
               </el-icon>
               <div class="stat-info">
-                <p class="stat-value">{{ stat.value }}</p>
-                <p class="stat-title">{{ stat.title }}</p>
+                <p class="stat-value">
+                  {{ stat.value }}
+                </p>
+                <p class="stat-title">
+                  {{ stat.title }}
+                </p>
               </div>
             </div>
           </el-card>

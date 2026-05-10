@@ -111,77 +111,182 @@ fetchData()
           style="width: 200px; margin-right: 12px;"
           @keyup.enter="fetchData"
         />
-        <el-select v-model="statusFilter" placeholder="状态筛选" style="width: 120px; margin-right: 12px;" @change="fetchData">
-          <el-option label="全部" value="" />
-          <el-option label="正常" value="active" />
-          <el-option label="已封禁" value="suspended" />
-          <el-option label="已关闭" value="closed" />
+        <el-select
+          v-model="statusFilter"
+          placeholder="状态筛选"
+          style="width: 120px; margin-right: 12px;"
+          @change="fetchData"
+        >
+          <el-option
+            label="全部"
+            value=""
+          />
+          <el-option
+            label="正常"
+            value="active"
+          />
+          <el-option
+            label="已封禁"
+            value="suspended"
+          />
+          <el-option
+            label="已关闭"
+            value="closed"
+          />
         </el-select>
-        <el-button type="primary" @click="fetchData">搜索</el-button>
+        <el-button
+          type="primary"
+          @click="fetchData"
+        >
+          搜索
+        </el-button>
       </div>
     </div>
 
     <!-- Loading State -->
-    <div v-if="loading" class="state-container">
-      <el-skeleton :rows="5" animated />
+    <div
+      v-if="loading"
+      class="state-container"
+    >
+      <el-skeleton
+        :rows="5"
+        animated
+      />
     </div>
 
     <!-- Forbidden State -->
-    <div v-else-if="forbidden" class="state-container">
-      <el-icon class="state-icon" color="#F56C6C"><Warning /></el-icon>
-      <p class="state-text">无权访问</p>
+    <div
+      v-else-if="forbidden"
+      class="state-container"
+    >
+      <el-icon
+        class="state-icon"
+        color="#F56C6C"
+      >
+        <Warning />
+      </el-icon>
+      <p class="state-text">
+        无权访问
+      </p>
     </div>
 
     <!-- Session Expired State -->
-    <div v-else-if="sessionExpired" class="state-container">
-      <el-icon class="state-icon" color="#E6A23C"><Warning /></el-icon>
-      <p class="state-text">登录已过期，请重新登录</p>
-      <p class="state-subtext">正在跳转到登录页...</p>
+    <div
+      v-else-if="sessionExpired"
+      class="state-container"
+    >
+      <el-icon
+        class="state-icon"
+        color="#E6A23C"
+      >
+        <Warning />
+      </el-icon>
+      <p class="state-text">
+        登录已过期，请重新登录
+      </p>
+      <p class="state-subtext">
+        正在跳转到登录页...
+      </p>
     </div>
 
     <!-- Error State -->
-    <div v-else-if="error" class="state-container">
-      <el-icon class="state-icon" color="#F56C6C"><Warning /></el-icon>
-      <p class="state-text">{{ error }}</p>
-      <el-button type="primary" @click="fetchData">重试</el-button>
+    <div
+      v-else-if="error"
+      class="state-container"
+    >
+      <el-icon
+        class="state-icon"
+        color="#F56C6C"
+      >
+        <Warning />
+      </el-icon>
+      <p class="state-text">
+        {{ error }}
+      </p>
+      <el-button
+        type="primary"
+        @click="fetchData"
+      >
+        重试
+      </el-button>
     </div>
 
     <!-- Empty State -->
-    <div v-else-if="users.length === 0" class="state-container">
-      <el-icon class="state-icon" color="#909399"><Document /></el-icon>
-      <p class="state-text">暂无用户数据</p>
+    <div
+      v-else-if="users.length === 0"
+      class="state-container"
+    >
+      <el-icon
+        class="state-icon"
+        color="#909399"
+      >
+        <Document />
+      </el-icon>
+      <p class="state-text">
+        暂无用户数据
+      </p>
     </div>
 
     <!-- Content -->
     <template v-else>
-      <el-table :data="users" style="width: 100%" v-loading="loading">
-        <el-table-column prop="profile_summary.display_name" label="用户">
+      <el-table
+        v-loading="loading"
+        :data="users"
+        style="width: 100%"
+      >
+        <el-table-column
+          prop="profile_summary.display_name"
+          label="用户"
+        >
           <template #default="{ row }">
             <div class="user-cell">
-              <el-avatar :size="32" :src="row.profile_summary.avatar_url" />
+              <el-avatar
+                :size="32"
+                :src="row.profile_summary.avatar_url"
+              />
               <span>{{ row.profile_summary.display_name }}</span>
             </div>
           </template>
         </el-table-column>
-        <el-table-column prop="email" label="邮箱" />
-        <el-table-column prop="default_role" label="角色">
+        <el-table-column
+          prop="email"
+          label="邮箱"
+        />
+        <el-table-column
+          prop="default_role"
+          label="角色"
+        >
           <template #default="{ row }">
             <el-tag :type="row.default_role === 'admin' ? 'danger' : 'primary'">
               {{ row.default_role === 'admin' ? '管理员' : '学习者' }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="account_status" label="状态">
+        <el-table-column
+          prop="account_status"
+          label="状态"
+        >
           <template #default="{ row }">
             <el-tag :type="getStatusType(row.account_status)">
               {{ getStatusLabel(row.account_status) }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="created_at" label="注册时间" />
-        <el-table-column label="操作" width="250">
+        <el-table-column
+          prop="created_at"
+          label="注册时间"
+        />
+        <el-table-column
+          label="操作"
+          width="250"
+        >
           <template #default="{ row }">
-            <el-button size="small" @click="handleViewDetail(row)">详情</el-button>
+            <el-button
+              size="small"
+              @click="handleViewDetail(row)"
+            >
+              详情
+            </el-button>
             <el-button 
               v-if="row.account_status === 'active'"
               size="small" 
@@ -203,8 +308,15 @@ fetchData()
       </el-table>
     </template>
 
-    <el-drawer v-model="drawerVisible" title="用户详情" size="400px">
-      <div v-if="selectedUser" class="user-detail">
+    <el-drawer
+      v-model="drawerVisible"
+      title="用户详情"
+      size="400px"
+    >
+      <div
+        v-if="selectedUser"
+        class="user-detail"
+      >
         <div class="detail-item">
           <span class="label">用户ID：</span>
           <span>{{ selectedUser.account_id }}</span>

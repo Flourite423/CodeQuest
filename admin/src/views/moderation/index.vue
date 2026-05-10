@@ -104,93 +104,217 @@ fetchData()
     <h1>内容审核</h1>
 
     <!-- Loading State -->
-    <div v-if="loading" class="state-container">
-      <el-skeleton :rows="5" animated />
+    <div
+      v-if="loading"
+      class="state-container"
+    >
+      <el-skeleton
+        :rows="5"
+        animated
+      />
     </div>
 
     <!-- Forbidden State -->
-    <div v-else-if="forbidden" class="state-container">
-      <el-icon class="state-icon" color="#F56C6C"><Warning /></el-icon>
-      <p class="state-text">无权访问</p>
+    <div
+      v-else-if="forbidden"
+      class="state-container"
+    >
+      <el-icon
+        class="state-icon"
+        color="#F56C6C"
+      >
+        <Warning />
+      </el-icon>
+      <p class="state-text">
+        无权访问
+      </p>
     </div>
 
     <!-- Session Expired State -->
-    <div v-else-if="sessionExpired" class="state-container">
-      <el-icon class="state-icon" color="#E6A23C"><Warning /></el-icon>
-      <p class="state-text">登录已过期，请重新登录</p>
-      <p class="state-subtext">正在跳转到登录页...</p>
+    <div
+      v-else-if="sessionExpired"
+      class="state-container"
+    >
+      <el-icon
+        class="state-icon"
+        color="#E6A23C"
+      >
+        <Warning />
+      </el-icon>
+      <p class="state-text">
+        登录已过期，请重新登录
+      </p>
+      <p class="state-subtext">
+        正在跳转到登录页...
+      </p>
     </div>
 
     <!-- Error State -->
-    <div v-else-if="error" class="state-container">
-      <el-icon class="state-icon" color="#F56C6C"><Warning /></el-icon>
-      <p class="state-text">{{ error }}</p>
-      <el-button type="primary" @click="fetchData">重试</el-button>
+    <div
+      v-else-if="error"
+      class="state-container"
+    >
+      <el-icon
+        class="state-icon"
+        color="#F56C6C"
+      >
+        <Warning />
+      </el-icon>
+      <p class="state-text">
+        {{ error }}
+      </p>
+      <el-button
+        type="primary"
+        @click="fetchData"
+      >
+        重试
+      </el-button>
     </div>
 
     <!-- Empty State -->
-    <div v-else-if="reports.length === 0" class="state-container">
-      <el-icon class="state-icon" color="#909399"><Document /></el-icon>
-      <p class="state-text">暂无审核数据</p>
+    <div
+      v-else-if="reports.length === 0"
+      class="state-container"
+    >
+      <el-icon
+        class="state-icon"
+        color="#909399"
+      >
+        <Document />
+      </el-icon>
+      <p class="state-text">
+        暂无审核数据
+      </p>
     </div>
 
     <!-- Content -->
     <template v-else>
       <el-tabs v-model="activeTab">
-        <el-tab-pane label="待处理" name="pending">
-          <el-table :data="pendingReports" style="width: 100%">
-            <el-table-column prop="case_type" label="类型">
+        <el-tab-pane
+          label="待处理"
+          name="pending"
+        >
+          <el-table
+            :data="pendingReports"
+            style="width: 100%"
+          >
+            <el-table-column
+              prop="case_type"
+              label="类型"
+            >
               <template #default="{ row }">
                 <el-tag>{{ caseTypeMap[row.case_type] || row.case_type }}</el-tag>
               </template>
             </el-table-column>
-            <el-table-column prop="target_summary.target_label" label="目标" />
-            <el-table-column prop="created_at" label="提交时间" />
-            <el-table-column label="操作" width="200">
+            <el-table-column
+              prop="target_summary.target_label"
+              label="目标"
+            />
+            <el-table-column
+              prop="created_at"
+              label="提交时间"
+            />
+            <el-table-column
+              label="操作"
+              width="200"
+            >
               <template #default="{ row }">
-                <el-button size="small" type="success" @click="openReasonDialog(row, 'approve')">通过</el-button>
-                <el-button size="small" type="danger" @click="openReasonDialog(row, 'reject')">拒绝</el-button>
+                <el-button
+                  size="small"
+                  type="success"
+                  @click="openReasonDialog(row, 'approve')"
+                >
+                  通过
+                </el-button>
+                <el-button
+                  size="small"
+                  type="danger"
+                  @click="openReasonDialog(row, 'reject')"
+                >
+                  拒绝
+                </el-button>
               </template>
             </el-table-column>
           </el-table>
         </el-tab-pane>
 
-        <el-tab-pane label="已处理" name="processed">
-          <el-table :data="processedReports" style="width: 100%">
-            <el-table-column prop="case_type" label="类型">
+        <el-tab-pane
+          label="已处理"
+          name="processed"
+        >
+          <el-table
+            :data="processedReports"
+            style="width: 100%"
+          >
+            <el-table-column
+              prop="case_type"
+              label="类型"
+            >
               <template #default="{ row }">
                 <el-tag>{{ caseTypeMap[row.case_type] || row.case_type }}</el-tag>
               </template>
             </el-table-column>
-            <el-table-column prop="target_summary.target_label" label="目标" />
-            <el-table-column prop="status" label="状态">
+            <el-table-column
+              prop="target_summary.target_label"
+              label="目标"
+            />
+            <el-table-column
+              prop="status"
+              label="状态"
+            >
               <template #default="{ row }">
                 <el-tag :type="getStatusType(row.status)">
                   {{ getStatusLabel(row.status) }}
                 </el-tag>
               </template>
             </el-table-column>
-            <el-table-column prop="decision_reason" label="处理原因" show-overflow-tooltip />
-            <el-table-column prop="reviewed_at" label="处理时间" />
+            <el-table-column
+              prop="decision_reason"
+              label="处理原因"
+              show-overflow-tooltip
+            />
+            <el-table-column
+              prop="reviewed_at"
+              label="处理时间"
+            />
           </el-table>
         </el-tab-pane>
       </el-tabs>
     </template>
 
-    <el-dialog v-model="reasonDialogVisible" title="处理原因" width="500px">
-      <el-form :model="reasonForm" label-width="80px">
+    <el-dialog
+      v-model="reasonDialogVisible"
+      title="处理原因"
+      width="500px"
+    >
+      <el-form
+        :model="reasonForm"
+        label-width="80px"
+      >
         <el-form-item label="操作">
           <el-tag :type="reasonForm.action === 'approve' ? 'success' : 'danger'">
             {{ reasonForm.action === 'approve' ? '通过' : '拒绝' }}
           </el-tag>
         </el-form-item>
         <el-form-item label="原因">
-          <el-input v-model="reasonForm.reason" type="textarea" :rows="3" placeholder="请输入处理原因..." />
+          <el-input
+            v-model="reasonForm.reason"
+            type="textarea"
+            :rows="3"
+            placeholder="请输入处理原因..."
+          />
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="reasonDialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="handleConfirmAction">确认</el-button>
+        <el-button @click="reasonDialogVisible = false">
+          取消
+        </el-button>
+        <el-button
+          type="primary"
+          @click="handleConfirmAction"
+        >
+          确认
+        </el-button>
       </template>
     </el-dialog>
   </div>

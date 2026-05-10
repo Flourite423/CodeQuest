@@ -104,7 +104,10 @@ const handleLogin = async () => {
         label-position="top"
         @submit.prevent="handleLogin"
       >
-        <el-form-item label="邮箱地址" prop="email">
+        <el-form-item
+          label="邮箱地址"
+          prop="email"
+        >
           <el-input
             v-model="form.email"
             placeholder="请输入邮箱地址"
@@ -112,7 +115,10 @@ const handleLogin = async () => {
           />
         </el-form-item>
 
-        <el-form-item label="登录密码" prop="password">
+        <el-form-item
+          label="登录密码"
+          prop="password"
+        >
           <el-input
             v-model="form.password"
             type="password"
@@ -123,7 +129,9 @@ const handleLogin = async () => {
         </el-form-item>
 
         <el-form-item>
-          <el-checkbox v-model="form.remember">记住登录状态</el-checkbox>
+          <el-checkbox v-model="form.remember">
+            记住登录状态
+          </el-checkbox>
         </el-form-item>
 
         <el-form-item>
