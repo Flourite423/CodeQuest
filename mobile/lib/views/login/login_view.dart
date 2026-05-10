@@ -55,7 +55,6 @@ class LoginView extends GetView<LoginController> {
           ),
           SizedBox(height: 48.h),
 
-          // Email field
           Obx(() => TextField(
             controller: controller.emailController,
             decoration: InputDecoration(
@@ -74,7 +73,6 @@ class LoginView extends GetView<LoginController> {
           )),
           SizedBox(height: 16.h),
 
-          // Password field
           Obx(() => TextField(
             controller: controller.passwordController,
             decoration: InputDecoration(
@@ -102,7 +100,6 @@ class LoginView extends GetView<LoginController> {
           )),
           SizedBox(height: 32.h),
 
-          // Login button
           Obx(() => SizedBox(
             width: double.infinity,
             height: 56.h,
@@ -125,7 +122,6 @@ class LoginView extends GetView<LoginController> {
           )),
           SizedBox(height: 24.h),
 
-          // Register link
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [

@@ -33,35 +33,20 @@ class HomeDashboardView extends GetView<HomeDashboardController> {
       child: ListView(
         padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 16.h),
         children: [
-          // 1. 问候语头部
           _buildGreetingHeader(context),
           SizedBox(height: 16.h),
-
-          // 2. 连续学习天数胶囊
           _buildStreakPill(context),
           SizedBox(height: 16.h),
-
-          // 3. 今日成长 Hero 卡片
           _buildHeroCard(context),
           SizedBox(height: 16.h),
-
-          // 4. 每日挑战卡片
           _buildDailyChallengeCard(context),
           SizedBox(height: 16.h),
-
-          // 5. 继续学习卡片
           _buildContinueLearningCard(context),
           SizedBox(height: 16.h),
-
-          // 6. 每周统计网格
           _buildWeeklyStatsGrid(context),
           SizedBox(height: 16.h),
-
-          // 7. 好友活动预览
           _buildFriendActivityPreview(context),
           SizedBox(height: 16.h),
-
-          // 8. 徽章预览
           _buildBadgePreview(context),
           SizedBox(height: 24.h),
         ],
@@ -69,7 +54,6 @@ class HomeDashboardView extends GetView<HomeDashboardController> {
     );
   }
 
-  // ==================== 1. 问候语头部 ====================
   Widget _buildGreetingHeader(BuildContext context) {
     final theme = Theme.of(context);
     final hour = DateTime.now().hour;
@@ -106,7 +90,6 @@ class HomeDashboardView extends GetView<HomeDashboardController> {
             ],
           ),
         ),
-        // 用户头像
         CircleAvatar(
           radius: 24.r,
           backgroundColor: theme.colorScheme.primaryContainer,
@@ -124,7 +107,6 @@ class HomeDashboardView extends GetView<HomeDashboardController> {
     );
   }
 
-  // ==================== 2. 连续学习天数胶囊 ====================
   Widget _buildStreakPill(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
@@ -157,7 +139,6 @@ class HomeDashboardView extends GetView<HomeDashboardController> {
     );
   }
 
-  // ==================== 3. 今日成长 Hero 卡片 ====================
   Widget _buildHeroCard(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
@@ -265,7 +246,6 @@ class HomeDashboardView extends GetView<HomeDashboardController> {
               ],
             ),
             SizedBox(height: 16.h),
-            // XP 进度条
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -295,7 +275,6 @@ class HomeDashboardView extends GetView<HomeDashboardController> {
     );
   }
 
-  // ==================== 4. 每日挑战卡片 ====================
   Widget _buildDailyChallengeCard(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
@@ -413,7 +392,6 @@ class HomeDashboardView extends GetView<HomeDashboardController> {
     );
   }
 
-  // ==================== 5. 继续学习卡片 ====================
   Widget _buildContinueLearningCard(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
@@ -543,7 +521,6 @@ class HomeDashboardView extends GetView<HomeDashboardController> {
     );
   }
 
-  // ==================== 6. 每周统计网格 ====================
   Widget _buildWeeklyStatsGrid(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
@@ -639,7 +616,6 @@ class HomeDashboardView extends GetView<HomeDashboardController> {
     );
   }
 
-  // ==================== 7. 好友活动预览 ====================
   Widget _buildFriendActivityPreview(BuildContext context) {
     final theme = Theme.of(context);
     final activities = controller.activities.take(3).toList();
@@ -660,7 +636,6 @@ class HomeDashboardView extends GetView<HomeDashboardController> {
             ),
             TextButton(
               onPressed: () {
-                // 跳转到 Social Tab (index 3)
                 final homeController = Get.find<HomeController>();
                 homeController.changeTab(3);
               },
@@ -732,7 +707,6 @@ class HomeDashboardView extends GetView<HomeDashboardController> {
     );
   }
 
-  // ==================== 8. 徽章预览 ====================
   Widget _buildBadgePreview(BuildContext context) {
     final theme = Theme.of(context);
     final badges = controller.badges.take(3).toList();
@@ -835,7 +809,6 @@ class HomeDashboardView extends GetView<HomeDashboardController> {
     );
   }
 
-  // ==================== 辅助方法 ====================
   String _formatTimeAgo(DateTime dateTime) {
     final now = DateTime.now();
     final diff = now.difference(dateTime);
@@ -882,7 +855,6 @@ class HomeDashboardController extends BaseController {
     return Get.put(ProgressService(), permanent: true);
   }
 
-  // 响应式数据
   final Rxn<app_models.User> user = Rxn<app_models.User>();
   final Rxn<app_models.Stats> stats = Rxn<app_models.Stats>();
   final Rxn<app_models.DailyChallenge> dailyChallenge = Rxn<app_models.DailyChallenge>();
@@ -890,7 +862,6 @@ class HomeDashboardController extends BaseController {
   final RxList<app_models.Activity> activities = <app_models.Activity>[].obs;
   final RxList<app_models.Badge> badges = <app_models.Badge>[].obs;
 
-  // 各模块加载状态
   final RxBool userLoaded = false.obs;
   final RxBool statsLoaded = false.obs;
   final RxBool dailyLoaded = false.obs;
@@ -916,7 +887,6 @@ class HomeDashboardController extends BaseController {
 
     setLoading(message: '加载仪表板中...');
 
-    // 重置加载状态
     userLoaded.value = false;
     statsLoaded.value = false;
     dailyLoaded.value = false;
@@ -924,7 +894,6 @@ class HomeDashboardController extends BaseController {
     activitiesLoaded.value = false;
     badgesLoaded.value = false;
 
-    // 并行加载所有数据
     await Future.wait([
       _loadUser(),
       _loadStats(),
@@ -934,7 +903,6 @@ class HomeDashboardController extends BaseController {
       _loadBadges(),
     ]);
 
-    // 判断整体状态
     final hasAnyData = userLoaded.value ||
         statsLoaded.value ||
         dailyLoaded.value ||
@@ -1030,7 +998,6 @@ class HomeDashboardController extends BaseController {
           : <String, dynamic>{};
       final data = payload['data'] as Map<String, dynamic>? ?? <String, dynamic>{};
 
-      // Extract challenge and record from response
       final challengeData = (data['challenge'] ?? data) as Map<String, dynamic>;
       final recordData = data['record'] as Map<String, dynamic>?;
 
@@ -1058,7 +1025,6 @@ class HomeDashboardController extends BaseController {
         return;
       }
 
-      // Try to load a specific course detail first
       bool loadedFromDetail = false;
       try {
         final courseDetailResponse = await _apiService.get('/learner/courses/course-1');
@@ -1079,7 +1045,6 @@ class HomeDashboardController extends BaseController {
 
       if (loadedFromDetail) return;
 
-      // Fallback: load from courses list
       final listResponse = await _apiService.get('/learner/courses');
       final listPayload = listResponse.data is Map<String, dynamic>
           ? listResponse.data as Map<String, dynamic>

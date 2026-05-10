@@ -10,13 +10,11 @@ import '../../services/progress_service.dart';
 import '../../widgets/page_state_host.dart';
 import '../../widgets/shared/filter_sheet.dart';
 
-
 class CourseListView extends GetView<CourseListController> {
   const CourseListView({super.key});
 
   @override
   Widget build(BuildContext context) {
-
 
     return Scaffold(
       appBar: AppBar(
@@ -198,7 +196,6 @@ class _CourseCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Cover image
             ClipRRect(
               borderRadius: BorderRadius.vertical(top: Radius.circular(12.r)),
               child: Container(
@@ -228,7 +225,6 @@ class _CourseCard extends StatelessWidget {
                       ),
               ),
             ),
-            // Content
             Padding(
               padding: EdgeInsets.all(16.w),
               child: Column(
@@ -252,7 +248,6 @@ class _CourseCard extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                   SizedBox(height: 12.h),
-                  // Meta row
                   Wrap(
                     spacing: 8.w,
                     runSpacing: 8.h,
@@ -351,7 +346,6 @@ class CourseListController extends BaseController {
   final RxBool isSearchActive = false.obs;
   final TextEditingController searchController = TextEditingController();
 
-  // ── Filter state ──────────────────────────────────
   final RxString difficultyFilter = ''.obs;
   final RxString categoryFilter = ''.obs;
   final RxString progressFilter = ''.obs;
@@ -361,12 +355,9 @@ class CourseListController extends BaseController {
       categoryFilter.value.isNotEmpty ||
       progressFilter.value.isNotEmpty;
 
-  // ── Computed list ─────────────────────────────────
-
   List<Course> get filteredCourses {
     var result = courses.toList();
 
-    // Apply search query
     if (searchQuery.value.isNotEmpty) {
       final query = searchQuery.value.toLowerCase();
       result = result.where((course) {
@@ -375,17 +366,14 @@ class CourseListController extends BaseController {
       }).toList();
     }
 
-    // Apply difficulty filter
     if (difficultyFilter.value.isNotEmpty) {
       result = result.where((c) => c.difficulty == difficultyFilter.value).toList();
     }
 
-    // Apply category filter
     if (categoryFilter.value.isNotEmpty) {
       result = result.where((c) => c.category == categoryFilter.value).toList();
     }
 
-    // Apply progress filter
     if (progressFilter.value.isNotEmpty) {
       result = result.where((c) {
         final p = c.progress ?? 0.0;
@@ -405,8 +393,6 @@ class CourseListController extends BaseController {
     return result;
   }
 
-  // ── Lifecycle ─────────────────────────────────────
-
   @override
   void onInit() {
     super.onInit();
@@ -418,8 +404,6 @@ class CourseListController extends BaseController {
     searchController.dispose();
     super.onClose();
   }
-
-  // ── Search ────────────────────────────────────────
 
   void toggleSearch() {
     isSearchActive.value = !isSearchActive.value;
@@ -433,16 +417,13 @@ class CourseListController extends BaseController {
     searchQuery.value = value;
   }
 
-  // ── Filters ───────────────────────────────────────
-
   void showCourseFilterSheet() {
     final List<FilterSection> sections = _buildFilterSections();
     FilterSheet.show(
       title: '筛选课程',
       sections: sections,
       onApply: () {
-        // Filter values are already applied via section onChanged callbacks.
-        // Refresh the UI reactively via Obx.
+        // Filters applied reactively via section onChanged callbacks.
       },
       onReset: resetCourseFilters,
     );
@@ -505,8 +486,6 @@ class CourseListController extends BaseController {
     progressFilter.value = '';
   }
 
-  // ── Data loading ──────────────────────────────────
-
   Future<void> loadCourses() async {
     if (!_progressService.isOnline.value) {
       final cachedCourses = _progressService.getCachedCourses();
@@ -533,12 +512,11 @@ class CourseListController extends BaseController {
           .map((item) => Course.fromListItemJson(Map<String, dynamic>.from(item)))
           .toList();
 
-      final result = items;
-      final withProgress = _progressService.applyCourseProgressList(result);
+      final withProgress = _progressService.applyCourseProgressList(items);
       await _progressService.cacheCourses(withProgress);
       courses.value = withProgress;
 
-      if (result.isEmpty) {
+      if (items.isEmpty) {
         setEmpty(message: '暂无可用课程。');
       } else {
         resetState();

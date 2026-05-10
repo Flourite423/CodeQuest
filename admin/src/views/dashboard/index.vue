@@ -56,7 +56,6 @@ fetchData()
   <div class="dashboard">
     <h1>数据看板</h1>
 
-    <!-- Loading State -->
     <div
       v-if="loading"
       class="state-container"
@@ -67,7 +66,6 @@ fetchData()
       />
     </div>
 
-    <!-- Forbidden State -->
     <div
       v-else-if="forbidden"
       class="state-container"
@@ -83,7 +81,6 @@ fetchData()
       </p>
     </div>
 
-    <!-- Session Expired State -->
     <div
       v-else-if="sessionExpired"
       class="state-container"
@@ -102,7 +99,6 @@ fetchData()
       </p>
     </div>
 
-    <!-- Error State -->
     <div
       v-else-if="error"
       class="state-container"
@@ -124,7 +120,6 @@ fetchData()
       </el-button>
     </div>
 
-    <!-- Content -->
     <template v-else>
       <el-row
         :gutter="20"

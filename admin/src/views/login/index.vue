@@ -43,7 +43,7 @@ const handleLogin = async () => {
   try {
     await formRef.value.validate()
   } catch {
-    return // validation failed
+      return
   }
 
   loading.value = true
