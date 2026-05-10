@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { Search } from '@element-plus/icons-vue'
+import { Search, Download } from '@element-plus/icons-vue'
 import type { User } from '@/types'
 
 const router = useRouter()
@@ -17,14 +17,31 @@ const users = ref<User[]>([
 ])
 
 const searchQuery = ref('')
+const filterRole = ref('')
+const filterStatus = ref('')
 
 const filteredUsers = computed(() => {
-  if (!searchQuery.value) return users.value
-  return users.value.filter(u =>
-    u.username.includes(searchQuery.value) ||
-    u.email.includes(searchQuery.value)
-  )
+  return users.value.filter(u => {
+    const matchSearch = !searchQuery.value ||
+      u.username.includes(searchQuery.value) ||
+      u.email.includes(searchQuery.value)
+    const matchRole = !filterRole.value || u.role === filterRole.value
+    const matchStatus = !filterStatus.value || u.account_status === filterStatus.value
+    return matchSearch && matchRole && matchStatus
+  })
 })
+
+const drawerVisible = ref(false)
+const selectedUser = ref<User | null>(null)
+
+const handleView = (user: User) => {
+  selectedUser.value = user
+  drawerVisible.value = true
+}
+
+const handleExport = () => {
+  console.log('Export users')
+}
 
 const fetchData = async () => {
   loading.value = true
@@ -56,12 +73,24 @@ fetchData()
   <div class="users">
     <div class="header">
       <h1>用户管理</h1>
-      <el-input
-        v-model="searchQuery"
-        placeholder="搜索昵称或邮箱..."
-        :prefix-icon="Search"
-        style="width: 300px"
-      />
+      <div class="header-actions">
+        <el-input
+          v-model="searchQuery"
+          placeholder="搜索昵称或邮箱..."
+          :prefix-icon="Search"
+          style="width: 200px; margin-right: 12px;"
+        />
+        <el-select v-model="filterRole" placeholder="角色" clearable style="width: 120px; margin-right: 12px;">
+          <el-option label="管理员" value="admin" />
+          <el-option label="学员" value="learner" />
+        </el-select>
+        <el-select v-model="filterStatus" placeholder="状态" clearable style="width: 120px; margin-right: 12px;">
+          <el-option label="正常" value="active" />
+          <el-option label="已暂停" value="suspended" />
+          <el-option label="已关闭" value="closed" />
+        </el-select>
+        <el-button :icon="Download" @click="handleExport">导出</el-button>
+      </div>
     </div>
 
     <!-- Loading State -->
@@ -117,13 +146,24 @@ fetchData()
         </el-table-column>
         <el-table-column prop="xp" label="经验值" width="100" />
         <el-table-column label="操作" width="150">
-          <template #default="{ row: _row }">
-            <el-button size="small">查看</el-button>
+          <template #default="{ row }">
+            <el-button size="small" @click="handleView(row)">查看</el-button>
             <el-button size="small" type="danger">禁用</el-button>
           </template>
         </el-table-column>
       </el-table>
     </template>
+
+    <el-drawer v-model="drawerVisible" title="用户详情" size="400px">
+      <div v-if="selectedUser" class="user-detail">
+        <p><strong>用户ID:</strong> {{ selectedUser.id }}</p>
+        <p><strong>昵称:</strong> {{ selectedUser.username }}</p>
+        <p><strong>邮箱:</strong> {{ selectedUser.email }}</p>
+        <p><strong>角色:</strong> {{ selectedUser.role === 'admin' ? '管理员' : '学员' }}</p>
+        <p><strong>状态:</strong> {{ selectedUser.account_status === 'active' ? '正常' : selectedUser.account_status === 'suspended' ? '已暂停' : '已关闭' }}</p>
+        <p><strong>经验值:</strong> {{ selectedUser.xp }}</p>
+      </div>
+    </el-drawer>
   </div>
 </template>
 
@@ -138,6 +178,18 @@ fetchData()
     h1 {
       margin: 0;
     }
+  }
+
+  .header-actions {
+    display: flex;
+    align-items: center;
+  }
+}
+
+.user-detail {
+  p {
+    margin-bottom: 16px;
+    font-size: 14px;
   }
 }
 </style>

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { Plus } from '@element-plus/icons-vue'
 import type { Exercise } from '@/types'
@@ -15,6 +15,17 @@ const exercises = ref<Exercise[]>([
   { id: 2, title: '条件判断', type: 'single_choice', difficulty: 'medium', chapter: '第二章', status: 'published' },
   { id: 3, title: '循环结构', type: 'coding', difficulty: 'hard', chapter: '第三章', status: 'draft' },
 ])
+
+const filterType = ref('')
+const filterDifficulty = ref('')
+
+const filteredExercises = computed(() => {
+  return exercises.value.filter(e => {
+    const matchType = !filterType.value || e.type === filterType.value
+    const matchDifficulty = !filterDifficulty.value || e.difficulty === filterDifficulty.value
+    return matchType && matchDifficulty
+  })
+})
 
 const dialogVisible = ref(false)
 const editingExercise = ref<Exercise | null>(null)
@@ -66,6 +77,18 @@ fetchData()
       <el-button type="primary" :icon="Plus">新建题目</el-button>
     </div>
 
+    <div class="filters">
+      <el-select v-model="filterType" placeholder="题目类型" clearable style="width: 150px; margin-right: 12px;">
+        <el-option label="编码题" value="coding" />
+        <el-option label="单选题" value="single_choice" />
+      </el-select>
+      <el-select v-model="filterDifficulty" placeholder="难度" clearable style="width: 150px;">
+        <el-option label="简单" value="easy" />
+        <el-option label="中等" value="medium" />
+        <el-option label="困难" value="hard" />
+      </el-select>
+    </div>
+
     <!-- Loading State -->
     <div v-if="loading" class="state-container">
       <el-skeleton :rows="5" animated />
@@ -92,7 +115,7 @@ fetchData()
     </div>
 
     <!-- Empty State -->
-    <div v-else-if="exercises.length === 0" class="state-container">
+    <div v-else-if="filteredExercises.length === 0" class="state-container">
       <el-icon class="state-icon" color="#909399"><Document /></el-icon>
       <p class="state-text">暂无题目数据</p>
       <el-button type="primary" :icon="Plus">新建题目</el-button>
@@ -100,7 +123,7 @@ fetchData()
 
     <!-- Content -->
     <template v-else>
-      <el-table :data="exercises" style="width: 100%" v-loading="loading">
+      <el-table :data="filteredExercises" style="width: 100%" v-loading="loading">
         <el-table-column prop="id" label="题目ID" width="80" />
         <el-table-column prop="title" label="题目标题" />
         <el-table-column prop="type" label="类型">
@@ -172,6 +195,10 @@ fetchData()
     h1 {
       margin: 0;
     }
+  }
+
+  .filters {
+    margin-bottom: 24px;
   }
 }
 </style>

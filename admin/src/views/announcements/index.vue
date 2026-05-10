@@ -1,37 +1,42 @@
 <script setup lang="ts">
 import { ref } from 'vue'
+import { useRouter } from 'vue-router'
 import { Plus } from '@element-plus/icons-vue'
+import type { Announcement } from '@/types'
 
+const router = useRouter()
 const loading = ref(false)
 const error = ref('')
+const forbidden = ref(false)
+const sessionExpired = ref(false)
 
 const activeTab = ref('announcements')
 
-const announcements = ref([
+const announcements = ref<Announcement[]>([
   { id: 1, title: '系统维护通知', audience: 'all', status: 'published', publishedAt: '2024-01-15', expiresAt: '2024-01-20' },
   { id: 2, title: '新功能上线', audience: 'all_learners', status: 'published', publishedAt: '2024-01-14', expiresAt: '2024-02-14' },
   { id: 3, title: '管理员会议', audience: 'all_admins', status: 'draft', publishedAt: '', expiresAt: '' },
 ])
 
 const dialogVisible = ref(false)
-const editingAnnouncement = ref<any>(null)
+const editingAnnouncement = ref<Announcement | null>(null)
 
-const handleEdit = (announcement: any) => {
+const handleEdit = (announcement: Announcement) => {
   editingAnnouncement.value = { ...announcement }
   dialogVisible.value = true
 }
 
 const deleteDialogVisible = ref(false)
-const deletingAnnouncement = ref<any>(null)
+const deletingAnnouncement = ref<Announcement | null>(null)
 
-const handleDelete = (announcement: any) => {
+const handleDelete = (announcement: Announcement) => {
   deletingAnnouncement.value = announcement
   deleteDialogVisible.value = true
 }
 
 const confirmDelete = () => {
   if (deletingAnnouncement.value) {
-    announcements.value = announcements.value.filter(a => a.id !== deletingAnnouncement.value.id)
+    announcements.value = announcements.value.filter(a => a.id !== deletingAnnouncement.value!.id)
     deletingAnnouncement.value = null
   }
   deleteDialogVisible.value = false
@@ -42,13 +47,37 @@ const handleSave = () => {
   editingAnnouncement.value = null
 }
 
+const configForm = ref({
+  aiEnabled: true,
+  aiModel: 'gpt-4',
+  pointsPerExercise: 10,
+  pointsPerChallenge: 100,
+  maintenanceMode: false,
+  allowRegistration: true,
+})
+
+const handleSaveConfig = () => {
+  console.log('保存配置:', configForm.value)
+}
+
 const fetchData = async () => {
   loading.value = true
   error.value = ''
+  forbidden.value = false
+  sessionExpired.value = false
   try {
     await new Promise(resolve => setTimeout(resolve, 500))
-  } catch (e) {
-    error.value = '加载数据失败，请重试'
+  } catch (e: unknown) {
+    if (e instanceof Error && e.message.includes('403')) {
+      forbidden.value = true
+    } else if (e instanceof Error && e.message.includes('401')) {
+      sessionExpired.value = true
+      setTimeout(() => {
+        router.push('/login?expired=1')
+      }, 2000)
+    } else {
+      error.value = '加载数据失败，请重试'
+    }
   } finally {
     loading.value = false
   }
@@ -66,6 +95,19 @@ fetchData()
     <!-- Loading State -->
     <div v-if="loading" class="state-container">
       <el-skeleton :rows="5" animated />
+    </div>
+
+    <!-- Forbidden State -->
+    <div v-else-if="forbidden" class="state-container">
+      <el-icon class="state-icon" color="#F56C6C"><Warning /></el-icon>
+      <p class="state-text">无权访问</p>
+    </div>
+
+    <!-- Session Expired State -->
+    <div v-else-if="sessionExpired" class="state-container">
+      <el-icon class="state-icon" color="#E6A23C"><Warning /></el-icon>
+      <p class="state-text">登录已过期，请重新登录</p>
+      <p class="state-subtext">正在跳转到登录页...</p>
     </div>
 
     <!-- Error State -->
@@ -117,6 +159,42 @@ fetchData()
               </template>
             </el-table-column>
           </el-table>
+        </el-tab-pane>
+
+        <!-- 系统配置 Tab -->
+        <el-tab-pane label="系统配置" name="config">
+          <el-form :model="configForm" label-width="200px">
+            <el-form-item label="AI 功能">
+              <el-switch v-model="configForm.aiEnabled" />
+            </el-form-item>
+
+            <el-form-item label="AI 模型">
+              <el-select v-model="configForm.aiModel">
+                <el-option label="GPT-4" value="gpt-4" />
+                <el-option label="GPT-3.5" value="gpt-3.5" />
+              </el-select>
+            </el-form-item>
+
+            <el-form-item label="每题积分">
+              <el-input-number v-model="configForm.pointsPerExercise" :min="1" :max="100" />
+            </el-form-item>
+
+            <el-form-item label="挑战积分">
+              <el-input-number v-model="configForm.pointsPerChallenge" :min="1" :max="1000" />
+            </el-form-item>
+
+            <el-form-item label="维护模式">
+              <el-switch v-model="configForm.maintenanceMode" />
+            </el-form-item>
+
+            <el-form-item label="允许注册">
+              <el-switch v-model="configForm.allowRegistration" />
+            </el-form-item>
+
+            <el-form-item>
+              <el-button type="primary" @click="handleSaveConfig">保存配置</el-button>
+            </el-form-item>
+          </el-form>
         </el-tab-pane>
       </el-tabs>
     </template>

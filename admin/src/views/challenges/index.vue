@@ -11,9 +11,9 @@ const forbidden = ref(false)
 const sessionExpired = ref(false)
 
 const challenges = ref<Challenge[]>([
-  { id: 1, title: '每日编程', difficulty: 'easy', reward_xp: 100, status: 'published' },
-  { id: 2, title: '每周挑战', difficulty: 'medium', reward_xp: 500, status: 'published' },
-  { id: 3, title: '月度马拉松', difficulty: 'hard', reward_xp: 2000, status: 'draft' },
+  { id: 1, title: '每日编程', difficulty: 'easy', reward_xp: 100, status: 'published', related_course_id: 1 },
+  { id: 2, title: '每周挑战', difficulty: 'medium', reward_xp: 500, status: 'published', related_course_id: 2 },
+  { id: 3, title: '月度马拉松', difficulty: 'hard', reward_xp: 2000, status: 'draft', related_course_id: 3 },
 ])
 
 const dialogVisible = ref(false)
@@ -22,6 +22,10 @@ const editingChallenge = ref<Challenge | null>(null)
 const handleEdit = (challenge: Challenge) => {
   editingChallenge.value = { ...challenge }
   dialogVisible.value = true
+}
+
+const handleDelete = (challenge: Challenge) => {
+  console.log('Delete challenge:', challenge.id)
 }
 
 const handleSave = () => {
@@ -107,6 +111,12 @@ fetchData()
           </template>
         </el-table-column>
         <el-table-column prop="reward_xp" label="奖励经验" width="100" />
+        <el-table-column prop="related_course_id" label="关联课程" width="100">
+          <template #default="{ row }">
+            <el-tag v-if="row.related_course_id">课程 {{ row.related_course_id }}</el-tag>
+            <span v-else>--</span>
+          </template>
+        </el-table-column>
         <el-table-column prop="status" label="状态">
           <template #default="{ row }">
             <el-tag :type="row.status === 'published' ? 'success' : row.status === 'draft' ? 'info' : 'warning'">
@@ -114,9 +124,10 @@ fetchData()
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="150">
+        <el-table-column label="操作" width="200">
           <template #default="{ row }">
             <el-button size="small" @click="handleEdit(row)">编辑</el-button>
+            <el-button size="small" type="danger" @click="handleDelete(row)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -133,6 +144,9 @@ fetchData()
             <el-option label="中等" value="medium" />
             <el-option label="困难" value="hard" />
           </el-select>
+        </el-form-item>
+        <el-form-item label="关联课程">
+          <el-input-number v-model="editingChallenge.related_course_id" :min="0" />
         </el-form-item>
         <el-form-item label="状态">
           <el-select v-model="editingChallenge.status">

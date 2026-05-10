@@ -10,16 +10,19 @@ const route = useRoute()
 const authStore = useAuthStore()
 const loading = ref(false)
 const sessionExpired = ref(false)
+const loginError = ref('')
 
 const formRef = ref<FormInstance>()
 const form = reactive({
-  username: '',
+  email: '',
   password: '',
+  remember: false,
 })
 
 const rules: FormRules = {
-  username: [
+  email: [
     { required: true, message: '请输入邮箱地址', trigger: 'blur' },
+    { type: 'email', message: '请输入有效的邮箱地址', trigger: 'blur' },
   ],
   password: [
     { required: true, message: '请输入登录密码', trigger: 'blur' },
@@ -40,11 +43,16 @@ const handleLogin = async () => {
     if (valid) {
       loading.value = true
       sessionExpired.value = false
+      loginError.value = ''
       setTimeout(() => {
-        authStore.setToken('mock_admin_token')
-        authStore.setUser({ username: form.username, role: 'admin' })
-        loading.value = false
-        router.push('/')
+        try {
+          authStore.setToken('mock_admin_token')
+          authStore.setUser({ username: form.email, role: 'admin' })
+          router.push('/')
+        } catch (err) {
+          loginError.value = '登录失败，请检查邮箱和密码'
+          loading.value = false
+        }
       }, 1000)
     }
   })
@@ -69,6 +77,14 @@ const handleLogin = async () => {
         class="session-alert"
       />
 
+      <el-alert
+        v-if="loginError"
+        :title="loginError"
+        type="error"
+        :closable="false"
+        class="session-alert"
+      />
+
       <el-form
         ref="formRef"
         :model="form"
@@ -76,9 +92,9 @@ const handleLogin = async () => {
         label-position="top"
         @submit.prevent="handleLogin"
       >
-        <el-form-item label="邮箱地址" prop="username">
+        <el-form-item label="邮箱地址" prop="email">
           <el-input
-            v-model="form.username"
+            v-model="form.email"
             placeholder="请输入邮箱地址"
             :prefix-icon="User"
           />
@@ -92,6 +108,10 @@ const handleLogin = async () => {
             :prefix-icon="Lock"
             show-password
           />
+        </el-form-item>
+
+        <el-form-item>
+          <el-checkbox v-model="form.remember">记住登录状态</el-checkbox>
         </el-form-item>
 
         <el-form-item>

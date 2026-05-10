@@ -2,7 +2,7 @@
 import { reactive } from 'vue'
 
 const settings = reactive({
-  siteName: 'Learning App',
+  siteName: '前端学习平台',
   maintenanceMode: false,
   allowRegistration: true,
   maxCoursesPerUser: 10,

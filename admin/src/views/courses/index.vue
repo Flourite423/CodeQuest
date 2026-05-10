@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { Plus } from '@element-plus/icons-vue'
+import { Plus, Search } from '@element-plus/icons-vue'
 import type { Course } from '@/types'
 
 const router = useRouter()
@@ -17,6 +17,16 @@ const courses = ref<Course[]>([
   { id: 4, title: '系统设计', description: '设计可扩展系统', status: 'published', students: 89, difficulty: 'medium', created_at: '2024-01-04' },
 ])
 
+const searchQuery = ref('')
+
+const filteredCourses = computed(() => {
+  if (!searchQuery.value) return courses.value
+  return courses.value.filter(c =>
+    c.title.includes(searchQuery.value) ||
+    c.description.includes(searchQuery.value)
+  )
+})
+
 const dialogVisible = ref(false)
 const editingCourse = ref<Course | null>(null)
 
@@ -27,6 +37,10 @@ const handleEdit = (course: Course) => {
 
 const handleDelete = (course: Course) => {
   console.log('Delete course:', course.id)
+}
+
+const handleArchive = (course: Course) => {
+  course.status = 'archived' as 'published' | 'draft'
 }
 
 const handleSave = () => {
@@ -64,7 +78,15 @@ fetchData()
   <div class="courses">
     <div class="header">
       <h1>课程管理</h1>
-      <el-button type="primary" :icon="Plus">新建课程</el-button>
+      <div class="header-actions">
+        <el-input
+          v-model="searchQuery"
+          placeholder="搜索课程名称..."
+          :prefix-icon="Search"
+          style="width: 250px; margin-right: 12px;"
+        />
+        <el-button type="primary" :icon="Plus">新建课程</el-button>
+      </div>
     </div>
 
     <!-- Loading State -->
@@ -93,7 +115,7 @@ fetchData()
     </div>
 
     <!-- Empty State -->
-    <div v-else-if="courses.length === 0" class="state-container">
+    <div v-else-if="filteredCourses.length === 0" class="state-container">
       <el-icon class="state-icon" color="#909399"><Document /></el-icon>
       <p class="state-text">暂无课程数据</p>
       <el-button type="primary" :icon="Plus">新建课程</el-button>
@@ -101,7 +123,7 @@ fetchData()
 
     <!-- Content -->
     <template v-else>
-      <el-table :data="courses" style="width: 100%" v-loading="loading">
+      <el-table :data="filteredCourses" style="width: 100%" v-loading="loading">
         <el-table-column prop="id" label="课程ID" width="80" />
         <el-table-column prop="title" label="课程名称" />
         <el-table-column prop="description" label="课程简介" />
@@ -113,9 +135,11 @@ fetchData()
           </template>
         </el-table-column>
         <el-table-column prop="students" label="学员数" width="100" />
-        <el-table-column label="操作" width="150">
+        <el-table-column prop="created_at" label="创建时间" />
+        <el-table-column label="操作" width="200">
           <template #default="{ row }">
             <el-button size="small" @click="handleEdit(row)">编辑</el-button>
+            <el-button size="small" type="warning" @click="handleArchive(row)">归档</el-button>
             <el-button size="small" type="danger" @click="handleDelete(row)">删除</el-button>
           </template>
         </el-table-column>
@@ -156,6 +180,11 @@ fetchData()
     h1 {
       margin: 0;
     }
+  }
+
+  .header-actions {
+    display: flex;
+    align-items: center;
   }
 }
 </style>
