@@ -114,8 +114,3 @@ backend/target/
 __pycache__/
 *.py[cod]
 *$py.class
-
-# OpenCode skills data (large CSV files)
-.opencode/skills/ui-ux-pro-max/scripts/__pycache__/
-.opencode/skills/ui-ux-pro-max/data/
-.opencode/skills/ui-ux-pro-max/data/stacks/
