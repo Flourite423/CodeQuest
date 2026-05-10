@@ -1,6 +1,7 @@
 import axios from 'axios'
+import type { AxiosInstance } from 'axios'
 
-const api = axios.create({
+const api: AxiosInstance = axios.create({
   baseURL: '/api/v1',
   timeout: 30000,
   headers: {
@@ -35,3 +36,14 @@ api.interceptors.response.use(
 )
 
 export default api
+
+export { courseApi } from './courses'
+export { exerciseApi } from './exercises'
+export { challengeApi } from './challenges'
+export { userApi } from './users'
+export { feedbackApi } from './feedback'
+export { moderationApi } from './moderation'
+export { announcementApi } from './announcements'
+export { configApi } from './configs'
+export { statsApi } from './stats'
+export { authApi } from './auth'

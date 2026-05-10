@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { Plus } from '@element-plus/icons-vue'
-import type { Announcement } from '@/types'
+import { Plus, Warning } from '@element-plus/icons-vue'
+import type { Announcement, AnnouncementStatus, AnnouncementAudience } from '@/types'
+import { announcementApi } from '@/api'
+import { ElMessage, ElMessageBox } from 'element-plus'
 
 const router = useRouter()
 const loading = ref(false)
@@ -12,52 +14,117 @@ const sessionExpired = ref(false)
 
 const activeTab = ref('announcements')
 
-const announcements = ref<Announcement[]>([
-  { id: 1, title: '系统维护通知', audience: 'all', status: 'published', publishedAt: '2024-01-15', expiresAt: '2024-01-20' },
-  { id: 2, title: '新功能上线', audience: 'all_learners', status: 'published', publishedAt: '2024-01-14', expiresAt: '2024-02-14' },
-  { id: 3, title: '管理员会议', audience: 'all_admins', status: 'draft', publishedAt: '', expiresAt: '' },
-])
+const announcements = ref<Announcement[]>([])
+
+interface AnnouncementForm {
+  id?: string
+  title: string
+  body_markdown: string
+  audience: AnnouncementAudience
+  status: AnnouncementStatus
+  published_at?: string | null
+  expires_at?: string | null
+}
 
 const dialogVisible = ref(false)
-const editingAnnouncement = ref<Announcement | null>(null)
+const editingAnnouncement = ref<AnnouncementForm | null>(null)
+const isCreating = ref(false)
 
-const handleEdit = (announcement: Announcement) => {
-  editingAnnouncement.value = { ...announcement }
+const handleCreate = () => {
+  isCreating.value = true
+  editingAnnouncement.value = {
+    title: '',
+    body_markdown: '',
+    audience: 'all',
+    status: 'draft',
+  }
   dialogVisible.value = true
 }
 
-const deleteDialogVisible = ref(false)
-const deletingAnnouncement = ref<Announcement | null>(null)
-
-const handleDelete = (announcement: Announcement) => {
-  deletingAnnouncement.value = announcement
-  deleteDialogVisible.value = true
-}
-
-const confirmDelete = () => {
-  if (deletingAnnouncement.value) {
-    announcements.value = announcements.value.filter(a => a.id !== deletingAnnouncement.value!.id)
-    deletingAnnouncement.value = null
+const handleEdit = (announcement: Announcement) => {
+  isCreating.value = false
+  editingAnnouncement.value = {
+    id: announcement.id,
+    title: announcement.title,
+    body_markdown: announcement.body_markdown,
+    audience: announcement.audience,
+    status: announcement.status,
+    published_at: announcement.published_at,
+    expires_at: announcement.expires_at,
   }
-  deleteDialogVisible.value = false
+  dialogVisible.value = true
 }
 
-const handleSave = () => {
-  dialogVisible.value = false
-  editingAnnouncement.value = null
+const handleDelete = async (announcement: Announcement) => {
+  try {
+    await ElMessageBox.confirm('确定要删除该公告吗？', '确认删除', {
+      confirmButtonText: '删除',
+      cancelButtonText: '取消',
+      type: 'warning',
+    })
+    await announcementApi.delete(announcement.id)
+    ElMessage.success('删除成功')
+    fetchData()
+  } catch (e: unknown) {
+    if (e !== 'cancel') {
+      ElMessage.error('删除失败')
+    }
+  }
+}
+
+const handleSave = async () => {
+  if (!editingAnnouncement.value) return
+  
+  try {
+    if (isCreating.value) {
+      await announcementApi.create(editingAnnouncement.value)
+      ElMessage.success('创建成功')
+    } else {
+      const { id, ...updateData } = editingAnnouncement.value
+      if (id) {
+        await announcementApi.update(id, updateData)
+        ElMessage.success('更新成功')
+      }
+    }
+    dialogVisible.value = false
+    fetchData()
+  } catch {
+    ElMessage.error('保存失败')
+  }
+}
+
+const getStatusType = (status: AnnouncementStatus) => {
+  const map: Record<AnnouncementStatus, string> = {
+    draft: 'info',
+    published: 'success',
+    expired: 'warning',
+  }
+  return map[status] || 'info'
+}
+
+const getStatusLabel = (status: AnnouncementStatus) => {
+  const map: Record<AnnouncementStatus, string> = {
+    draft: '草稿',
+    published: '已发布',
+    expired: '已过期',
+  }
+  return map[status] || status
+}
+
+const getAudienceLabel = (audience: AnnouncementAudience) => {
+  const map: Record<AnnouncementAudience, string> = {
+    all: '所有人',
+    all_learners: '所有学习者',
+    all_admins: '所有管理员',
+  }
+  return map[audience] || audience
 }
 
 const configForm = ref({
-  aiDailyLimit: 50,
-  aiPromptRules: '',
-  xpCalculationRules: '',
-  maintenanceMode: false,
-  allowRegistration: true,
+  site_name: '学习平台',
+  contact_email: 'admin@example.com',
+  max_courses_per_user: 10,
 })
-
-const handleSaveConfig = () => {
-  console.log('保存配置:', configForm.value)
-}
 
 const fetchData = async () => {
   loading.value = true
@@ -65,7 +132,8 @@ const fetchData = async () => {
   forbidden.value = false
   sessionExpired.value = false
   try {
-    await new Promise(resolve => setTimeout(resolve, 500))
+    const res = await announcementApi.list()
+    announcements.value = res.data.items
   } catch (e: unknown) {
     if (e instanceof Error && e.message.includes('403')) {
       forbidden.value = true
@@ -87,9 +155,7 @@ fetchData()
 
 <template>
   <div class="announcements">
-    <div class="header">
-      <h1>公告与配置</h1>
-    </div>
+    <h1>公告与配置</h1>
 
     <!-- Loading State -->
     <div v-if="loading" class="state-container">
@@ -119,39 +185,30 @@ fetchData()
     <!-- Content -->
     <template v-else>
       <el-tabs v-model="activeTab">
-        <!-- 公告管理 Tab -->
         <el-tab-pane label="公告管理" name="announcements">
           <div class="tab-header">
-            <el-button type="primary" :icon="Plus">新建公告</el-button>
+            <el-button type="primary" :icon="Plus" @click="handleCreate">发布公告</el-button>
           </div>
 
-          <!-- Empty State -->
-          <div v-if="announcements.length === 0" class="state-container">
-            <el-icon class="state-icon" color="#909399"><Document /></el-icon>
-            <p class="state-text">暂无公告数据</p>
-            <el-button type="primary" :icon="Plus">新建公告</el-button>
-          </div>
+          <el-empty v-if="announcements.length === 0" description="暂无公告" />
 
           <el-table v-else :data="announcements" style="width: 100%">
-            <el-table-column prop="id" label="公告ID" width="80" />
-            <el-table-column prop="title" label="公告标题" />
-            <el-table-column prop="audience" label="面向对象">
+            <el-table-column prop="title" label="标题" />
+            <el-table-column prop="audience" label="受众">
               <template #default="{ row }">
-                <el-tag :type="row.audience === 'all' ? 'primary' : row.audience === 'all_learners' ? 'success' : 'warning'">
-                  {{ row.audience === 'all' ? '全部用户' : row.audience === 'all_learners' ? '全部学员' : '全部管理员' }}
-                </el-tag>
+                <el-tag>{{ getAudienceLabel(row.audience) }}</el-tag>
               </template>
             </el-table-column>
             <el-table-column prop="status" label="状态">
               <template #default="{ row }">
-                <el-tag :type="row.status === 'published' ? 'success' : 'info'">
-                  {{ row.status === 'published' ? '已发布' : '草稿' }}
+                <el-tag :type="getStatusType(row.status)">
+                  {{ getStatusLabel(row.status) }}
                 </el-tag>
               </template>
             </el-table-column>
-            <el-table-column prop="publishedAt" label="发布时间" />
-            <el-table-column prop="expiresAt" label="过期时间" />
-            <el-table-column label="操作" width="150">
+            <el-table-column prop="published_at" label="发布时间" />
+            <el-table-column prop="expires_at" label="过期时间" />
+            <el-table-column label="操作" width="200">
               <template #default="{ row }">
                 <el-button size="small" @click="handleEdit(row)">编辑</el-button>
                 <el-button size="small" type="danger" @click="handleDelete(row)">删除</el-button>
@@ -160,59 +217,38 @@ fetchData()
           </el-table>
         </el-tab-pane>
 
-        <!-- 系统配置 Tab -->
         <el-tab-pane label="系统配置" name="config">
-          <el-form :model="configForm" label-width="200px">
-            <el-form-item label="AI 每日调用上限">
-              <el-input-number v-model="configForm.aiDailyLimit" :min="1" :max="1000" />
+          <el-form :model="configForm" label-width="150px">
+            <el-form-item label="站点名称">
+              <el-input v-model="configForm.site_name" />
             </el-form-item>
-
-            <el-form-item label="AI 提示规则">
-              <el-input type="textarea" v-model="configForm.aiPromptRules" rows="3" />
+            <el-form-item label="联系邮箱">
+              <el-input v-model="configForm.contact_email" />
             </el-form-item>
-
-            <el-form-item label="经验值计算规则">
-              <el-input type="textarea" v-model="configForm.xpCalculationRules" rows="3" />
+            <el-form-item label="每用户最大课程数">
+              <el-input-number v-model="configForm.max_courses_per_user" :min="1" />
             </el-form-item>
-
-            <el-form-item label="维护模式">
-              <el-switch v-model="configForm.maintenanceMode" />
-            </el-form-item>
-
-            <el-form-item label="允许注册">
-              <el-switch v-model="configForm.allowRegistration" />
-            </el-form-item>
-
             <el-form-item>
-              <el-button type="primary" @click="handleSaveConfig">保存配置</el-button>
+              <el-button type="primary">保存配置</el-button>
             </el-form-item>
           </el-form>
         </el-tab-pane>
       </el-tabs>
     </template>
 
-    <el-dialog
-      v-model="deleteDialogVisible"
-      title="确认删除"
-      width="400px"
-    >
-      <p>确定要删除该公告吗？</p>
-      <template #footer>
-        <el-button @click="deleteDialogVisible = false">取消</el-button>
-        <el-button type="danger" @click="confirmDelete">确定删除</el-button>
-      </template>
-    </el-dialog>
-
-    <el-dialog v-model="dialogVisible" title="编辑公告" width="500px">
+    <el-dialog v-model="dialogVisible" :title="isCreating ? '发布公告' : '编辑公告'" width="600px">
       <el-form v-if="editingAnnouncement" :model="editingAnnouncement" label-width="100px">
-        <el-form-item label="公告标题">
+        <el-form-item label="标题">
           <el-input v-model="editingAnnouncement.title" />
         </el-form-item>
-        <el-form-item label="面向对象">
+        <el-form-item label="内容">
+          <el-input v-model="editingAnnouncement.body_markdown" type="textarea" :rows="5" />
+        </el-form-item>
+        <el-form-item label="受众">
           <el-select v-model="editingAnnouncement.audience">
-            <el-option label="全部用户" value="all" />
-            <el-option label="全部学员" value="all_learners" />
-            <el-option label="全部管理员" value="all_admins" />
+            <el-option label="所有人" value="all" />
+            <el-option label="所有学习者" value="all_learners" />
+            <el-option label="所有管理员" value="all_admins" />
           </el-select>
         </el-form-item>
         <el-form-item label="状态">
@@ -220,6 +256,12 @@ fetchData()
             <el-option label="草稿" value="draft" />
             <el-option label="已发布" value="published" />
           </el-select>
+        </el-form-item>
+        <el-form-item label="发布时间">
+          <el-date-picker v-model="editingAnnouncement.published_at" type="datetime" placeholder="选择发布时间" />
+        </el-form-item>
+        <el-form-item label="过期时间">
+          <el-date-picker v-model="editingAnnouncement.expires_at" type="datetime" placeholder="选择过期时间" />
         </el-form-item>
       </el-form>
       <template #footer>
@@ -232,15 +274,8 @@ fetchData()
 
 <style scoped lang="scss">
 .announcements {
-  .header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+  h1 {
     margin-bottom: 24px;
-
-    h1 {
-      margin: 0;
-    }
   }
 
   .tab-header {

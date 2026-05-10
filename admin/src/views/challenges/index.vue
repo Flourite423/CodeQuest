@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { Plus } from '@element-plus/icons-vue'
-import type { Challenge } from '@/types'
+import { Plus, Warning, Document } from '@element-plus/icons-vue'
+import type { AdminChallengeListItem, ChallengeStatus } from '@/types'
+import { challengeApi } from '@/api'
+import { ElMessage, ElMessageBox } from 'element-plus'
 
 const router = useRouter()
 const loading = ref(false)
@@ -10,27 +12,114 @@ const error = ref('')
 const forbidden = ref(false)
 const sessionExpired = ref(false)
 
-const challenges = ref<Challenge[]>([
-  { id: 1, title: '每日编程', difficulty: 'easy', reward_xp: 100, status: 'published', related_course_id: 1 },
-  { id: 2, title: '每周挑战', difficulty: 'medium', reward_xp: 500, status: 'published', related_course_id: 2 },
-  { id: 3, title: '月度马拉松', difficulty: 'hard', reward_xp: 2000, status: 'draft', related_course_id: 3 },
-])
+const challenges = ref<AdminChallengeListItem[]>([])
+
+interface ChallengeForm {
+  id?: string
+  title: string
+  difficulty: 'beginner' | 'intermediate'
+  reward_xp: number
+  status: 'draft' | 'published'
+}
 
 const dialogVisible = ref(false)
-const editingChallenge = ref<Challenge | null>(null)
+const editingChallenge = ref<ChallengeForm | null>(null)
+const isCreating = ref(false)
 
-const handleEdit = (challenge: Challenge) => {
-  editingChallenge.value = { ...challenge }
+const handleCreate = () => {
+  isCreating.value = true
+  editingChallenge.value = {
+    title: '',
+    difficulty: 'beginner',
+    reward_xp: 0,
+    status: 'draft',
+  }
   dialogVisible.value = true
 }
 
-const handleDelete = (challenge: Challenge) => {
-  console.log('Delete challenge:', challenge.id)
+const handleEdit = (challenge: AdminChallengeListItem) => {
+  isCreating.value = false
+  editingChallenge.value = {
+    id: challenge.id,
+    title: challenge.title,
+    difficulty: challenge.difficulty,
+    reward_xp: challenge.reward_xp,
+    status: challenge.status === 'archived' ? 'published' : challenge.status,
+  }
+  dialogVisible.value = true
 }
 
-const handleSave = () => {
-  dialogVisible.value = false
-  editingChallenge.value = null
+const handleDelete = async (challenge: AdminChallengeListItem) => {
+  try {
+    await ElMessageBox.confirm('确定要删除该挑战吗？', '确认删除', {
+      confirmButtonText: '删除',
+      cancelButtonText: '取消',
+      type: 'warning',
+    })
+    await challengeApi.delete(challenge.id)
+    ElMessage.success('删除成功')
+    fetchData()
+  } catch (e: unknown) {
+    if (e !== 'cancel') {
+      ElMessage.error('删除失败')
+    }
+  }
+}
+
+const handleSave = async () => {
+  if (!editingChallenge.value) return
+  
+  try {
+    if (isCreating.value) {
+      const { id: _id, ...createData } = editingChallenge.value
+      await challengeApi.create(createData as Omit<AdminChallengeListItem, 'id' | 'created_at' | 'updated_at'>)
+      ElMessage.success('创建成功')
+    } else {
+      const { id, ...updateData } = editingChallenge.value
+      if (id) {
+        await challengeApi.update(id, updateData)
+        ElMessage.success('更新成功')
+      }
+    }
+    dialogVisible.value = false
+    fetchData()
+  } catch {
+    ElMessage.error('保存失败')
+  }
+}
+
+const getDifficultyType = (difficulty: string) => {
+  const map: Record<string, string> = {
+    beginner: 'success',
+    intermediate: 'warning',
+  }
+  return map[difficulty] || 'info'
+}
+
+const getDifficultyLabel = (difficulty: string) => {
+  const map: Record<string, string> = {
+    beginner: '初级',
+    intermediate: '中级',
+  }
+  return map[difficulty] || difficulty
+}
+
+const getStatusType = (status: ChallengeStatus) => {
+  const map: Record<ChallengeStatus, string> = {
+    draft: 'info',
+    published: 'success',
+    archived: 'warning',
+  }
+  return map[status] || 'info'
+}
+
+const getStatusLabel = (status: ChallengeStatus) => {
+  const map: Record<ChallengeStatus, string> = {
+    draft: '草稿',
+    published: '已发布',
+    archived: '已归档',
+  }
+  return map[status] || status
 }
 
 const fetchData = async () => {
@@ -39,7 +128,8 @@ const fetchData = async () => {
   forbidden.value = false
   sessionExpired.value = false
   try {
-    await new Promise(resolve => setTimeout(resolve, 500))
+    const res = await challengeApi.list()
+    challenges.value = res.data.items
   } catch (e: unknown) {
     if (e instanceof Error && e.message.includes('403')) {
       forbidden.value = true
@@ -63,7 +153,7 @@ fetchData()
   <div class="challenges">
     <div class="header">
       <h1>挑战管理</h1>
-      <el-button type="primary" :icon="Plus">新建挑战</el-button>
+      <el-button type="primary" :icon="Plus" @click="handleCreate">新建挑战</el-button>
     </div>
 
     <!-- Loading State -->
@@ -95,32 +185,25 @@ fetchData()
     <div v-else-if="challenges.length === 0" class="state-container">
       <el-icon class="state-icon" color="#909399"><Document /></el-icon>
       <p class="state-text">暂无挑战数据</p>
-      <el-button type="primary" :icon="Plus">新建挑战</el-button>
+      <el-button type="primary" :icon="Plus" @click="handleCreate">新建挑战</el-button>
     </div>
 
     <!-- Content -->
     <template v-else>
       <el-table :data="challenges" style="width: 100%" v-loading="loading">
-        <el-table-column prop="id" label="挑战ID" width="80" />
         <el-table-column prop="title" label="挑战名称" />
         <el-table-column prop="difficulty" label="难度">
           <template #default="{ row }">
-            <el-tag :type="row.difficulty === 'easy' ? 'success' : row.difficulty === 'medium' ? 'warning' : 'danger'">
-              {{ row.difficulty === 'easy' ? '简单' : row.difficulty === 'medium' ? '中等' : '困难' }}
+            <el-tag :type="getDifficultyType(row.difficulty)">
+              {{ getDifficultyLabel(row.difficulty) }}
             </el-tag>
           </template>
         </el-table-column>
         <el-table-column prop="reward_xp" label="奖励经验" width="100" />
-        <el-table-column prop="related_course_id" label="关联课程" width="100">
-          <template #default="{ row }">
-            <el-tag v-if="row.related_course_id">课程 {{ row.related_course_id }}</el-tag>
-            <span v-else>--</span>
-          </template>
-        </el-table-column>
         <el-table-column prop="status" label="状态">
           <template #default="{ row }">
-            <el-tag :type="row.status === 'published' ? 'success' : row.status === 'draft' ? 'info' : 'warning'">
-              {{ row.status === 'published' ? '已发布' : row.status === 'draft' ? '草稿' : '已归档' }}
+            <el-tag :type="getStatusType(row.status)">
+              {{ getStatusLabel(row.status) }}
             </el-tag>
           </template>
         </el-table-column>
@@ -133,26 +216,24 @@ fetchData()
       </el-table>
     </template>
 
-    <el-dialog v-model="dialogVisible" title="编辑挑战" width="500px">
+    <el-dialog v-model="dialogVisible" :title="isCreating ? '新建挑战' : '编辑挑战'" width="500px">
       <el-form v-if="editingChallenge" :model="editingChallenge" label-width="100px">
         <el-form-item label="挑战名称">
           <el-input v-model="editingChallenge.title" />
         </el-form-item>
         <el-form-item label="难度">
           <el-select v-model="editingChallenge.difficulty">
-            <el-option label="简单" value="easy" />
-            <el-option label="中等" value="medium" />
-            <el-option label="困难" value="hard" />
+            <el-option label="初级" value="beginner" />
+            <el-option label="中级" value="intermediate" />
           </el-select>
         </el-form-item>
-        <el-form-item label="关联课程">
-          <el-input-number v-model="editingChallenge.related_course_id" :min="0" />
+        <el-form-item label="奖励经验">
+          <el-input-number v-model="editingChallenge.reward_xp" :min="0" />
         </el-form-item>
         <el-form-item label="状态">
           <el-select v-model="editingChallenge.status">
             <el-option label="草稿" value="draft" />
             <el-option label="已发布" value="published" />
-            <el-option label="已归档" value="archived" />
           </el-select>
         </el-form-item>
       </el-form>

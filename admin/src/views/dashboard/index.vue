@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { User, Reading, View, Warning } from '@element-plus/icons-vue'
+import { statsApi } from '@/api'
+import type { Activity } from '@/types'
 
 const router = useRouter()
 const loading = ref(false)
@@ -8,34 +11,14 @@ const error = ref('')
 const forbidden = ref(false)
 const sessionExpired = ref(false)
 
-interface Stat {
-  title: string
-  value: string
-  icon: string
-  color: string
-}
-
-interface Activity {
-  user: string
-  action: string
-  target: string
-  time: string
-}
-
-const stats = ref<Stat[]>([
-  { title: '总用户数', value: '1,234', icon: 'User', color: '#409EFF' },
-  { title: '总课程数', value: '56', icon: 'Reading', color: '#67C23A' },
-  { title: '今日活跃', value: '89', icon: 'View', color: '#E6A23C' },
-  { title: '待审核数', value: '12', icon: 'Warning', color: '#F56C6C' },
+const stats = ref<{ title: string; value: string; icon: typeof User; color: string }[]>([
+  { title: '总用户数', value: '0', icon: User, color: '#409EFF' },
+  { title: '总课程数', value: '0', icon: Reading, color: '#67C23A' },
+  { title: '今日活跃', value: '0', icon: View, color: '#E6A23C' },
+  { title: '待审核数', value: '0', icon: Warning, color: '#F56C6C' },
 ])
 
-const recentActivities = ref<Activity[]>([
-  { user: '用户1', action: '完成了课程', target: 'Flutter 基础', time: '2 分钟前' },
-  { user: '用户2', action: '加入了挑战', target: '每日编程', time: '5 分钟前' },
-  { user: '用户3', action: '获得了徽章', target: '首次连胜', time: '10 分钟前' },
-  { user: '用户4', action: '完成了课程', target: 'Rust 基础', time: '15 分钟前' },
-  { user: '用户5', action: '加入了挑战', target: '每周挑战', time: '20 分钟前' },
-])
+const recentActivities = ref<Activity[]>([])
 
 const fetchData = async () => {
   loading.value = true
@@ -43,7 +26,20 @@ const fetchData = async () => {
   forbidden.value = false
   sessionExpired.value = false
   try {
-    await new Promise(resolve => setTimeout(resolve, 500))
+    const [statsRes, activitiesRes] = await Promise.all([
+      statsApi.dashboard(),
+      statsApi.recentActivities(),
+    ])
+    
+    const data = statsRes.data as { total_users: number; total_courses: number; active_today: number; pending_moderation: number }
+    stats.value = [
+      { title: '总用户数', value: data.total_users.toLocaleString(), icon: User, color: '#409EFF' },
+      { title: '总课程数', value: data.total_courses.toLocaleString(), icon: Reading, color: '#67C23A' },
+      { title: '今日活跃', value: data.active_today.toLocaleString(), icon: View, color: '#E6A23C' },
+      { title: '待审核数', value: data.pending_moderation.toLocaleString(), icon: Warning, color: '#F56C6C' },
+    ]
+    
+    recentActivities.value = activitiesRes.data as Activity[]
   } catch (e: unknown) {
     if (e instanceof Error && e.message.includes('403')) {
       forbidden.value = true
@@ -114,20 +110,21 @@ fetchData()
         <template #header>
           <span>最近动态</span>
         </template>
-        <el-timeline>
+        <el-timeline v-if="recentActivities.length > 0">
           <el-timeline-item
             v-for="(activity, index) in recentActivities"
-            :key="index"
+            :key="activity.id"
             :type="index === 0 ? 'primary' : ''"
           >
             <p>
-              <strong>{{ activity.user }}</strong>
+              <strong>{{ activity.user_name }}</strong>
               {{ activity.action }}
-              <el-tag size="small">{{ activity.target }}</el-tag>
+              <el-tag size="small">{{ activity.target_name }}</el-tag>
             </p>
-            <p class="activity-time">{{ activity.time }}</p>
+            <p class="activity-time">{{ activity.created_at }}</p>
           </el-timeline-item>
         </el-timeline>
+        <el-empty v-else description="暂无动态" />
       </el-card>
     </template>
   </div>

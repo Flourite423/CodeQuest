@@ -1,7 +1,10 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import type { ModerationCase } from '@/types'
+import { Warning, Document } from '@element-plus/icons-vue'
+import type { AdminModerationListItem, ModerationStatus } from '@/types'
+import { moderationApi } from '@/api'
+import { ElMessage } from 'element-plus'
 
 const router = useRouter()
 const loading = ref(false)
@@ -11,18 +14,12 @@ const sessionExpired = ref(false)
 
 const activeTab = ref('pending')
 
-const reports = ref<ModerationCase[]>([
-  { id: 1, case_type: 'inappropriate_content', target_id: 'user2', reporter: 'user1', status: 'pending', created_at: '2024-01-15' },
-  { id: 2, case_type: 'harassment', target_id: 'user4', reporter: 'user3', status: 'approved', created_at: '2024-01-14' },
-  { id: 3, case_type: 'spam', target_id: 'post123', reporter: 'user5', status: 'pending', created_at: '2024-01-16' },
-])
+const reports = ref<AdminModerationListItem[]>([])
 
 const caseTypeMap: Record<string, string> = {
-  inappropriate_content: '不当内容',
-  harassment: '骚扰行为',
-  spam: '垃圾信息',
-  cheating: '作弊行为',
-  other: '其他',
+  nickname: '昵称违规',
+  avatar: '头像违规',
+  feedback: '反馈违规',
 }
 
 const pendingReports = computed(() => reports.value.filter(r => r.status === 'pending'))
@@ -30,24 +27,49 @@ const processedReports = computed(() => reports.value.filter(r => r.status !== '
 
 const reasonDialogVisible = ref(false)
 const reasonForm = ref({ action: '', reason: '' })
-const currentReport = ref<ModerationCase | null>(null)
+const currentReport = ref<AdminModerationListItem | null>(null)
 
-const openReasonDialog = (report: ModerationCase, action: string) => {
+const openReasonDialog = (report: AdminModerationListItem, action: string) => {
   currentReport.value = report
   reasonForm.value = { action, reason: '' }
   reasonDialogVisible.value = true
 }
 
-const handleConfirmAction = () => {
-  if (currentReport.value && reasonForm.value.reason.trim()) {
-    if (reasonForm.value.action === 'approve') {
-      currentReport.value.status = 'approved'
-    } else {
-      currentReport.value.status = 'rejected'
-    }
+const handleConfirmAction = async () => {
+  if (!currentReport.value || !reasonForm.value.reason.trim()) return
+  
+  try {
+    const status: ModerationStatus = reasonForm.value.action === 'approve' ? 'approved' : 'rejected'
+    await moderationApi.update(currentReport.value.id, {
+      status,
+      decision_reason: reasonForm.value.reason,
+    })
+    ElMessage.success('操作成功')
+    fetchData()
+  } catch {
+    ElMessage.error('操作失败')
   }
+  
   reasonDialogVisible.value = false
   currentReport.value = null
+}
+
+const getStatusType = (status: ModerationStatus) => {
+  const map: Record<ModerationStatus, string> = {
+    pending: 'warning',
+    approved: 'success',
+    rejected: 'danger',
+  }
+  return map[status] || 'info'
+}
+
+const getStatusLabel = (status: ModerationStatus) => {
+  const map: Record<ModerationStatus, string> = {
+    pending: '待处理',
+    approved: '已通过',
+    rejected: '已拒绝',
+  }
+  return map[status] || status
 }
 
 const fetchData = async () => {
@@ -56,7 +78,8 @@ const fetchData = async () => {
   forbidden.value = false
   sessionExpired.value = false
   try {
-    await new Promise(resolve => setTimeout(resolve, 500))
+    const res = await moderationApi.list()
+    reports.value = res.data.items
   } catch (e: unknown) {
     if (e instanceof Error && e.message.includes('403')) {
       forbidden.value = true
@@ -115,89 +138,59 @@ fetchData()
     <template v-else>
       <el-tabs v-model="activeTab">
         <el-tab-pane label="待处理" name="pending">
-          <div v-if="pendingReports.length === 0" class="state-container">
-            <el-icon class="state-icon" color="#67C23A"><CircleCheck /></el-icon>
-            <p class="state-text">暂无待处理举报</p>
-          </div>
-
-          <el-table v-else :data="pendingReports" style="width: 100%">
-            <el-table-column prop="id" label="审核ID" width="80" />
+          <el-table :data="pendingReports" style="width: 100%">
             <el-table-column prop="case_type" label="类型">
               <template #default="{ row }">
                 <el-tag>{{ caseTypeMap[row.case_type] || row.case_type }}</el-tag>
               </template>
             </el-table-column>
-            <el-table-column prop="target_id" label="目标ID" />
-            <el-table-column prop="reporter" label="举报人" />
+            <el-table-column prop="target_summary.target_label" label="目标" />
             <el-table-column prop="created_at" label="提交时间" />
             <el-table-column label="操作" width="200">
               <template #default="{ row }">
-                <el-button
-                  size="small"
-                  type="success"
-                  @click="openReasonDialog(row, 'approve')"
-                >
-                  通过
-                </el-button>
-                <el-button
-                  size="small"
-                  type="danger"
-                  @click="openReasonDialog(row, 'reject')"
-                >
-                  拒绝
-                </el-button>
+                <el-button size="small" type="success" @click="openReasonDialog(row, 'approve')">通过</el-button>
+                <el-button size="small" type="danger" @click="openReasonDialog(row, 'reject')">拒绝</el-button>
               </template>
             </el-table-column>
           </el-table>
         </el-tab-pane>
 
         <el-tab-pane label="已处理" name="processed">
-          <div v-if="processedReports.length === 0" class="state-container">
-            <el-icon class="state-icon" color="#909399"><Document /></el-icon>
-            <p class="state-text">暂无已处理记录</p>
-          </div>
-
-          <el-table v-else :data="processedReports" style="width: 100%">
-            <el-table-column prop="id" label="审核ID" width="80" />
+          <el-table :data="processedReports" style="width: 100%">
             <el-table-column prop="case_type" label="类型">
               <template #default="{ row }">
                 <el-tag>{{ caseTypeMap[row.case_type] || row.case_type }}</el-tag>
               </template>
             </el-table-column>
-            <el-table-column prop="target_id" label="目标ID" />
-            <el-table-column prop="reporter" label="举报人" />
+            <el-table-column prop="target_summary.target_label" label="目标" />
             <el-table-column prop="status" label="状态">
               <template #default="{ row }">
-                <el-tag :type="row.status === 'approved' ? 'success' : 'danger'">
-                  {{ row.status === 'approved' ? '已通过' : '已拒绝' }}
+                <el-tag :type="getStatusType(row.status)">
+                  {{ getStatusLabel(row.status) }}
                 </el-tag>
               </template>
             </el-table-column>
-            <el-table-column prop="created_at" label="提交时间" />
+            <el-table-column prop="decision_reason" label="处理原因" show-overflow-tooltip />
+            <el-table-column prop="reviewed_at" label="处理时间" />
           </el-table>
         </el-tab-pane>
       </el-tabs>
     </template>
 
-    <el-dialog
-      v-model="reasonDialogVisible"
-      :title="reasonForm.action === 'approve' ? '确认通过' : '确认拒绝'"
-      width="400px"
-    >
-      <el-form :model="reasonForm">
-        <el-form-item label="处理理由" required>
-          <el-input
-            v-model="reasonForm.reason"
-            type="textarea"
-            placeholder="请输入处理理由"
-          />
+    <el-dialog v-model="reasonDialogVisible" title="处理原因" width="500px">
+      <el-form :model="reasonForm" label-width="80px">
+        <el-form-item label="操作">
+          <el-tag :type="reasonForm.action === 'approve' ? 'success' : 'danger'">
+            {{ reasonForm.action === 'approve' ? '通过' : '拒绝' }}
+          </el-tag>
+        </el-form-item>
+        <el-form-item label="原因">
+          <el-input v-model="reasonForm.reason" type="textarea" :rows="3" placeholder="请输入处理原因..." />
         </el-form-item>
       </el-form>
       <template #footer>
         <el-button @click="reasonDialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="handleConfirmAction">
-          {{ reasonForm.action === 'approve' ? '确认通过' : '确认拒绝' }}
-        </el-button>
+        <el-button type="primary" @click="handleConfirmAction">确认</el-button>
       </template>
     </el-dialog>
   </div>

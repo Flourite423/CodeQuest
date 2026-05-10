@@ -1,8 +1,10 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { Search, Download } from '@element-plus/icons-vue'
-import type { User } from '@/types'
+import { Search, Warning, Document } from '@element-plus/icons-vue'
+import type { AdminUserListItem, AccountStatus } from '@/types'
+import { userApi } from '@/api'
+import { ElMessage } from 'element-plus'
 
 const router = useRouter()
 const loading = ref(false)
@@ -10,37 +12,60 @@ const error = ref('')
 const forbidden = ref(false)
 const sessionExpired = ref(false)
 
-const users = ref<User[]>([
-  { id: 1, username: 'user1', email: 'user1@example.com', role: 'learner', account_status: 'active', xp: 5000 },
-  { id: 2, username: 'user2', email: 'user2@example.com', role: 'learner', account_status: 'active', xp: 3200 },
-  { id: 3, username: 'admin1', email: 'admin1@example.com', role: 'admin', account_status: 'active', xp: 0 },
-])
-
+const users = ref<AdminUserListItem[]>([])
 const searchQuery = ref('')
-const filterRole = ref('')
-const filterStatus = ref('')
-
-const filteredUsers = computed(() => {
-  return users.value.filter(u => {
-    const matchSearch = !searchQuery.value ||
-      u.username.includes(searchQuery.value) ||
-      u.email.includes(searchQuery.value)
-    const matchRole = !filterRole.value || u.role === filterRole.value
-    const matchStatus = !filterStatus.value || u.account_status === filterStatus.value
-    return matchSearch && matchRole && matchStatus
-  })
-})
+const statusFilter = ref('')
 
 const drawerVisible = ref(false)
-const selectedUser = ref<User | null>(null)
+const selectedUser = ref<AdminUserListItem | null>(null)
 
-const handleView = (user: User) => {
+const handleViewDetail = (user: AdminUserListItem) => {
   selectedUser.value = user
   drawerVisible.value = true
 }
 
-const handleExport = () => {
-  console.log('Export users')
+const handleBan = async (user: AdminUserListItem) => {
+  try {
+    await userApi.updateStatus(user.account_id, {
+      account_status: 'suspended',
+      reason: '管理员手动封禁',
+    })
+    ElMessage.success('封禁成功')
+    fetchData()
+  } catch {
+    ElMessage.error('封禁失败')
+  }
+}
+
+const handleUnban = async (user: AdminUserListItem) => {
+  try {
+    await userApi.updateStatus(user.account_id, {
+      account_status: 'active',
+      reason: '管理员手动解封',
+    })
+    ElMessage.success('解封成功')
+    fetchData()
+  } catch {
+    ElMessage.error('解封失败')
+  }
+}
+
+const getStatusType = (status: AccountStatus) => {
+  const map: Record<AccountStatus, string> = {
+    active: 'success',
+    suspended: 'danger',
+    closed: 'info',
+  }
+  return map[status] || 'info'
+}
+
+const getStatusLabel = (status: AccountStatus) => {
+  const map: Record<AccountStatus, string> = {
+    active: '正常',
+    suspended: '已封禁',
+    closed: '已关闭',
+  }
+  return map[status] || status
 }
 
 const fetchData = async () => {
@@ -49,7 +74,12 @@ const fetchData = async () => {
   forbidden.value = false
   sessionExpired.value = false
   try {
-    await new Promise(resolve => setTimeout(resolve, 500))
+    const params: { search?: string; status?: string } = {}
+    if (searchQuery.value) params.search = searchQuery.value
+    if (statusFilter.value) params.status = statusFilter.value
+    
+    const res = await userApi.list(params)
+    users.value = res.data.items
   } catch (e: unknown) {
     if (e instanceof Error && e.message.includes('403')) {
       forbidden.value = true
@@ -76,20 +106,18 @@ fetchData()
       <div class="header-actions">
         <el-input
           v-model="searchQuery"
-          placeholder="搜索昵称或邮箱..."
+          placeholder="搜索用户..."
           :prefix-icon="Search"
           style="width: 200px; margin-right: 12px;"
+          @keyup.enter="fetchData"
         />
-        <el-select v-model="filterRole" placeholder="角色" clearable style="width: 120px; margin-right: 12px;">
-          <el-option label="管理员" value="admin" />
-          <el-option label="学员" value="learner" />
-        </el-select>
-        <el-select v-model="filterStatus" placeholder="状态" clearable style="width: 120px; margin-right: 12px;">
+        <el-select v-model="statusFilter" placeholder="状态筛选" style="width: 120px; margin-right: 12px;" @change="fetchData">
+          <el-option label="全部" value="" />
           <el-option label="正常" value="active" />
-          <el-option label="已暂停" value="suspended" />
+          <el-option label="已封禁" value="suspended" />
           <el-option label="已关闭" value="closed" />
         </el-select>
-        <el-button :icon="Download" @click="handleExport">导出</el-button>
+        <el-button type="primary" @click="fetchData">搜索</el-button>
       </div>
     </div>
 
@@ -119,36 +147,57 @@ fetchData()
     </div>
 
     <!-- Empty State -->
-    <div v-else-if="filteredUsers.length === 0" class="state-container">
-      <el-icon class="state-icon" color="#909399"><User /></el-icon>
+    <div v-else-if="users.length === 0" class="state-container">
+      <el-icon class="state-icon" color="#909399"><Document /></el-icon>
       <p class="state-text">暂无用户数据</p>
     </div>
 
     <!-- Content -->
     <template v-else>
-      <el-table :data="filteredUsers" style="width: 100%" v-loading="loading">
-        <el-table-column prop="id" label="用户ID" width="80" />
-        <el-table-column prop="username" label="昵称" />
+      <el-table :data="users" style="width: 100%" v-loading="loading">
+        <el-table-column prop="profile_summary.display_name" label="用户">
+          <template #default="{ row }">
+            <div class="user-cell">
+              <el-avatar :size="32" :src="row.profile_summary.avatar_url" />
+              <span>{{ row.profile_summary.display_name }}</span>
+            </div>
+          </template>
+        </el-table-column>
         <el-table-column prop="email" label="邮箱" />
-        <el-table-column prop="role" label="角色">
+        <el-table-column prop="default_role" label="角色">
           <template #default="{ row }">
-            <el-tag :type="row.role === 'admin' ? 'danger' : 'primary'">
-              {{ row.role === 'admin' ? '管理员' : '学员' }}
+            <el-tag :type="row.default_role === 'admin' ? 'danger' : 'primary'">
+              {{ row.default_role === 'admin' ? '管理员' : '学习者' }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="account_status" label="账号状态">
+        <el-table-column prop="account_status" label="状态">
           <template #default="{ row }">
-            <el-tag :type="row.account_status === 'active' ? 'success' : row.account_status === 'suspended' ? 'warning' : 'danger'">
-              {{ row.account_status === 'active' ? '正常' : row.account_status === 'suspended' ? '已暂停' : '已关闭' }}
+            <el-tag :type="getStatusType(row.account_status)">
+              {{ getStatusLabel(row.account_status) }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="xp" label="经验值" width="100" />
-        <el-table-column label="操作" width="150">
+        <el-table-column prop="created_at" label="注册时间" />
+        <el-table-column label="操作" width="250">
           <template #default="{ row }">
-            <el-button size="small" @click="handleView(row)">查看</el-button>
-            <el-button size="small" type="danger">禁用</el-button>
+            <el-button size="small" @click="handleViewDetail(row)">详情</el-button>
+            <el-button 
+              v-if="row.account_status === 'active'"
+              size="small" 
+              type="danger" 
+              @click="handleBan(row)"
+            >
+              封禁
+            </el-button>
+            <el-button 
+              v-else-if="row.account_status === 'suspended'"
+              size="small" 
+              type="success" 
+              @click="handleUnban(row)"
+            >
+              解封
+            </el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -156,12 +205,32 @@ fetchData()
 
     <el-drawer v-model="drawerVisible" title="用户详情" size="400px">
       <div v-if="selectedUser" class="user-detail">
-        <p><strong>用户ID:</strong> {{ selectedUser.id }}</p>
-        <p><strong>昵称:</strong> {{ selectedUser.username }}</p>
-        <p><strong>邮箱:</strong> {{ selectedUser.email }}</p>
-        <p><strong>角色:</strong> {{ selectedUser.role === 'admin' ? '管理员' : '学员' }}</p>
-        <p><strong>状态:</strong> {{ selectedUser.account_status === 'active' ? '正常' : selectedUser.account_status === 'suspended' ? '已暂停' : '已关闭' }}</p>
-        <p><strong>经验值:</strong> {{ selectedUser.xp }}</p>
+        <div class="detail-item">
+          <span class="label">用户ID：</span>
+          <span>{{ selectedUser.account_id }}</span>
+        </div>
+        <div class="detail-item">
+          <span class="label">邮箱：</span>
+          <span>{{ selectedUser.email }}</span>
+        </div>
+        <div class="detail-item">
+          <span class="label">角色：</span>
+          <el-tag>{{ selectedUser.default_role === 'admin' ? '管理员' : '学习者' }}</el-tag>
+        </div>
+        <div class="detail-item">
+          <span class="label">状态：</span>
+          <el-tag :type="getStatusType(selectedUser.account_status)">
+            {{ getStatusLabel(selectedUser.account_status) }}
+          </el-tag>
+        </div>
+        <div class="detail-item">
+          <span class="label">注册时间：</span>
+          <span>{{ selectedUser.created_at }}</span>
+        </div>
+        <div class="detail-item">
+          <span class="label">最后登录：</span>
+          <span>{{ selectedUser.last_login_at || '从未登录' }}</span>
+        </div>
       </div>
     </el-drawer>
   </div>
@@ -184,12 +253,23 @@ fetchData()
     display: flex;
     align-items: center;
   }
+
+  .user-cell {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
 }
 
 .user-detail {
-  p {
+  .detail-item {
     margin-bottom: 16px;
-    font-size: 14px;
+
+    .label {
+      font-weight: bold;
+      color: #606266;
+      margin-right: 8px;
+    }
   }
 }
 </style>
