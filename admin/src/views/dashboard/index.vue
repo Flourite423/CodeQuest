@@ -3,7 +3,6 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { User, Reading, View, Warning } from '@element-plus/icons-vue'
 import { statsApi } from '@/api'
-import type { Activity } from '@/types'
 
 const router = useRouter()
 const loading = ref(false)
@@ -18,18 +17,13 @@ const stats = ref<{ title: string; value: string; icon: typeof User; color: stri
   { title: '待审核数', value: '0', icon: Warning, color: '#F56C6C' },
 ])
 
-const recentActivities = ref<Activity[]>([])
-
 const fetchData = async () => {
   loading.value = true
   error.value = ''
   forbidden.value = false
   sessionExpired.value = false
   try {
-    const [statsRes, activitiesRes] = await Promise.all([
-      statsApi.dashboard(),
-      statsApi.recentActivities(),
-    ])
+    const statsRes = await statsApi.dashboard()
     
     const data = statsRes.data as { total_users: number; total_courses: number; active_today: number; pending_moderation: number }
     stats.value = [
@@ -39,7 +33,6 @@ const fetchData = async () => {
       { title: '待审核数', value: data.pending_moderation.toLocaleString(), icon: Warning, color: '#F56C6C' },
     ]
     
-    recentActivities.value = activitiesRes.data as Activity[]
   } catch (e: unknown) {
     if (e instanceof Error && e.message.includes('403')) {
       forbidden.value = true
@@ -105,27 +98,6 @@ fetchData()
           </el-card>
         </el-col>
       </el-row>
-
-      <el-card class="activity-card">
-        <template #header>
-          <span>最近动态</span>
-        </template>
-        <el-timeline v-if="recentActivities.length > 0">
-          <el-timeline-item
-            v-for="(activity, index) in recentActivities"
-            :key="activity.id"
-            :type="index === 0 ? 'primary' : ''"
-          >
-            <p>
-              <strong>{{ activity.user_name }}</strong>
-              {{ activity.action }}
-              <el-tag size="small">{{ activity.target_name }}</el-tag>
-            </p>
-            <p class="activity-time">{{ activity.created_at }}</p>
-          </el-timeline-item>
-        </el-timeline>
-        <el-empty v-else description="暂无动态" />
-      </el-card>
     </template>
   </div>
 </template>
@@ -165,11 +137,4 @@ fetchData()
   }
 }
 
-.activity-card {
-  .activity-time {
-    font-size: 12px;
-    color: #909399;
-    margin-top: 4px;
-  }
-}
 </style>
