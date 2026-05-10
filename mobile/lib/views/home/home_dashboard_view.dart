@@ -5,7 +5,7 @@ import 'package:get/get.dart';
 import '../../controllers/base_controller.dart';
 import '../../models/models.dart' as app_models;
 import 'home_view.dart';
-import '../../services/mock_data.dart';
+import '../../services/api_service.dart';
 import '../../services/progress_service.dart';
 import '../../widgets/page_state_host.dart';
 import '../../widgets/shared/list_card.dart';
@@ -873,7 +873,7 @@ class _StatItem {
 ///
 /// 管理仪表板数据加载和状态，支持部分数据失败。
 class HomeDashboardController extends BaseController {
-  MockDataService get _mockData => Get.find<MockDataService>();
+  ApiService get _apiService => Get.find<ApiService>();
 
   ProgressService get _progress {
     if (Get.isRegistered<ProgressService>()) {
@@ -960,23 +960,30 @@ class HomeDashboardController extends BaseController {
 
   Future<void> _loadUser() async {
     try {
-      final result = await _mockData.fetchUser();
-      if (result != null) {
-        await _progress.cacheUser(result);
-        final snapshot = _progress.getLearningStatsSnapshot();
-        user.value = app_models.User(
-          id: result.id,
-          email: result.email,
-          nickname: result.nickname,
-          avatar: result.avatar,
-          level: result.level,
-          xp: result.xp + snapshot.earnedXp,
-          streak: snapshot.streakDays > 0 ? snapshot.streakDays : result.streak,
-          bio: result.bio,
-          dailyGoal: result.dailyGoal,
-          themeMode: result.themeMode,
-        );
-      }
+      final response = await _apiService.get('/learner/profile');
+      final payload = response.data is Map<String, dynamic>
+          ? response.data as Map<String, dynamic>
+          : <String, dynamic>{};
+      final profile = payload['data'] as Map<String, dynamic>? ?? <String, dynamic>{};
+
+      final result = app_models.User.fromContracts(
+        account: {'id': profile['account_id'] ?? '', 'email': ''},
+        profile: profile,
+      );
+      await _progress.cacheUser(result);
+      final snapshot = _progress.getLearningStatsSnapshot();
+      user.value = app_models.User(
+        id: result.id,
+        email: result.email,
+        nickname: result.nickname,
+        avatar: result.avatar,
+        level: result.level,
+        xp: result.xp + snapshot.earnedXp,
+        streak: snapshot.streakDays > 0 ? snapshot.streakDays : result.streak,
+        bio: result.bio,
+        dailyGoal: result.dailyGoal,
+        themeMode: result.themeMode,
+      );
       userLoaded.value = true;
     } catch (e) {
       userLoaded.value = false;
@@ -985,26 +992,30 @@ class HomeDashboardController extends BaseController {
 
   Future<void> _loadStats() async {
     try {
-      final result = await _mockData.fetchStats();
-      if (result != null) {
-        final snapshot = _progress.getLearningStatsSnapshot();
-        final merged = app_models.Stats(
-          studyTime: snapshot.studyMinutes > 0 ? snapshot.studyMinutes : result.studyTime,
-          coursesCompleted: snapshot.completedCourses > 0
-              ? snapshot.completedCourses
-              : result.coursesCompleted,
-          challengesWon: snapshot.completedChallenges > 0
-              ? snapshot.completedChallenges
-              : result.challengesWon,
-          currentStreak: snapshot.streakDays > 0
-              ? snapshot.streakDays
-              : result.currentStreak,
-          totalXp: result.totalXp + snapshot.earnedXp,
-          mastery: result.mastery,
-        );
-        stats.value = merged;
-        await _progress.cacheStats(merged);
-      }
+      final response = await _apiService.get('/learner/stats/personal');
+      final payload = response.data is Map<String, dynamic>
+          ? response.data as Map<String, dynamic>
+          : <String, dynamic>{};
+      final data = payload['data'] as Map<String, dynamic>? ?? <String, dynamic>{};
+
+      final result = app_models.Stats.fromPersonalStatsJson(data);
+      final snapshot = _progress.getLearningStatsSnapshot();
+      final merged = app_models.Stats(
+        studyTime: snapshot.studyMinutes > 0 ? snapshot.studyMinutes : result.studyTime,
+        coursesCompleted: snapshot.completedCourses > 0
+            ? snapshot.completedCourses
+            : result.coursesCompleted,
+        challengesWon: snapshot.completedChallenges > 0
+            ? snapshot.completedChallenges
+            : result.challengesWon,
+        currentStreak: snapshot.streakDays > 0
+            ? snapshot.streakDays
+            : result.currentStreak,
+        totalXp: result.totalXp + snapshot.earnedXp,
+        mastery: result.mastery,
+      );
+      stats.value = merged;
+      await _progress.cacheStats(merged);
       statsLoaded.value = true;
     } catch (e) {
       statsLoaded.value = false;
@@ -1013,12 +1024,24 @@ class HomeDashboardController extends BaseController {
 
   Future<void> _loadDailyChallenge() async {
     try {
-      final result = await _mockData.fetchDailyChallenge();
-      if (result != null) {
-        final merged = _progress.applyDailyChallengeProgress(result);
-        dailyChallenge.value = merged;
-        await _progress.cacheDailyChallenge(merged);
-      }
+      final response = await _apiService.get('/learner/daily-challenges/today');
+      final payload = response.data is Map<String, dynamic>
+          ? response.data as Map<String, dynamic>
+          : <String, dynamic>{};
+      final data = payload['data'] as Map<String, dynamic>? ?? <String, dynamic>{};
+
+      // Extract challenge and record from response
+      final challengeData = (data['challenge'] ?? data) as Map<String, dynamic>;
+      final recordData = data['record'] as Map<String, dynamic>?;
+
+      final result = app_models.DailyChallenge.fromContracts(
+        challenge: challengeData,
+        record: recordData,
+      );
+      final merged = _progress.applyDailyChallengeProgress(result);
+      dailyChallenge.value = merged;
+      await _progress.cacheDailyChallenge(merged);
+
       dailyLoaded.value = true;
     } catch (e) {
       dailyLoaded.value = false;
@@ -1035,17 +1058,40 @@ class HomeDashboardController extends BaseController {
         return;
       }
 
-      final detail = await _mockData.fetchCourse();
-      if (detail != null) {
+      // Try to load a specific course detail first
+      bool loadedFromDetail = false;
+      try {
+        final courseDetailResponse = await _apiService.get('/learner/courses/course-1');
+        final detailPayload = courseDetailResponse.data is Map<String, dynamic>
+            ? courseDetailResponse.data as Map<String, dynamic>
+            : <String, dynamic>{};
+        final courseData = detailPayload['data'] as Map<String, dynamic>? ?? <String, dynamic>{};
+
+        final detail = app_models.Course.fromDetailJson(courseData);
         final processed = _progress.applyCourseProgress(detail);
         await _progress.cacheCourse(processed);
         continueCourse.value = processed;
         courseLoaded.value = true;
-        return;
+        loadedFromDetail = true;
+      } catch (_) {
+        // Detail fetch failed, fall back to courses list
       }
 
-      final courses = await _mockData.fetchCourses();
-      final withProgress = _progress.applyCourseProgressList(courses);
+      if (loadedFromDetail) return;
+
+      // Fallback: load from courses list
+      final listResponse = await _apiService.get('/learner/courses');
+      final listPayload = listResponse.data is Map<String, dynamic>
+          ? listResponse.data as Map<String, dynamic>
+          : <String, dynamic>{};
+      final listData = listPayload['data'] as Map<String, dynamic>? ?? <String, dynamic>{};
+      final items = (listData['items'] as List<dynamic>? ?? <dynamic>[])
+          .whereType<Map>()
+          .map((item) => app_models.Course.fromListItemJson(
+                Map<String, dynamic>.from(item),
+              ))
+          .toList();
+      final withProgress = _progress.applyCourseProgressList(items);
       await _progress.cacheCourses(withProgress);
       final course = withProgress.firstWhereOrNull(
         (c) => c.chapters.any((ch) => !ch.isCompleted && !ch.isLocked),
@@ -1059,8 +1105,17 @@ class HomeDashboardController extends BaseController {
 
   Future<void> _loadActivities() async {
     try {
-      final result = await _mockData.fetchActivities();
-      activities.assignAll(result);
+      final response = await _apiService.get('/learner/activities');
+      final payload = response.data is Map<String, dynamic>
+          ? response.data as Map<String, dynamic>
+          : <String, dynamic>{};
+      final data = payload['data'] as Map<String, dynamic>? ?? <String, dynamic>{};
+      final items = (data['items'] as List<dynamic>? ?? <dynamic>[])
+          .whereType<Map>()
+          .map((item) =>
+              app_models.Activity.fromContract(Map<String, dynamic>.from(item)))
+          .toList();
+      activities.assignAll(items);
       activitiesLoaded.value = true;
     } catch (e) {
       activitiesLoaded.value = false;
@@ -1069,8 +1124,21 @@ class HomeDashboardController extends BaseController {
 
   Future<void> _loadBadges() async {
     try {
-      final result = await _mockData.fetchBadges();
-      badges.assignAll(result);
+      final response = await _apiService.get('/learner/rewards');
+      final payload = response.data is Map<String, dynamic>
+          ? response.data as Map<String, dynamic>
+          : <String, dynamic>{};
+      final data = payload['data'] as Map<String, dynamic>? ?? <String, dynamic>{};
+      final items = (data['badges'] as List<dynamic>? ?? <dynamic>[])
+          .whereType<Map>()
+          .map((item) => app_models.Badge.fromAwardJson(
+                Map<String, dynamic>.from(item),
+                name: (item['name'] ?? '').toString(),
+                description: (item['description'] ?? '').toString(),
+                icon: item['icon_url'] as String?,
+              ))
+          .toList();
+      badges.assignAll(items);
       badgesLoaded.value = true;
     } catch (e) {
       badgesLoaded.value = false;

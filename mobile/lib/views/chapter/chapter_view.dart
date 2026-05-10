@@ -4,7 +4,7 @@ import 'package:get/get.dart';
 
 import '../../controllers/base_controller.dart';
 import '../../models/models.dart';
-import '../../services/mock_data.dart';
+import '../../services/api_service.dart';
 import '../../services/progress_service.dart';
 import '../../widgets/page_state_host.dart';
 import '../../widgets/shared/cta_bar.dart';
@@ -476,7 +476,7 @@ class _KnowledgeSummaryCard extends StatelessWidget {
 }
 
 class ChapterController extends BaseController {
-  final MockDataService _mockDataService = Get.find<MockDataService>();
+  ApiService get _apiService => Get.find<ApiService>();
 
   ProgressService get _progressService {
     if (Get.isRegistered<ProgressService>()) {
@@ -522,12 +522,13 @@ class ChapterController extends BaseController {
     registerRetry(loadChapter);
 
     try {
-      final result = await _mockDataService.fetchCourse();
-      if (result == null) {
-        setEmpty(message: '未找到章节。');
-        return;
-      }
+      final response = await _apiService.get('/learner/courses/${courseId.value}');
+      final payload = response.data is Map<String, dynamic>
+          ? response.data as Map<String, dynamic>
+          : <String, dynamic>{};
+      final data = payload['data'] as Map<String, dynamic>? ?? <String, dynamic>{};
 
+      final result = Course.fromDetailJson(data);
       // Find the chapter by ID from the course
       final foundChapter = result.chapters.firstWhereOrNull(
         (c) => c.id == chapterId.value,
@@ -553,8 +554,6 @@ class ChapterController extends BaseController {
       isCompleted.value = processedChapter.isCompleted;
 
       pageState.value = PageState.initial;
-    } on MockDataException catch (e) {
-      setError(message: e.message);
     } catch (e) {
       setError(message: '加载章节失败，请重试。');
     }

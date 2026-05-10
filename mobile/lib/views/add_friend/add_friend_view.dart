@@ -6,8 +6,18 @@ import 'package:get/get.dart';
 
 import '../../controllers/base_controller.dart';
 import '../../models/models.dart';
-import '../../services/mock_data.dart';
+import '../../services/api_service.dart';
 import '../../widgets/shared/empty_state.dart';
+
+int _asInt(dynamic value, {int fallback = 0}) {
+  if (value is int) {
+    return value;
+  }
+  if (value is num) {
+    return value.toInt();
+  }
+  return fallback;
+}
 
 class AddFriendView extends GetView<AddFriendController> {
   const AddFriendView({super.key});
@@ -202,7 +212,10 @@ class _UserResultCard extends StatelessWidget {
 }
 
 class AddFriendController extends BaseController {
-  final MockDataService _mockData = Get.find<MockDataService>();
+  ApiService get _apiService => Get.find<ApiService>();
+
+  /// Tracks locally sent friend request IDs for immediate UI feedback.
+  final Set<String> _sentRequestIds = <String>{};
 
   final TextEditingController searchController = TextEditingController();
   final RxString searchQuery = ''.obs;
@@ -247,7 +260,25 @@ class AddFriendController extends BaseController {
     isSearching.value = true;
 
     try {
-      final results = await _mockData.searchUsers(query: query);
+      final response = await _apiService.get('/learner/friends', queryParameters: {'q': query});
+      final payload = response.data is Map<String, dynamic>
+          ? response.data as Map<String, dynamic>
+          : <String, dynamic>{};
+      final data = payload['data'] as Map<String, dynamic>? ?? <String, dynamic>{};
+      final results = (data['items'] as List<dynamic>? ?? <dynamic>[])
+          .whereType<Map>()
+          .map((item) => User(
+                id: (item['account_id'] ?? item['id'] ?? '').toString(),
+                email: '',
+                nickname: (item['nickname'] ?? '').toString(),
+                avatar: item['avatar_url'] as String?,
+                level: _asInt(item['level'] ?? item['current_level'], fallback: 1),
+                xp: _asInt(item['xp'] ?? item['total_xp']),
+                streak: _asInt(item['streak'] ?? item['streak_days']),
+                dailyGoal: _asInt(item['daily_goal_minutes'], fallback: 30),
+                themeMode: (item['theme_mode'] ?? 'system').toString(),
+              ))
+          .toList();
       searchResults.assignAll(results);
     } catch (e) {
       searchResults.clear();
@@ -263,23 +294,25 @@ class AddFriendController extends BaseController {
   }
 
   bool isRequestSent(String userId) {
-    return _mockData.hasSentFriendRequest(userId);
+    // Track sent requests locally for immediate UI feedback
+    return _sentRequestIds.contains(userId);
   }
 
   Future<void> sendFriendRequest(String userId) async {
     try {
-      final success = await _mockData.sendFriendRequest(userId: userId);
-      if (success) {
-        Get.snackbar(
-          '好友请求已发送',
-          '等待对方接受您的好友请求。',
-          snackPosition: SnackPosition.BOTTOM,
-          margin: const EdgeInsets.all(16),
-          duration: const Duration(seconds: 2),
-        );
-        // Refresh UI to show "sent" state
-        searchResults.refresh();
-      }
+      await _apiService.post('/learner/friends/requests', data: {
+        'friend_id': userId,
+      });
+      _sentRequestIds.add(userId);
+      Get.snackbar(
+        '好友请求已发送',
+        '等待对方接受您的好友请求。',
+        snackPosition: SnackPosition.BOTTOM,
+        margin: const EdgeInsets.all(16),
+        duration: const Duration(seconds: 2),
+      );
+      // Refresh UI to show "sent" state
+      searchResults.refresh();
     } catch (e) {
       Get.snackbar(
         '发送失败',

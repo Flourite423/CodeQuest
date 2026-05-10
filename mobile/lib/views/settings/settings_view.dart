@@ -4,7 +4,7 @@ import 'package:get/get.dart';
 
 import '../../controllers/base_controller.dart';
 import '../../models/models.dart' as app_models;
-import '../../services/mock_data.dart';
+import '../../services/api_service.dart';
 import '../../services/notification_service.dart';
 import '../../services/progress_service.dart';
 import '../../services/storage_service.dart';
@@ -694,7 +694,7 @@ class _ThemeOption {
 }
 
 class SettingsController extends BaseController {
-  final MockDataService _mockDataService = Get.find<MockDataService>();
+  final ApiService _apiService = Get.find<ApiService>();
   final StorageService _storageService = Get.find<StorageService>();
   final NotificationService _notificationService = Get.find<NotificationService>();
 
@@ -729,25 +729,30 @@ class SettingsController extends BaseController {
     registerRetry(loadSettings);
 
     try {
-      final userData = await _mockDataService.fetchUser();
-      if (userData != null) {
-        user.value = userData;
+      final response = await _apiService.get('/learner/profile');
+      final payload = response.data is Map<String, dynamic>
+          ? response.data as Map<String, dynamic>
+          : <String, dynamic>{};
+      final profile = payload['data'] as Map<String, dynamic>? ?? <String, dynamic>{};
 
-        // Load persisted settings
-        final persistedGoal = _storageService.read<int>(_dailyGoalKey);
-        final persistedTheme = _storageService.read<String>(_themeModeKey);
-        final persistedAiHints = _storageService.read<bool>(_aiHintsKey);
+      final userData = app_models.User.fromContracts(
+        account: {'id': profile['account_id'] ?? '', 'email': ''},
+        profile: profile,
+      );
+      user.value = userData;
 
-        dailyGoal.value = persistedGoal ?? userData.dailyGoal;
-        themeMode.value = persistedTheme ?? userData.themeMode;
-        aiHintsEnabled.value = persistedAiHints ?? true;
+      // Load persisted settings
+      final persistedGoal = _storageService.read<int>(_dailyGoalKey);
+      final persistedTheme = _storageService.read<String>(_themeModeKey);
+      final persistedAiHints = _storageService.read<bool>(_aiHintsKey);
 
-        await _calculateCacheSize();
-        await _syncNotificationState();
-        resetState();
-      } else {
-        setEmpty(message: '设置不可用。');
-      }
+      dailyGoal.value = persistedGoal ?? userData.dailyGoal;
+      themeMode.value = persistedTheme ?? userData.themeMode;
+      aiHintsEnabled.value = persistedAiHints ?? true;
+
+      await _calculateCacheSize();
+      await _syncNotificationState();
+      resetState();
     } catch (e) {
       setError(message: '加载设置失败，请重试。');
     }

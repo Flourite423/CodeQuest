@@ -9,7 +9,6 @@ import 'package:integration_test/integration_test.dart';
 import 'package:codequest/controllers/base_controller.dart';
 import 'package:codequest/routes/app_pages.dart';
 import 'package:codequest/services/api_service.dart';
-import 'package:codequest/services/mock_data.dart';
 import 'package:codequest/services/storage_service.dart';
 import 'package:codequest/themes/app_theme.dart';
 import 'package:codequest/views/challenge/challenge_detail_view.dart';
@@ -104,18 +103,15 @@ class _TestBinding extends Bindings {
   _TestBinding({
     required this.apiService,
     required this.storageService,
-    MockDataService? mockDataService,
-  }) : mockDataService = mockDataService ?? MockDataService();
+  });
 
   final _FakeApiService apiService;
   final _FakeStorageService storageService;
-  final MockDataService mockDataService;
 
   @override
   void dependencies() {
     Get.put<StorageService>(storageService, permanent: true);
     Get.put<ApiService>(apiService, permanent: true);
-    Get.put<MockDataService>(mockDataService, permanent: true);
 
     if (!Get.isRegistered<HomeDashboardController>()) {
       Get.lazyPut<HomeDashboardController>(() => HomeDashboardController(), fenix: true);
@@ -217,7 +213,6 @@ dio.DioException _networkError(String path) {
 Widget _buildTestApp({
   required _FakeApiService apiService,
   required _FakeStorageService storageService,
-  MockDataService? mockDataService,
   String initialRoute = AppPages.initialRoute,
   List<GetPage<dynamic>> extraPages = const <GetPage<dynamic>>[],
 }) {
@@ -235,7 +230,6 @@ Widget _buildTestApp({
         initialBinding: _TestBinding(
           apiService: apiService,
           storageService: storageService,
-          mockDataService: mockDataService,
         ),
         initialRoute: initialRoute,
         getPages: <GetPage<dynamic>>[
@@ -252,7 +246,6 @@ Future<void> _pumpApp(
   WidgetTester tester, {
   required _FakeApiService apiService,
   required _FakeStorageService storageService,
-  MockDataService? mockDataService,
   String initialRoute = AppPages.initialRoute,
   List<GetPage<dynamic>> extraPages = const <GetPage<dynamic>>[],
 }) async {
@@ -260,7 +253,6 @@ Future<void> _pumpApp(
     _buildTestApp(
       apiService: apiService,
       storageService: storageService,
-      mockDataService: mockDataService,
       initialRoute: initialRoute,
       extraPages: extraPages,
     ),

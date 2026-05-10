@@ -7,7 +7,6 @@ import '../views/course/course_detail_view.dart';
 import '../views/course/course_list_view.dart';
 import '../views/daily_challenge/daily_challenge_view.dart';
 import '../views/exercise/exercise_view.dart';
-import '../views/friends/friends_view.dart';
 import '../views/home/home_view.dart';
 import '../views/login/login_view.dart';
 import '../views/onboarding/onboarding_view.dart';
@@ -120,10 +119,6 @@ class AppPages {
       page: () => const SettingsView(),
       binding: SettingsBinding(),
     ),
-    GetPage(
-      name: '/friends',
-      page: () => const FriendsView(),
-      binding: FriendsBinding(),
-    ),
+
   ];
 }

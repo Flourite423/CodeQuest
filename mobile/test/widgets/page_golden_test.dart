@@ -7,7 +7,7 @@ import 'package:get/get.dart';
 
 import 'package:codequest/controllers/base_controller.dart';
 import 'package:codequest/models/models.dart' as app_models;
-import 'package:codequest/services/mock_data.dart';
+import 'package:codequest/services/api_service.dart';
 import 'package:codequest/services/storage_service.dart';
 import 'package:codequest/views/challenge/challenge_list_view.dart';
 import 'package:codequest/views/course/course_list_view.dart';
@@ -143,16 +143,15 @@ class _TestHomeDashboardController extends HomeDashboardController {
   }
 
   void setLoadedState() {
-    final mock = Get.find<MockDataService>();
-    user.value = _withoutAvatar(mock.buildUser());
-    stats.value = mock.buildStats();
-    dailyChallenge.value = mock.buildDailyChallenge();
-    continueCourse.value = _withoutCover(mock.buildCourse(includeChapters: true));
+    user.value = _withoutAvatar(_testUser());
+    stats.value = _testStats();
+    dailyChallenge.value = _testDailyChallenge();
+    continueCourse.value = _withoutCover(_testCourse(includeChapters: true));
     activities.assignAll(
-      mock.buildActivities(count: 3).map(_withoutActivityAvatar),
+      _testActivities(count: 3).map(_withoutActivityAvatar),
     );
     badges.assignAll(
-      mock.buildBadges(count: 2).map(_withoutBadgeIcon),
+      _testBadges(count: 2).map(_withoutBadgeIcon),
     );
     pageState.value = PageState.initial;
     stateMessage.value = '';
@@ -175,9 +174,7 @@ class _TestCourseListController extends CourseListController {
   }
 
   void setLoadedState() {
-    final mock = Get.find<MockDataService>();
-    courses.value = mock
-        .buildCourses(count: 3)
+    courses.value = _testCourses(count: 3)
         .map(_withoutCover)
         .toList();
     pageState.value = PageState.initial;
@@ -213,8 +210,7 @@ class _TestChallengeListController extends ChallengeListController {
   }
 
   void setLoadedState() {
-    final mock = Get.find<MockDataService>();
-    challenges.assignAll(mock.buildChallenges(count: 4));
+    challenges.assignAll(_testChallenges(count: 4));
     challengeStars.assignAll(<String, int>{
       for (final challenge in challenges) challenge.id: challenge.stars,
     });
@@ -234,14 +230,13 @@ class _TestSocialController extends SocialController {
   }
 
   void setLoadedState() {
-    final mock = Get.find<MockDataService>();
     activities.assignAll(
-      mock.buildActivities(count: 3).map(_withoutActivityAvatar),
+      _testActivities(count: 3).map(_withoutActivityAvatar),
     );
     friends.assignAll(
-      mock.buildFriends(count: 4).map(_withoutFriendAvatar),
+      _testFriends(count: 4).map(_withoutFriendAvatar),
     );
-    leaderboard.assignAll(mock.buildLeaderboardEntries(count: 6));
+    leaderboard.assignAll(_testLeaderboardEntries(count: 6));
     pageState.value = PageState.initial;
     stateMessage.value = '';
   }
@@ -271,11 +266,10 @@ class _TestProfileController extends ProfileController {
   }
 
   void setLoadedState() {
-    final mock = Get.find<MockDataService>();
-    user.value = _withoutAvatar(mock.buildUser());
-    stats.value = mock.buildStats();
+    user.value = _withoutAvatar(_testUser());
+    stats.value = _testStats();
     badges.assignAll(
-      mock.buildBadges(count: 2).map(_withoutBadgeIcon),
+      _testBadges(count: 2).map(_withoutBadgeIcon),
     );
     pageState.value = PageState.initial;
     stateMessage.value = '';
@@ -321,6 +315,166 @@ class _TestHttpOverrides extends HttpOverrides {
   }
 }
 
+
+// ==================== Test Data Factories ====================
+// These replace the MockDataService builder methods that were used before.
+
+app_models.User _testUser({int seed = 1}) {
+  return app_models.User(
+    id: 'user-$seed',
+    email: 'learner$seed@example.com',
+    nickname: '学习者 $seed',
+    avatar: 'https://example.com/avatar/$seed.png',
+    level: 4 + seed,
+    xp: 1200 * seed,
+    streak: 2 + seed,
+    bio: '每天都在稳步提升前端技能。',
+    dailyGoal: 30 + seed * 5,
+    themeMode: seed.isEven ? 'dark' : 'system',
+  );
+}
+
+app_models.Stats _testStats({int seed = 1}) {
+  return app_models.Stats(
+    studyTime: 240 + seed * 30,
+    coursesCompleted: 2 + seed,
+    challengesWon: 1 + seed,
+    currentStreak: 3 + seed,
+    totalXp: 1400 + seed * 500,
+    mastery: 0.55 + seed * 0.05,
+  );
+}
+
+app_models.DailyChallenge _testDailyChallenge({int seed = 1}) {
+  return app_models.DailyChallenge(
+    id: 'daily-$seed',
+    title: '每日挑战 $seed',
+    description: '在倒计时结束前完成一个小型编码任务。',
+    timeLimit: 900 + seed * 60,
+    isAttempted: seed.isEven,
+    isExpired: seed > 2,
+  );
+}
+
+app_models.Chapter _testChapter({int seed = 1}) {
+  return app_models.Chapter(
+    id: 'chapter-$seed',
+    title: '章节 $seed',
+    content: '# 章节 $seed\n\n本章介绍学习者友好的 Markdown 内容。',
+    sampleCode: '<section>章节 $seed 示例</section>',
+    summary: '核心概念 $seed 总结',
+    isCompleted: seed == 1,
+    isLocked: seed > 2,
+  );
+}
+
+app_models.Course _testCourse({int seed = 1, bool includeChapters = true}) {
+  final chapters = includeChapters
+      ? [for (var i = 1; i <= 3; i++) _testChapter(seed: i)]
+      : <app_models.Chapter>[];
+  return app_models.Course(
+    id: 'course-$seed',
+    title: '前端基础 $seed',
+    summary: '循序渐进学习布局、样式和交互基础。',
+    difficulty: seed.isEven ? 'intermediate' : 'beginner',
+    estimatedMinutes: 90 + seed * 10,
+    progress: 0.2 * seed,
+    chapters: chapters,
+    description: '课程 $seed 的契约对齐学习者课程详情模拟数据。',
+    coverImageUrl: 'https://example.com/course/$seed.png',
+    category: 'frontend',
+  );
+}
+
+List<app_models.Course> _testCourses({int count = 3}) {
+  return [for (var i = 1; i <= count; i++) _testCourse(seed: i, includeChapters: false)];
+}
+
+app_models.Challenge _testChallenge({int seed = 1}) {
+  return app_models.Challenge(
+    id: 'challenge-$seed',
+    title: '挑战 $seed',
+    description: '完成一系列学习任务来赢取星星。',
+    tasks: [
+      app_models.ChallengeTask(id: 'task-$seed-1', title: '完成阶段 1', isCompleted: seed == 1),
+      app_models.ChallengeTask(id: 'task-$seed-2', title: '完成阶段 2', isCompleted: false),
+      app_models.ChallengeTask(id: 'task-$seed-3', title: '完成阶段 3', isCompleted: false),
+    ],
+    stars: seed % 4,
+    reward: seed * 150,
+    isCompleted: seed == 1,
+  );
+}
+
+List<app_models.Challenge> _testChallenges({int count = 4}) {
+  return [for (var i = 1; i <= count; i++) _testChallenge(seed: i)];
+}
+
+app_models.ActivityUser _testActivityUser({int seed = 1}) {
+  return app_models.ActivityUser(
+    id: 'activity-user-$seed',
+    nickname: '用户 $seed',
+    avatar: 'https://example.com/peer/$seed.png',
+  );
+}
+
+app_models.Activity _testActivity({int seed = 1}) {
+  final types = ['challenge_completed', 'badge_earned', 'streak_reached', 'course_completed'];
+  return app_models.Activity(
+    id: 'activity-$seed',
+    type: types[seed % 4],
+    description: '完成了一个可见的学习里程碑 #$seed。',
+    timestamp: DateTime.now().subtract(Duration(hours: seed * 3)),
+    user: _testActivityUser(seed: seed),
+  );
+}
+
+List<app_models.Activity> _testActivities({int count = 3}) {
+  return [for (var i = 1; i <= count; i++) _testActivity(seed: i)];
+}
+
+app_models.Badge _testBadge({int seed = 1}) {
+  return app_models.Badge(
+    id: 'badge-$seed',
+    name: '徽章 $seed',
+    description: '因持续学习进步而授予。',
+    icon: 'https://example.com/badge/$seed.png',
+    earnedAt: DateTime.now().subtract(Duration(days: seed * 2)),
+  );
+}
+
+List<app_models.Badge> _testBadges({int count = 2}) {
+  return [for (var i = 1; i <= count; i++) _testBadge(seed: i)];
+}
+
+app_models.Friend _testFriend({int seed = 1}) {
+  return app_models.Friend(
+    id: 'friend-$seed',
+    nickname: '好友 $seed',
+    avatar: 'https://example.com/friend/$seed.png',
+    level: 3 + seed,
+    status: seed.isEven ? 'pending' : 'accepted',
+  );
+}
+
+List<app_models.Friend> _testFriends({int count = 4}) {
+  return [for (var i = 1; i <= count; i++) _testFriend(seed: i)];
+}
+
+app_models.LeaderboardEntry _testLeaderboardEntry({int seed = 1}) {
+  return app_models.LeaderboardEntry(
+    rank: seed,
+    userId: 'leader-$seed',
+    nickname: '榜首 $seed',
+    level: (10 - seed) < 1 ? 1 : 10 - seed,
+    xp: 8000 - seed * 400,
+  );
+}
+
+List<app_models.LeaderboardEntry> _testLeaderboardEntries({int count = 6}) {
+  return [for (var i = 1; i <= count; i++) _testLeaderboardEntry(seed: i)];
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   HttpOverrides.global = _TestHttpOverrides();
@@ -328,9 +482,7 @@ void main() {
   setUp(() {
     Get.testMode = true;
     Get.reset();
-    final mockData = MockDataService();
-    mockData.enableDelay = false;
-    Get.put<MockDataService>(mockData);
+    Get.put<ApiService>(ApiService());
     Get.put<StorageService>(_FakeStorageService());
   });
 

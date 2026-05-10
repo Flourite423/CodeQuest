@@ -1,14 +1,12 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:codequest/main.dart';
-import 'package:codequest/services/mock_data.dart';
+import 'package:codequest/services/api_service.dart';
 
 void main() {
   setUp(() {
     Get.reset();
-    final mockData = MockDataService();
-    mockData.enableDelay = false;
-    Get.put<MockDataService>(mockData);
+    Get.put<ApiService>(ApiService());
   });
 
   tearDown(() {
