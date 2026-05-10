@@ -36,7 +36,7 @@ pub async fn list_challenges(req: &mut Request, depot: &mut Depot) -> Result<Jso
     let offset = (page - 1) * per_page;
     
     let challenges = sqlx::query_as::<_, Challenge>(
-        "SELECT * FROM challenges WHERE status = 'published' ORDER BY sort_order LIMIT $1 OFFSET $2"
+        "SELECT id, challenge_code, title, summary, related_course_id, difficulty::text, reward_xp, status::text, sort_order, content_version, published_at, created_at, updated_at FROM challenges WHERE status = 'published' ORDER BY sort_order LIMIT $1 OFFSET $2"
     )
     .bind(per_page)
     .bind(offset)
@@ -66,7 +66,7 @@ pub async fn get_challenge(req: &mut Request, depot: &mut Depot) -> Result<Json<
         .or_else(|| req.param::<String>("id"))
         .ok_or_else(StatusError::bad_request)?;
     
-    let challenge = sqlx::query_as::<_, Challenge>("SELECT * FROM challenges WHERE id = $1")
+    let challenge = sqlx::query_as::<_, Challenge>("SELECT id, challenge_code, title, summary, related_course_id, difficulty::text, reward_xp, status::text, sort_order, content_version, published_at, created_at, updated_at FROM challenges WHERE id = $1")
         .bind(&id)
         .fetch_optional(pool)
         .await

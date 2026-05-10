@@ -274,6 +274,7 @@ pub struct Challenge {
     pub status: String,
     pub sort_order: i32,
     pub content_version: i32,
+    pub published_at: Option<DateTime<Utc>>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }

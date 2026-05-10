@@ -30,7 +30,7 @@ pub async fn get_today_challenge(depot: &mut Depot) -> Result<Json<ApiResponse<s
     let today = Utc::now().date_naive();
     
     let challenge = sqlx::query_as::<_, DailyChallenge>(
-        "SELECT * FROM daily_challenges WHERE challenge_date = $1 AND status = 'active'"
+        "SELECT id, challenge_date, title, exercise_id, difficulty::text, time_limit_seconds, reward_xp, status::text, published_at, created_at, updated_at FROM daily_challenges WHERE challenge_date = $1 AND status = 'active'"
     )
     .bind(today)
     .fetch_optional(pool)
@@ -60,7 +60,7 @@ pub async fn list_daily_challenges(depot: &mut Depot) -> Result<Json<ApiResponse
         .map_err(|_| StatusError::internal_server_error())?;
     
     let challenges = sqlx::query_as::<_, DailyChallenge>(
-        "SELECT * FROM daily_challenges WHERE status = 'active' ORDER BY challenge_date DESC LIMIT 30"
+        "SELECT id, challenge_date, title, exercise_id, difficulty::text, time_limit_seconds, reward_xp, status::text, published_at, created_at, updated_at FROM daily_challenges WHERE status = 'active' ORDER BY challenge_date DESC LIMIT 30"
     )
     .fetch_all(pool)
     .await
@@ -146,7 +146,7 @@ pub async fn get_daily_challenge(req: &mut Request, depot: &mut Depot) -> Result
     let challenge_uuid = Uuid::parse_str(&challenge_id)
         .map_err(|_| StatusError::bad_request().brief("Invalid challenge_id"))?;
     
-    let challenge = sqlx::query_as::<_, DailyChallenge>("SELECT * FROM daily_challenges WHERE id = $1")
+    let challenge = sqlx::query_as::<_, DailyChallenge>("SELECT id, challenge_date, title, exercise_id, difficulty::text, time_limit_seconds, reward_xp, status::text, published_at, created_at, updated_at FROM daily_challenges WHERE id = $1")
         .bind(challenge_uuid)
         .fetch_optional(pool)
         .await
