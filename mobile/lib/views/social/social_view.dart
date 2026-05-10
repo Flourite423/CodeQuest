@@ -1,10 +1,11 @@
+import 'package:dio/dio.dart' as dio;
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
 import '../../controllers/base_controller.dart';
 import '../../models/models.dart';
-import '../../services/mock_data.dart';
+import '../../services/api_service.dart';
 import '../../widgets/shared/empty_state.dart';
 import '../../widgets/shared/list_card.dart';
 import '../../widgets/shared/rank_row.dart';
@@ -40,14 +41,13 @@ class SocialView extends GetView<SocialController> {
 }
 
 class SocialController extends BaseController {
-  final MockDataService _mockData = Get.find<MockDataService>();
+  ApiService get _apiService => Get.find<ApiService>();
 
   final RxList<Activity> activities = <Activity>[].obs;
   final RxList<Friend> friends = <Friend>[].obs;
   final RxList<LeaderboardEntry> leaderboard = <LeaderboardEntry>[].obs;
 
-  // Current user ID for highlighting in leaderboard
-  static const String currentUserId = 'leader-5';
+  String currentUserId = '';
 
   @override
   void onInit() {
@@ -60,23 +60,64 @@ class SocialController extends BaseController {
       loadActivities(),
       loadFriends(),
       loadLeaderboard(),
+      loadCurrentUserId(),
     ]);
+  }
+
+  Future<void> loadCurrentUserId() async {
+    try {
+      final response = await _apiService.get('/me');
+      final payload = response.data is Map<String, dynamic>
+          ? response.data as Map<String, dynamic>
+          : <String, dynamic>{};
+      final data = payload['data'] as Map<String, dynamic>? ?? <String, dynamic>{};
+      currentUserId = (data['id'] ?? '').toString();
+    } catch (_) {
+      // Non-critical, leaderboard highlight will be disabled
+    }
   }
 
   Future<void> loadActivities() async {
     try {
-      final data = await _mockData.fetchActivities();
-      activities.value = data;
+      final response = await _apiService.get('/learner/activities');
+      final payload = response.data is Map<String, dynamic>
+          ? response.data as Map<String, dynamic>
+          : <String, dynamic>{};
+      final data = payload['data'] as Map<String, dynamic>? ?? <String, dynamic>{};
+      final items = (data['items'] as List<dynamic>? ?? <dynamic>[])
+          .whereType<Map>()
+          .map((item) => Activity.fromContract(Map<String, dynamic>.from(item)))
+          .toList();
+      activities.value = items;
+    } on dio.DioException catch (e) {
+      if (e.response?.statusCode == 401) {
+        activities.value = <Activity>[];
+      } else {
+        activities.value = <Activity>[];
+      }
     } catch (e) {
-      // Keep existing data or empty list
       activities.value = <Activity>[];
     }
   }
 
   Future<void> loadFriends() async {
     try {
-      final data = await _mockData.fetchFriends();
-      friends.value = data;
+      final response = await _apiService.get('/learner/friends');
+      final payload = response.data is Map<String, dynamic>
+          ? response.data as Map<String, dynamic>
+          : <String, dynamic>{};
+      final data = payload['data'] as Map<String, dynamic>? ?? <String, dynamic>{};
+      final items = (data['items'] as List<dynamic>? ?? <dynamic>[])
+          .whereType<Map>()
+          .map((item) => Friend.fromContract(Map<String, dynamic>.from(item)))
+          .toList();
+      friends.value = items;
+    } on dio.DioException catch (e) {
+      if (e.response?.statusCode == 401) {
+        friends.value = <Friend>[];
+      } else {
+        friends.value = <Friend>[];
+      }
     } catch (e) {
       friends.value = <Friend>[];
     }
@@ -84,8 +125,23 @@ class SocialController extends BaseController {
 
   Future<void> loadLeaderboard() async {
     try {
-      final data = await _mockData.fetchLeaderboard();
-      leaderboard.value = data;
+      final response = await _apiService.get('/learner/leaderboards');
+      final payload = response.data is Map<String, dynamic>
+          ? response.data as Map<String, dynamic>
+          : <String, dynamic>{};
+      final data = payload['data'] as Map<String, dynamic>? ?? <String, dynamic>{};
+      final items = (data['items'] as List<dynamic>? ?? <dynamic>[])
+          .whereType<Map>()
+          .map((item) =>
+              LeaderboardEntry.fromContract(Map<String, dynamic>.from(item)))
+          .toList();
+      leaderboard.value = items;
+    } on dio.DioException catch (e) {
+      if (e.response?.statusCode == 401) {
+        leaderboard.value = <LeaderboardEntry>[];
+      } else {
+        leaderboard.value = <LeaderboardEntry>[];
+      }
     } catch (e) {
       leaderboard.value = <LeaderboardEntry>[];
     }
@@ -208,8 +264,10 @@ class _FriendsTab extends StatelessWidget {
   Widget build(BuildContext context) {
     return Obx(() {
       final allFriends = controller.friends;
-      final pendingFriends = allFriends.where((f) => f.status == 'pending').toList();
-      final acceptedFriends = allFriends.where((f) => f.status == 'accepted').toList();
+      final pendingFriends =
+          allFriends.where((f) => f.status == 'pending').toList();
+      final acceptedFriends =
+          allFriends.where((f) => f.status == 'accepted').toList();
 
       return ListView(
         padding: EdgeInsets.all(16.w),
@@ -430,7 +488,7 @@ class _LeaderboardTab extends StatelessWidget {
             level: entry.level ?? 1,
             xp: entry.xp,
             avatarUrl: null,
-            isCurrentUser: entry.userId == SocialController.currentUserId,
+            isCurrentUser: entry.userId == controller.currentUserId,
           );
         },
       );

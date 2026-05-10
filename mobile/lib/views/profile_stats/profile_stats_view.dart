@@ -1,10 +1,11 @@
+import 'package:dio/dio.dart' as dio;
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
 import '../../controllers/base_controller.dart';
 import '../../models/models.dart' as app_models;
-import '../../services/mock_data.dart';
+import '../../services/api_service.dart';
 import '../../widgets/page_state_host.dart';
 
 enum TimeRange { week, month, all }
@@ -614,13 +615,13 @@ class _ProgressRingPainter extends CustomPainter {
 }
 
 class ProfileStatsController extends BaseController {
+  ApiService get _apiService => Get.find<ApiService>();
+
   final Rx<TimeRange> selectedTimeRange = TimeRange.week.obs;
   final Rx<app_models.Stats?> stats = Rx<app_models.Stats?>(null);
   final RxList<app_models.LeaderboardEntry> leaderboardData =
       <app_models.LeaderboardEntry>[].obs;
   final RxList<int> trendData = <int>[].obs;
-
-  final MockDataService _mockDataService = Get.find<MockDataService>();
 
   @override
   void onInit() {
@@ -633,16 +634,49 @@ class ProfileStatsController extends BaseController {
     registerRetry(loadStatsData);
 
     try {
-      final statsResult = await _mockDataService.fetchStats();
-      final leaderboard = await _mockDataService.fetchLeaderboard();
+      final response = await _apiService.get('/learner/stats/personal');
+      final payload = response.data is Map<String, dynamic>
+          ? response.data as Map<String, dynamic>
+          : <String, dynamic>{};
+      final data = payload['data'] as Map<String, dynamic>? ?? <String, dynamic>{};
 
-      if (statsResult != null) {
-        stats.value = statsResult;
-        leaderboardData.assignAll(leaderboard);
-        _generateTrendData();
-        resetState();
+      final statsResult = app_models.Stats.fromPersonalStatsJson(data);
+      stats.value = statsResult;
+
+      // Load leaderboard data (non-critical, secondary display)
+      try {
+        final lbResponse = await _apiService.get('/learner/leaderboards');
+        final lbPayload = lbResponse.data is Map<String, dynamic>
+            ? lbResponse.data as Map<String, dynamic>
+            : <String, dynamic>{};
+        final lbData = lbPayload['data'] as Map<String, dynamic>? ?? <String, dynamic>{};
+        final items = (lbData['items'] as List<dynamic>? ?? <dynamic>[])
+            .whereType<Map>()
+            .map((item) =>
+                app_models.LeaderboardEntry.fromContract(Map<String, dynamic>.from(item)))
+            .toList();
+        leaderboardData.assignAll(items);
+      } catch (_) {
+        // Leaderboard is secondary; keep empty if fails
+        leaderboardData.clear();
+      }
+
+      _generateTrendData();
+      resetState();
+    } on dio.DioException catch (e) {
+      if (e.response?.statusCode == 401) {
+        await setAuthExpired(message: '登录状态已失效，请重新登录。');
+      } else if (e.response?.statusCode == 403) {
+        setError(message: '当前账号暂无查看统计的权限。');
+      } else if (e.response?.statusCode == 500) {
+        setError(message: '统计服务暂时不可用，请稍后重试。');
+      } else if (e.type == dio.DioExceptionType.connectionTimeout ||
+          e.type == dio.DioExceptionType.receiveTimeout) {
+        setError(message: '加载统计超时，请重试。');
+      } else if (e.type == dio.DioExceptionType.connectionError) {
+        setError(message: '网络连接异常，请检查后重试。');
       } else {
-        setEmpty(message: '暂无统计数据。');
+        setError(message: '加载统计数据失败，请重试。');
       }
     } catch (e) {
       setError(message: '加载统计数据失败，请重试。');

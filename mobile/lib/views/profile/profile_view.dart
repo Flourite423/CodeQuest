@@ -1,10 +1,11 @@
+import 'package:dio/dio.dart' as dio;
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
 import '../../controllers/base_controller.dart';
 import '../../models/models.dart' as app_models;
-import '../../services/mock_data.dart';
+import '../../services/api_service.dart';
 import '../../widgets/page_state_host.dart';
 
 class ProfileView extends GetView<ProfileController> {
@@ -248,7 +249,8 @@ class ProfileView extends GetView<ProfileController> {
     );
   }
 
-  Widget _buildBadgesPreview(BuildContext context, List<app_models.Badge> badges) {
+  Widget _buildBadgesPreview(
+      BuildContext context, List<app_models.Badge> badges) {
     final textTheme = Theme.of(context).textTheme;
     final colorScheme = Theme.of(context).colorScheme;
     final recentBadges = badges.take(3).toList();
@@ -285,8 +287,9 @@ class ProfileView extends GetView<ProfileController> {
                       CircleAvatar(
                         radius: 24.r,
                         backgroundColor: colorScheme.primaryContainer,
-                        backgroundImage:
-                            badge.icon != null ? NetworkImage(badge.icon!) : null,
+                        backgroundImage: badge.icon != null
+                            ? NetworkImage(badge.icon!)
+                            : null,
                         child: badge.icon == null
                             ? Icon(
                                 Icons.workspace_premium,
@@ -388,11 +391,11 @@ class _StatItem {
 }
 
 class ProfileController extends BaseController {
+  ApiService get _apiService => Get.find<ApiService>();
+
   final Rx<app_models.User?> user = Rx<app_models.User?>(null);
   final Rx<app_models.Stats?> stats = Rx<app_models.Stats?>(null);
   final RxList<app_models.Badge> badges = <app_models.Badge>[].obs;
-
-  final MockDataService _mockDataService = Get.find<MockDataService>();
 
   @override
   void onInit() {
@@ -405,17 +408,82 @@ class ProfileController extends BaseController {
     registerRetry(loadProfileData);
 
     try {
-      final userData = await _mockDataService.fetchUser();
-      final statsData = await _mockDataService.fetchStats();
-      final badgesData = await _mockDataService.fetchBadges();
+      // Fetch account (/me) and profile (/learner/profile) in parallel
+      final results = await Future.wait([
+        _apiService.get('/me'),
+        _apiService.get('/learner/profile'),
+        _apiService.get('/learner/stats/personal'),
+        _apiService.get('/learner/rewards'),
+      ]);
 
-      if (userData != null) {
-        user.value = userData;
-        stats.value = statsData;
-        badges.assignAll(badgesData);
-        resetState();
+      final meResponse = results[0];
+      final profileResponse = results[1];
+      final statsResponse = results[2];
+      final rewardsResponse = results[3];
+
+      // Parse account data
+      final mePayload = meResponse.data is Map<String, dynamic>
+          ? meResponse.data as Map<String, dynamic>
+          : <String, dynamic>{};
+      final account = mePayload['data'] as Map<String, dynamic>? ?? <String, dynamic>{};
+
+      // Parse profile data
+      final profilePayload = profileResponse.data is Map<String, dynamic>
+          ? profileResponse.data as Map<String, dynamic>
+          : <String, dynamic>{};
+      final profile = profilePayload['data'] as Map<String, dynamic>? ?? <String, dynamic>{};
+
+      // Parse stats data
+      final statsPayload = statsResponse.data is Map<String, dynamic>
+          ? statsResponse.data as Map<String, dynamic>
+          : <String, dynamic>{};
+      final statsData = statsPayload['data'] as Map<String, dynamic>? ?? <String, dynamic>{};
+
+      // Parse rewards data for badges
+      final rewardsPayload = rewardsResponse.data is Map<String, dynamic>
+          ? rewardsResponse.data as Map<String, dynamic>
+          : <String, dynamic>{};
+      final rewardsData = rewardsPayload['data'] as Map<String, dynamic>? ?? <String, dynamic>{};
+
+      // Combine account + profile into User
+      user.value = app_models.User.fromContracts(
+        account: account,
+        profile: profile,
+      );
+
+      // Parse stats
+      stats.value = app_models.Stats.fromPersonalStatsJson(statsData);
+
+      // Parse badges from rewards data
+      final badgeItems = (rewardsData['badges'] as List<dynamic>? ?? <dynamic>[])
+          .whereType<Map>()
+          .map((item) {
+            final json = Map<String, dynamic>.from(item);
+            return app_models.Badge.fromAwardJson(
+              json,
+              name: '徽章',
+              description: '',
+              icon: null,
+            );
+          })
+          .toList();
+      badges.assignAll(badgeItems);
+
+      resetState();
+    } on dio.DioException catch (e) {
+      if (e.response?.statusCode == 401) {
+        await setAuthExpired(message: '登录状态已失效，请重新登录后查看个人资料。');
+      } else if (e.response?.statusCode == 403) {
+        setError(message: '当前账号暂无访问权限。');
+      } else if (e.response?.statusCode == 500) {
+        setError(message: '个人资料服务暂时不可用，请稍后重试。');
+      } else if (e.type == dio.DioExceptionType.connectionTimeout ||
+          e.type == dio.DioExceptionType.receiveTimeout) {
+        setError(message: '加载个人资料超时，请重试。');
+      } else if (e.type == dio.DioExceptionType.connectionError) {
+        setError(message: '网络连接异常，请检查后重试。');
       } else {
-        setEmpty(message: '个人资料暂不可用。');
+        setError(message: '加载个人资料失败，请重试。');
       }
     } catch (e) {
       setError(message: '加载个人资料失败，请重试。');

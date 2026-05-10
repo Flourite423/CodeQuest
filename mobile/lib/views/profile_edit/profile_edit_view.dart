@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:dio/dio.dart' as dio;
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
@@ -7,7 +8,7 @@ import 'package:image_picker/image_picker.dart';
 
 import '../../controllers/base_controller.dart';
 import '../../models/models.dart' as app_models;
-import '../../services/mock_data.dart';
+import '../../services/api_service.dart';
 import '../../services/storage_service.dart';
 import '../../widgets/page_state_host.dart';
 
@@ -251,7 +252,8 @@ class ProfileEditView extends GetView<ProfileEditController> {
                     selectedColor: colorScheme.primaryContainer,
                     labelStyle: TextStyle(
                       fontSize: 14.sp,
-                      fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                      fontWeight:
+                          isSelected ? FontWeight.w600 : FontWeight.normal,
                       color: isSelected
                           ? colorScheme.onPrimaryContainer
                           : colorScheme.onSurfaceVariant,
@@ -335,7 +337,9 @@ class ProfileEditView extends GetView<ProfileEditController> {
                             theme.label,
                             style: TextStyle(
                               fontSize: 13.sp,
-                              fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                              fontWeight: isSelected
+                                  ? FontWeight.w600
+                                  : FontWeight.normal,
                               color: isSelected
                                   ? colorScheme.onPrimaryContainer
                                   : colorScheme.onSurfaceVariant,
@@ -362,7 +366,8 @@ class ProfileEditView extends GetView<ProfileEditController> {
         width: double.infinity,
         height: 52.h,
         child: ElevatedButton(
-          onPressed: controller.isFormValid.value ? controller.saveProfile : null,
+          onPressed:
+              controller.isFormValid.value ? controller.saveProfile : null,
           style: ElevatedButton.styleFrom(
             backgroundColor: colorScheme.primary,
             foregroundColor: colorScheme.onPrimary,
@@ -378,7 +383,8 @@ class ProfileEditView extends GetView<ProfileEditController> {
                   height: 24.h,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(colorScheme.onPrimary),
+                    valueColor:
+                        AlwaysStoppedAnimation<Color>(colorScheme.onPrimary),
                   ),
                 )
               : Text(
@@ -403,7 +409,7 @@ class _ThemeOption {
 }
 
 class ProfileEditController extends BaseController {
-  final MockDataService _mockDataService = Get.find<MockDataService>();
+  ApiService get _apiService => Get.find<ApiService>();
   final StorageService _storageService = Get.find<StorageService>();
 
   final nicknameController = TextEditingController();
@@ -443,29 +449,58 @@ class ProfileEditController extends BaseController {
     registerRetry(loadProfileData);
 
     try {
-      final userData = await _mockDataService.fetchUser();
-      if (userData != null) {
-        user.value = userData;
-        avatarUrl.value = userData.avatar;
-        nicknameController.text = userData.nickname;
-        bioController.text = userData.bio ?? '';
-        dailyGoal.value = userData.dailyGoal;
-        themeMode.value = userData.themeMode;
+      final response = await _apiService.get('/learner/profile');
+      final payload = response.data is Map<String, dynamic>
+          ? response.data as Map<String, dynamic>
+          : <String, dynamic>{};
+      final profile =
+          payload['data'] as Map<String, dynamic>? ?? <String, dynamic>{};
 
-        // Load persisted settings if available
-        final persistedGoal = _storageService.read<int>(_dailyGoalKey);
-        final persistedTheme = _storageService.read<String>(_themeModeKey);
-        if (persistedGoal != null) {
-          dailyGoal.value = persistedGoal;
-        }
-        if (persistedTheme != null) {
-          themeMode.value = persistedTheme;
-        }
+      // Build user from profile data
+      user.value = app_models.User.fromContracts(
+        account: {'id': profile['account_id'] ?? '', 'email': ''},
+        profile: profile,
+      );
 
-        validateForm();
-        resetState();
+      avatarUrl.value = profile['avatar_url'] as String?;
+      nicknameController.text = (profile['nickname'] ?? '').toString();
+      bioController.text = (profile['bio'] as String?) ?? '';
+
+      final goal = profile['daily_goal_minutes'];
+      if (goal != null) {
+        dailyGoal.value = goal is int ? goal : int.tryParse(goal.toString()) ?? 30;
+      }
+      final theme = profile['theme_mode'] as String?;
+      if (theme != null && theme.isNotEmpty) {
+        themeMode.value = theme;
+      }
+
+      // Load persisted settings if available
+      final persistedGoal = _storageService.read<int>(_dailyGoalKey);
+      final persistedTheme = _storageService.read<String>(_themeModeKey);
+      if (persistedGoal != null) {
+        dailyGoal.value = persistedGoal;
+      }
+      if (persistedTheme != null) {
+        themeMode.value = persistedTheme;
+      }
+
+      validateForm();
+      resetState();
+    } on dio.DioException catch (e) {
+      if (e.response?.statusCode == 401) {
+        await setAuthExpired(message: '登录状态已失效，请重新登录后编辑资料。');
+      } else if (e.response?.statusCode == 403) {
+        setError(message: '当前账号暂无编辑权限。');
+      } else if (e.response?.statusCode == 500) {
+        setError(message: '个人资料服务暂时不可用，请稍后重试。');
+      } else if (e.type == dio.DioExceptionType.connectionTimeout ||
+          e.type == dio.DioExceptionType.receiveTimeout) {
+        setError(message: '加载个人资料超时，请重试。');
+      } else if (e.type == dio.DioExceptionType.connectionError) {
+        setError(message: '网络连接异常，请检查后重试。');
       } else {
-        setEmpty(message: '个人资料暂不可用。');
+        setError(message: '加载个人资料失败，请重试。');
       }
     } catch (e) {
       setError(message: '加载个人资料失败，请重试。');
@@ -623,10 +658,8 @@ class ProfileEditController extends BaseController {
     isUploadingAvatar.value = true;
 
     try {
-      // Simulate upload delay
-      await Future<void>.delayed(const Duration(seconds: 1));
-
-      // Update local state with the selected file
+      // TODO: Replace with actual avatar upload endpoint when available
+      // For now, keep the selected file locally
       avatarFile.value = imageFile;
 
       Get.snackbar(
@@ -659,22 +692,15 @@ class ProfileEditController extends BaseController {
       await _storageService.write(_dailyGoalKey, dailyGoal.value);
       await _storageService.write(_themeModeKey, themeMode.value);
 
-      // Simulate API call delay
-      await Future<void>.delayed(const Duration(milliseconds: 800));
-
-      // Update local user data
-      user.value = app_models.User(
-        id: user.value?.id ?? '',
-        email: user.value?.email ?? '',
-        nickname: nicknameController.text.trim(),
-        avatar: avatarUrl.value ?? avatarFile.value?.path,
-        level: user.value?.level ?? 1,
-        xp: user.value?.xp ?? 0,
-        streak: user.value?.streak ?? 0,
-        bio: bioController.text.trim().isEmpty ? null : bioController.text.trim(),
-        dailyGoal: dailyGoal.value,
-        themeMode: themeMode.value,
-      );
+      // Send PATCH request to update profile
+      await _apiService.patch('/learner/profile', data: {
+        'nickname': nicknameController.text.trim(),
+        'bio': bioController.text.trim().isEmpty
+            ? null
+            : bioController.text.trim(),
+        'daily_goal_minutes': dailyGoal.value,
+        'theme_mode': themeMode.value,
+      });
 
       Get.back();
       Get.snackbar(
@@ -684,6 +710,51 @@ class ProfileEditController extends BaseController {
         duration: const Duration(seconds: 2),
         margin: EdgeInsets.all(16.w),
       );
+    } on dio.DioException catch (e) {
+      if (e.response?.statusCode == 400) {
+        Get.snackbar(
+          '数据错误',
+          '请检查输入内容后重试。',
+          snackPosition: SnackPosition.BOTTOM,
+          duration: const Duration(seconds: 3),
+          margin: EdgeInsets.all(16.w),
+        );
+      } else if (e.response?.statusCode == 401) {
+        await setAuthExpired(message: '登录状态已失效，请重新登录。');
+      } else if (e.response?.statusCode == 500) {
+        Get.snackbar(
+          '服务错误',
+          '保存服务暂时不可用，请稍后重试。',
+          snackPosition: SnackPosition.BOTTOM,
+          duration: const Duration(seconds: 3),
+          margin: EdgeInsets.all(16.w),
+        );
+      } else if (e.type == dio.DioExceptionType.connectionTimeout ||
+          e.type == dio.DioExceptionType.receiveTimeout) {
+        Get.snackbar(
+          '请求超时',
+          '保存超时，请重试。',
+          snackPosition: SnackPosition.BOTTOM,
+          duration: const Duration(seconds: 3),
+          margin: EdgeInsets.all(16.w),
+        );
+      } else if (e.type == dio.DioExceptionType.connectionError) {
+        Get.snackbar(
+          '网络错误',
+          '网络连接异常，请检查后重试。',
+          snackPosition: SnackPosition.BOTTOM,
+          duration: const Duration(seconds: 3),
+          margin: EdgeInsets.all(16.w),
+        );
+      } else {
+        Get.snackbar(
+          '错误',
+          '保存个人资料失败，请重试。',
+          snackPosition: SnackPosition.BOTTOM,
+          duration: const Duration(seconds: 3),
+          margin: EdgeInsets.all(16.w),
+        );
+      }
     } catch (e) {
       Get.snackbar(
         '错误',

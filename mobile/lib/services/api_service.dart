@@ -62,6 +62,10 @@ class ApiService extends GetxService {
     return _dio.put(path, data: data);
   }
 
+  Future<dio.Response> patch(String path, {dynamic data}) async {
+    return _dio.patch(path, data: data);
+  }
+
   Future<dio.Response> delete(String path) async {
     return _dio.delete(path);
   }

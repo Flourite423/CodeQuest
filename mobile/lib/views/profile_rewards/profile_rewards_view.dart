@@ -1,10 +1,11 @@
+import 'package:dio/dio.dart' as dio;
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
 import '../../controllers/base_controller.dart';
 import '../../models/models.dart' as app_models;
-import '../../services/mock_data.dart';
+import '../../services/api_service.dart';
 import '../../widgets/page_state_host.dart';
 import '../../widgets/shared/filter_sheet.dart';
 
@@ -13,8 +14,6 @@ class ProfileRewardsView extends GetView<ProfileRewardsController> {
 
   @override
   Widget build(BuildContext context) {
-
-
     return Scaffold(
       appBar: AppBar(
         title: const Text('奖励中心'),
@@ -176,7 +175,6 @@ class ProfileRewardsView extends GetView<ProfileRewardsController> {
   }
 
   Widget _buildEmptyBadges(BuildContext context) {
-
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
@@ -215,7 +213,6 @@ class ProfileRewardsView extends GetView<ProfileRewardsController> {
   }
 
   Widget _buildBadgesGrid(BuildContext context, List<app_models.Badge> badges) {
-
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
@@ -321,7 +318,8 @@ class ProfileRewardsView extends GetView<ProfileRewardsController> {
         ),
         SizedBox(height: 12.h),
         if (rewards.isEmpty)
-          _buildEmptyLedger(context, hasFilters: controller.hasActiveRewardFilters)
+          _buildEmptyLedger(
+              context, hasFilters: controller.hasActiveRewardFilters)
         else
           _buildRewardsTimeline(context, rewards),
       ],
@@ -329,7 +327,6 @@ class ProfileRewardsView extends GetView<ProfileRewardsController> {
   }
 
   Widget _buildEmptyLedger(BuildContext context, {bool hasFilters = false}) {
-
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
@@ -356,9 +353,7 @@ class ProfileRewardsView extends GetView<ProfileRewardsController> {
           ),
           SizedBox(height: 4.h),
           Text(
-            hasFilters
-                ?                 '尝试调整筛选条件。'
-                : '你的奖励历史将显示于此。',
+            hasFilters ? '尝试调整筛选条件。' : '你的奖励历史将显示于此。',
             style: textTheme.bodyMedium?.copyWith(
               color: colorScheme.onSurfaceVariant,
             ),
@@ -373,7 +368,6 @@ class ProfileRewardsView extends GetView<ProfileRewardsController> {
     BuildContext context,
     List<app_models.Reward> rewards,
   ) {
-
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
@@ -504,7 +498,6 @@ class BadgePreviewSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-
     final textTheme = Theme.of(context).textTheme;
 
     return Container(
@@ -637,11 +630,11 @@ class BadgePreviewSheet extends StatelessWidget {
 // ═══════════════════════════════════════════════════════════
 
 class ProfileRewardsController extends BaseController {
+  ApiService get _apiService => Get.find<ApiService>();
+
   final Rx<app_models.User?> user = Rx<app_models.User?>(null);
   final RxList<app_models.Badge> badges = <app_models.Badge>[].obs;
   final RxList<app_models.Reward> rewards = <app_models.Reward>[].obs;
-
-  final MockDataService _mockDataService = Get.find<MockDataService>();
 
   // ── Filter state ──────────────────────────────────
   final RxString rewardTypeFilter = ''.obs;
@@ -660,7 +653,9 @@ class ProfileRewardsController extends BaseController {
       result = result.where((r) {
         switch (rewardTypeFilter.value) {
           case 'xp':
-            return r.type == 'chapter' || r.type == 'exercise' || r.type == 'daily';
+            return r.type == 'chapter' ||
+                r.type == 'exercise' ||
+                r.type == 'daily';
           case 'badge':
             return r.type == 'challenge';
           case 'achievement':
@@ -767,18 +762,77 @@ class ProfileRewardsController extends BaseController {
     registerRetry(loadRewardsData);
 
     try {
-      final userData = await _mockDataService.fetchUser();
-      final badgesData = await _mockDataService.fetchBadges();
-      final rewardsData = await _mockDataService.fetchRewards();
+      // Fetch profile (for XP card) and rewards in parallel
+      final results = await Future.wait([
+        _apiService.get('/learner/profile'),
+        _apiService.get('/learner/rewards'),
+      ]);
 
-      user.value = userData;
-      badges.assignAll(badgesData);
-      rewards.assignAll(rewardsData);
+      final profileResponse = results[0];
+      final rewardsResponse = results[1];
 
-      if (badgesData.isEmpty && rewardsData.isEmpty) {
+      // Parse profile data
+      final profilePayload = profileResponse.data is Map<String, dynamic>
+          ? profileResponse.data as Map<String, dynamic>
+          : <String, dynamic>{};
+      final profile =
+          profilePayload['data'] as Map<String, dynamic>? ?? <String, dynamic>{};
+
+      // Build user from profile (account not needed for XP card display)
+      user.value = app_models.User.fromContracts(
+        account: {'id': profile['account_id'] ?? '', 'email': ''},
+        profile: profile,
+      );
+
+      // Parse rewards data
+      final rewardsPayload = rewardsResponse.data is Map<String, dynamic>
+          ? rewardsResponse.data as Map<String, dynamic>
+          : <String, dynamic>{};
+      final data =
+          rewardsPayload['data'] as Map<String, dynamic>? ?? <String, dynamic>{};
+
+      // Parse badges from rewards data
+      final badgeItems = (data['badges'] as List<dynamic>? ?? <dynamic>[])
+          .whereType<Map>()
+          .map((item) {
+            final json = Map<String, dynamic>.from(item);
+            return app_models.Badge.fromAwardJson(
+              json,
+              name: '徽章',
+              description: '',
+              icon: null,
+            );
+          })
+          .toList();
+      badges.assignAll(badgeItems);
+
+      // Parse xp ledger from rewards data
+      final rewardItems = (data['xp_ledger'] as List<dynamic>? ?? <dynamic>[])
+          .whereType<Map>()
+          .map((item) =>
+              app_models.Reward.fromLedgerJson(Map<String, dynamic>.from(item)))
+          .toList();
+      rewards.assignAll(rewardItems);
+
+      if (badgeItems.isEmpty && rewardItems.isEmpty) {
         setEmpty(message: '暂无奖励或徽章。开始学习吧！');
       } else {
         resetState();
+      }
+    } on dio.DioException catch (e) {
+      if (e.response?.statusCode == 401) {
+        await setAuthExpired(message: '登录状态已失效，请重新登录。');
+      } else if (e.response?.statusCode == 403) {
+        setError(message: '当前账号暂无查看奖励的权限。');
+      } else if (e.response?.statusCode == 500) {
+        setError(message: '奖励服务暂时不可用，请稍后重试。');
+      } else if (e.type == dio.DioExceptionType.connectionTimeout ||
+          e.type == dio.DioExceptionType.receiveTimeout) {
+        setError(message: '加载奖励超时，请重试。');
+      } else if (e.type == dio.DioExceptionType.connectionError) {
+        setError(message: '网络连接异常，请检查后重试。');
+      } else {
+        setError(message: '加载奖励失败，请重试。');
       }
     } catch (e) {
       setError(message: '加载奖励失败，请重试。');
