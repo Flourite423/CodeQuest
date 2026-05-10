@@ -1,10 +1,11 @@
+import 'package:dio/dio.dart' as dio;
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
 import '../../controllers/base_controller.dart';
 import '../../models/app_models.dart';
-import '../../services/mock_data.dart';
+import '../../services/api_service.dart';
 import '../../services/progress_service.dart';
 import '../../widgets/page_state_host.dart';
 
@@ -19,7 +20,7 @@ class ChallengeListController extends BaseController {
   final RxList<Challenge> challenges = <Challenge>[].obs;
   final RxMap<String, int> challengeStars = <String, int>{}.obs;
 
-  MockDataService get _mockData => Get.find<MockDataService>();
+  ApiService get _apiService => Get.find<ApiService>();
 
   ProgressService get _progress {
     if (Get.isRegistered<ProgressService>()) {
@@ -52,7 +53,18 @@ class ChallengeListController extends BaseController {
     registerRetry(loadChallenges);
 
     try {
-      final items = await _mockData.fetchChallenges();
+      final response = await _apiService.get('/learner/challenges');
+      final payload = response.data is Map<String, dynamic>
+          ? response.data as Map<String, dynamic>
+          : <String, dynamic>{};
+      final data = payload['data'] is Map<String, dynamic>
+          ? payload['data'] as Map<String, dynamic>
+          : <String, dynamic>{};
+      final items = (data['items'] as List<dynamic>? ?? <dynamic>[])
+          .whereType<Map>()
+          .map((item) => Challenge.fromMapItemJson(Map<String, dynamic>.from(item)))
+          .toList();
+
       await _progress.cacheChallenges(items);
       final merged = _progress.applyChallengeProgressList(items);
       challenges.assignAll(merged);
@@ -64,6 +76,21 @@ class ChallengeListController extends BaseController {
         setEmpty(message: '暂无可用挑战。');
       } else {
         resetState();
+      }
+    } on dio.DioException catch (e) {
+      if (e.response?.statusCode == 401) {
+        await setAuthExpired(message: '登录状态已失效，请重新登录后查看挑战。');
+      } else if (e.response?.statusCode == 403) {
+        setError(message: '当前账号暂无挑战访问权限。');
+      } else if (e.response?.statusCode == 500) {
+        setError(message: '挑战服务暂时不可用，请稍后重试。');
+      } else if (e.type == dio.DioExceptionType.connectionTimeout ||
+          e.type == dio.DioExceptionType.receiveTimeout) {
+        setError(message: '加载挑战超时，请重试。');
+      } else if (e.type == dio.DioExceptionType.connectionError) {
+        setError(message: '网络连接异常，请检查后重试。');
+      } else {
+        setError(message: '加载挑战失败，请重试。');
       }
     } catch (e) {
       setError(message: '加载挑战失败，请重试。');

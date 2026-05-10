@@ -148,7 +148,7 @@ class LoginView extends GetView<LoginController> {
 }
 
 class LoginController extends BaseController {
-  final ApiService _apiService = Get.find<ApiService>();
+  ApiService get _apiService => Get.find<ApiService>();
   final StorageService _storage = Get.find<StorageService>();
 
   final emailController = TextEditingController();
@@ -207,13 +207,19 @@ class LoginController extends BaseController {
     resetState();
 
     try {
-      final response = await _apiService.post('/auth/login', data: {
+      final response = await _apiService.post('/auth/learner/login', data: {
         'email': emailController.text.trim(),
         'password': passwordController.text,
       });
 
       if (response.statusCode == 200) {
-        final token = response.data['token'] as String?;
+        final payload = response.data is Map<String, dynamic>
+            ? response.data as Map<String, dynamic>
+            : <String, dynamic>{};
+        final data = payload['data'] is Map<String, dynamic>
+            ? payload['data'] as Map<String, dynamic>
+            : payload;
+        final token = (data['access_token'] ?? data['token']) as String?;
         if (token != null && token.isNotEmpty) {
           await _storage.write(StorageService.authTokenKey, token);
           Get.offAllNamed('/home');

@@ -1,10 +1,11 @@
+import 'package:dio/dio.dart' as dio;
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
 import '../../controllers/base_controller.dart';
 import '../../models/models.dart' hide Badge;
-import '../../services/mock_data.dart';
+import '../../services/api_service.dart';
 import '../../services/progress_service.dart';
 import '../../widgets/page_state_host.dart';
 import '../../widgets/shared/filter_sheet.dart';
@@ -336,7 +337,7 @@ class _MetaChip extends StatelessWidget {
 }
 
 class CourseListController extends BaseController {
-  final MockDataService _mockDataService = Get.find<MockDataService>();
+  ApiService get _apiService => Get.find<ApiService>();
 
   ProgressService get _progressService {
     if (Get.isRegistered<ProgressService>()) {
@@ -520,7 +521,19 @@ class CourseListController extends BaseController {
     registerRetry(loadCourses);
 
     try {
-      final result = await _mockDataService.fetchCourses();
+      final response = await _apiService.get('/learner/courses');
+      final payload = response.data is Map<String, dynamic>
+          ? response.data as Map<String, dynamic>
+          : <String, dynamic>{};
+      final data = payload['data'] is Map<String, dynamic>
+          ? payload['data'] as Map<String, dynamic>
+          : <String, dynamic>{};
+      final items = (data['items'] as List<dynamic>? ?? <dynamic>[])
+          .whereType<Map>()
+          .map((item) => Course.fromListItemJson(Map<String, dynamic>.from(item)))
+          .toList();
+
+      final result = items;
       final withProgress = _progressService.applyCourseProgressList(result);
       await _progressService.cacheCourses(withProgress);
       courses.value = withProgress;
@@ -528,10 +541,23 @@ class CourseListController extends BaseController {
       if (result.isEmpty) {
         setEmpty(message: '暂无可用课程。');
       } else {
-        pageState.value = PageState.initial;
+        resetState();
       }
-    } on MockDataException catch (e) {
-      setError(message: e.message);
+    } on dio.DioException catch (e) {
+      if (e.response?.statusCode == 401) {
+        await setAuthExpired(message: '登录状态已失效，请重新登录后查看课程。');
+      } else if (e.response?.statusCode == 403) {
+        setError(message: '当前账号暂无课程访问权限。');
+      } else if (e.response?.statusCode == 500) {
+        setError(message: '课程服务暂时不可用，请稍后重试。');
+      } else if (e.type == dio.DioExceptionType.connectionTimeout ||
+          e.type == dio.DioExceptionType.receiveTimeout) {
+        setError(message: '加载课程超时，请重试。');
+      } else if (e.type == dio.DioExceptionType.connectionError) {
+        setError(message: '网络连接异常，请检查后重试。');
+      } else {
+        setError(message: '加载课程失败，请重试。');
+      }
     } catch (e) {
       setError(message: '加载课程失败，请重试。');
     }
