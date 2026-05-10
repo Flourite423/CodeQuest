@@ -1,67 +1,22 @@
 {
-  "active_plan": "/home/ltc/CodeQuest/.sisyphus/plans/three-end-contract-first-integration.md",
-  "started_at": "2026-05-06T19:20:12.546Z",
+  "active_plan": "/home/ltc/.local/share/opencode/worktree/fb38d988bb0526ceccf255d23722a8655dd6e4f2/hidden-falcon/.sisyphus/plans/admin-page-design.md",
+  "started_at": "2026-05-09T07:49:19.750Z",
   "session_ids": [
-    "ses_20310ba95ffe5ZoQSBNMjZ6SL7"
+    "ses_1f4a4d797ffevLVZpWrzAbuufl"
   ],
   "session_origins": {
-    "ses_20310ba95ffe5ZoQSBNMjZ6SL7": "direct"
+    "ses_1f4a4d797ffevLVZpWrzAbuufl": "direct"
   },
-  "plan_name": "three-end-contract-first-integration",
+  "plan_name": "admin-page-design",
   "agent": "atlas",
   "task_sessions": {
-    "todo:1": {
-      "task_key": "todo:1",
-      "task_label": "1",
-      "task_title": "固化 OpenAPI 单一真源与目录约定",
-      "session_id": "ses_20141f9b4ffe9cLJssur8R0o4M",
-      "agent": "Sisyphus-Junior",
-      "category": "deep",
-      "updated_at": "2026-05-06T19:24:37.193Z"
-    },
-    "todo:2": {
-      "task_key": "todo:2",
-      "task_label": "2",
-      "task_title": "定义统一认证、角色与全局字段规范",
-      "session_id": "ses_2013ee993ffey6QMSDuTvCHOn3",
-      "agent": "Sisyphus-Junior",
-      "category": "deep",
-      "updated_at": "2026-05-06T19:28:47.360Z"
-    },
-    "todo:3": {
-      "task_key": "todo:3",
-      "task_label": "3",
-      "task_title": "定义课程与章节领域契约",
-      "session_id": "ses_2013ac5f9ffe0hdIq6SptZIlYV",
-      "agent": "Sisyphus-Junior",
-      "category": "deep",
-      "updated_at": "2026-05-06T19:36:54.314Z"
-    },
-    "todo:7": {
-      "task_key": "todo:7",
-      "task_label": "7",
-      "task_title": "定义后台运营、审核、公告与系统配置契约",
-      "session_id": "ses_20131fbfaffe1I4y5pNCVi2QSy",
-      "agent": "Sisyphus-Junior",
-      "category": "deep",
-      "updated_at": "2026-05-06T19:44:33.841Z"
-    },
-    "todo:9": {
-      "task_key": "todo:9",
-      "task_label": "9",
-      "task_title": "定义三端独立开发联调机制与 mock 资产",
-      "session_id": "ses_2012cd7ffffeYEsRdqbBRpmnBJ",
-      "agent": "Sisyphus-Junior",
-      "category": "writing",
-      "updated_at": "2026-05-06T19:48:14.317Z"
-    },
     "final-wave:f1": {
       "task_key": "final-wave:f1",
       "task_label": "F1",
       "task_title": "Plan Compliance Audit — oracle",
-      "session_id": "ses_200f341afffeRv7Z1Jsrvbncdh",
-      "agent": "general",
-      "updated_at": "2026-05-06T21:18:39.191Z"
+      "session_id": "ses_1f4092622ffe4jo3cx3hJJPUVz",
+      "agent": "oracle",
+      "updated_at": "2026-05-09T09:08:47.887Z"
     }
   }
 }
