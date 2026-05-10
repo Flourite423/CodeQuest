@@ -333,10 +333,26 @@ pub async fn get_dashboard_stats(depot: &mut Depot) -> Result<Json<ApiResponse<s
         .await
         .map_err(|_| StatusError::internal_server_error())?;
 
+    let active_today: (i64,) = sqlx::query_as(
+        "SELECT COUNT(DISTINCT account_id) FROM sessions WHERE last_seen_at >= CURRENT_DATE"
+    )
+    .fetch_one(pool)
+    .await
+    .map_err(|_| StatusError::internal_server_error())?;
+
+    let pending_moderation: (i64,) = sqlx::query_as(
+        "SELECT COUNT(*) FROM moderation_cases WHERE status = 'pending'"
+    )
+    .fetch_one(pool)
+    .await
+    .map_err(|_| StatusError::internal_server_error())?;
+
     Ok(Json(ApiResponse::new(serde_json::json!({
         "total_users": users.0,
         "total_courses": courses.0,
-        "total_submissions": submissions.0
+        "total_submissions": submissions.0,
+        "active_today": active_today.0,
+        "pending_moderation": pending_moderation.0
     }))))
 }
 
