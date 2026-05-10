@@ -94,7 +94,7 @@ pub async fn delete_user(req: &mut Request, depot: &mut Depot) -> Result<StatusC
         .map_err(|_| StatusError::bad_request().brief("Invalid user ID"))?;
     
     sqlx::query("DELETE FROM accounts WHERE id = $1")
-        .bind(&id)
+        .bind(id)
         .execute(pool)
         .await
         .map_err(|e| {

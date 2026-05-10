@@ -43,7 +43,7 @@ async fn map_leaderboard_entries(
             let (nickname, avatar_url) = profile_map
                 .get(&entry.learner_id.to_string())
                 .cloned()
-                .unwrap_or_else(|| (None, None));
+                .unwrap_or((None, None));
             
             LeaderboardEntry {
                 rank: entry.rank_position,

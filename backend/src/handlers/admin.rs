@@ -861,7 +861,7 @@ pub async fn get_admin_user(req: &mut Request, depot: &mut Depot) -> Result<Json
         .map_err(|_| StatusError::bad_request().brief("Invalid user ID"))?;
     
     let user = sqlx::query_as::<_, crate::models::Account>("SELECT * FROM accounts WHERE id = $1")
-        .bind(&id)
+        .bind(id)
         .fetch_optional(pool)
         .await
         .map_err(|_| StatusError::internal_server_error())?
@@ -915,7 +915,7 @@ pub async fn update_user(req: &mut Request, depot: &mut Depot) -> Result<StatusC
          updated_at = NOW()
          WHERE id = $1"
     )
-    .bind(&id)
+    .bind(id)
     .bind(body.get("email").and_then(|v| v.as_str()))
     .bind(role_enum)
     .bind(status_enum)

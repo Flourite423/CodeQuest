@@ -504,6 +504,12 @@ impl ListMeta {
     }
 }
 
+impl Default for ResponseMeta {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ResponseMeta {
     pub fn new() -> Self {
         Self {
