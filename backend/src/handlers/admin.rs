@@ -5,7 +5,7 @@ use uuid::Uuid;
 use chrono::{DateTime, Utc};
 
 use crate::handlers::auth;
-use crate::models::{Announcement, ApiResponse, SystemConfig};
+use crate::models::{Announcement, ApiResponse, FeedbackTicket, ModerationCase, SystemConfig};
 
 const COURSE_SELECT_COLUMNS: &str = "SELECT
     id,
@@ -78,6 +78,149 @@ pub struct SafeAccount {
     pub last_login_at: Option<DateTime<Utc>>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct FeedbackLearnerProfileSummary {
+    pub account_id: Uuid,
+    pub nickname: String,
+    pub avatar_url: Option<String>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct AdminFeedbackListItem {
+    #[serde(flatten)]
+    pub ticket: FeedbackTicket,
+    pub learner_profile: FeedbackLearnerProfileSummary,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct UpdateFeedbackRequest {
+    pub status: String,
+    pub admin_reply: Option<String>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct ModerationTargetSummary {
+    pub target_label: String,
+    pub target_owner_id: Option<Uuid>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct ReviewerProfileSummary {
+    pub account_id: Uuid,
+    pub display_name: String,
+    pub avatar_url: Option<String>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct AdminModerationListItem {
+    #[serde(flatten)]
+    pub case_record: ModerationCase,
+    pub target_summary: ModerationTargetSummary,
+    pub reviewer_profile: Option<ReviewerProfileSummary>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct UpdateModerationCaseRequest {
+    pub status: String,
+    pub decision_reason: Option<String>,
+}
+
+#[derive(Debug, sqlx::FromRow)]
+struct AdminFeedbackListRow {
+    pub id: Uuid,
+    pub learner_id: Uuid,
+    pub category: String,
+    pub content: String,
+    pub screenshot_urls: serde_json::Value,
+    pub status: String,
+    pub admin_reply: Option<String>,
+    pub replied_at: Option<DateTime<Utc>>,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+    pub learner_nickname: String,
+    pub learner_avatar_url: Option<String>,
+}
+
+#[derive(Debug, sqlx::FromRow)]
+struct AdminModerationListRow {
+    pub id: Uuid,
+    pub case_type: String,
+    pub target_id: Uuid,
+    pub target_snapshot_json: serde_json::Value,
+    pub status: String,
+    pub decision_reason: Option<String>,
+    pub reviewed_by: Option<Uuid>,
+    pub reviewed_at: Option<DateTime<Utc>>,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+    pub reviewer_display_name: Option<String>,
+    pub reviewer_avatar_url: Option<String>,
+}
+
+fn build_feedback_list_item(row: AdminFeedbackListRow) -> AdminFeedbackListItem {
+    AdminFeedbackListItem {
+        ticket: FeedbackTicket {
+            id: row.id,
+            learner_id: row.learner_id,
+            category: row.category,
+            content: row.content,
+            screenshot_urls: row.screenshot_urls,
+            status: row.status,
+            admin_reply: row.admin_reply,
+            replied_at: row.replied_at,
+            created_at: row.created_at,
+            updated_at: row.updated_at,
+        },
+        learner_profile: FeedbackLearnerProfileSummary {
+            account_id: row.learner_id,
+            nickname: row.learner_nickname,
+            avatar_url: row.learner_avatar_url,
+        },
+    }
+}
+
+fn build_moderation_list_item(row: AdminModerationListRow) -> AdminModerationListItem {
+    let target_label = row.target_snapshot_json
+        .get("target_label")
+        .and_then(|value| value.as_str())
+        .or_else(|| row.target_snapshot_json.get("nickname").and_then(|value| value.as_str()))
+        .or_else(|| row.target_snapshot_json.get("title").and_then(|value| value.as_str()))
+        .or_else(|| row.target_snapshot_json.get("content").and_then(|value| value.as_str()))
+        .unwrap_or("unknown")
+        .to_string();
+
+    let target_owner_id = row.target_snapshot_json
+        .get("target_owner_id")
+        .and_then(|value| value.as_str())
+        .and_then(|value| Uuid::parse_str(value).ok())
+        .or_else(|| row.target_snapshot_json.get("learner_id").and_then(|value| value.as_str()).and_then(|value| Uuid::parse_str(value).ok()))
+        .or_else(|| row.target_snapshot_json.get("account_id").and_then(|value| value.as_str()).and_then(|value| Uuid::parse_str(value).ok()));
+
+    AdminModerationListItem {
+        case_record: ModerationCase {
+            id: row.id,
+            case_type: row.case_type,
+            target_id: row.target_id,
+            target_snapshot_json: row.target_snapshot_json,
+            status: row.status,
+            decision_reason: row.decision_reason,
+            reviewed_by: row.reviewed_by,
+            reviewed_at: row.reviewed_at,
+            created_at: row.created_at,
+            updated_at: row.updated_at,
+        },
+        target_summary: ModerationTargetSummary {
+            target_label,
+            target_owner_id,
+        },
+        reviewer_profile: row.reviewed_by.zip(row.reviewer_display_name).map(|(account_id, display_name)| ReviewerProfileSummary {
+            account_id,
+            display_name,
+            avatar_url: row.reviewer_avatar_url,
+        }),
+    }
 }
 
 #[handler]
@@ -797,45 +940,282 @@ pub async fn update_user_status(req: &mut Request, depot: &mut Depot) -> Result<
 }
 
 #[handler]
-pub async fn list_feedback(_depot: &mut Depot) -> Result<Json<ApiResponse<serde_json::Value>>, StatusError> {
-    Ok(Json(ApiResponse::new(serde_json::json!({"items": []}))))
+pub async fn list_feedback(req: &mut Request, depot: &mut Depot) -> Result<Json<ApiResponse<crate::models::ListResponse<AdminFeedbackListItem>>>, StatusError> {
+    let pool = depot.obtain::<PgPool>()
+        .map_err(|_| StatusError::internal_server_error())?;
+
+    let page = req.query::<i64>("page").unwrap_or(1).max(1);
+    let page_size = req.query::<i64>("page_size").unwrap_or(20).clamp(1, 100);
+    let offset = (page - 1) * page_size;
+
+    let rows = sqlx::query_as::<_, AdminFeedbackListRow>(
+        "SELECT
+            ft.id,
+            ft.learner_id,
+            ft.category::text AS category,
+            ft.content,
+            ft.screenshot_urls,
+            ft.status::text AS status,
+            ft.admin_reply,
+            ft.replied_at,
+            ft.created_at,
+            ft.updated_at,
+            lp.nickname AS learner_nickname,
+            lp.avatar_url AS learner_avatar_url
+         FROM feedback_tickets ft
+         INNER JOIN learner_profiles lp ON lp.account_id = ft.learner_id
+         ORDER BY ft.created_at DESC
+         LIMIT $1 OFFSET $2"
+    )
+    .bind(page_size)
+    .bind(offset)
+    .fetch_all(pool)
+    .await
+    .map_err(|_| StatusError::internal_server_error())?;
+
+    let total: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM feedback_tickets")
+        .fetch_one(pool)
+        .await
+        .map_err(|_| StatusError::internal_server_error())?;
+
+    let response = crate::models::ListResponse {
+        items: rows.into_iter().map(build_feedback_list_item).collect(),
+        meta: crate::models::ListMeta::new(page, page_size, total.0),
+    };
+
+    Ok(Json(ApiResponse::new(response)))
 }
 
 #[handler]
-pub async fn get_feedback(req: &mut Request, _depot: &mut Depot) -> Result<Json<ApiResponse<serde_json::Value>>, StatusError> {
-    let _ticket_id = req.param::<String>("ticket_id")
+pub async fn get_feedback(req: &mut Request, depot: &mut Depot) -> Result<Json<ApiResponse<FeedbackTicket>>, StatusError> {
+    let pool = depot.obtain::<PgPool>()
+        .map_err(|_| StatusError::internal_server_error())?;
+
+    let ticket_id = req.param::<String>("ticket_id")
         .ok_or_else(StatusError::bad_request)?;
-    Ok(Json(ApiResponse::new(serde_json::json!({}))))
+
+    let ticket_id = Uuid::parse_str(&ticket_id)
+        .map_err(|_| StatusError::bad_request().brief("Invalid feedback ticket ID"))?;
+
+    let ticket = sqlx::query_as::<_, FeedbackTicket>(
+        "SELECT
+            id,
+            learner_id,
+            category::text AS category,
+            content,
+            screenshot_urls,
+            status::text AS status,
+            admin_reply,
+            replied_at,
+            created_at,
+            updated_at
+         FROM feedback_tickets
+         WHERE id = $1"
+    )
+    .bind(ticket_id)
+    .fetch_optional(pool)
+    .await
+    .map_err(|_| StatusError::internal_server_error())?
+    .ok_or_else(StatusError::not_found)?;
+
+    Ok(Json(ApiResponse::new(ticket)))
 }
 
 #[handler]
-pub async fn update_feedback(req: &mut Request, _depot: &mut Depot) -> Result<StatusCode, StatusError> {
-    let _ticket_id = req.param::<String>("ticket_id")
+pub async fn update_feedback(req: &mut Request, depot: &mut Depot) -> Result<Json<ApiResponse<FeedbackTicket>>, StatusError> {
+    let pool = depot.obtain::<PgPool>()
+        .map_err(|_| StatusError::internal_server_error())?;
+
+    let ticket_id = req.param::<String>("ticket_id")
         .ok_or_else(StatusError::bad_request)?;
-    let _body = req.parse_json::<serde_json::Value>().await
+
+    let ticket_id = Uuid::parse_str(&ticket_id)
+        .map_err(|_| StatusError::bad_request().brief("Invalid feedback ticket ID"))?;
+
+    let body: UpdateFeedbackRequest = req.parse_json().await
         .map_err(|_| StatusError::bad_request().brief("Invalid request body"))?;
-    Ok(StatusCode::OK)
+
+    match body.status.as_str() {
+        "open" | "in_progress" | "resolved" | "closed" => {}
+        _ => return Err(StatusError::bad_request().brief("Invalid feedback status")),
+    }
+
+    let replied_at = if body.admin_reply.is_some() {
+        Some(Utc::now())
+    } else {
+        None
+    };
+
+    let ticket = sqlx::query_as::<_, FeedbackTicket>(
+        "UPDATE feedback_tickets SET
+            status = $2::feedback_status,
+            admin_reply = $3,
+            replied_at = CASE WHEN $3 IS NOT NULL THEN $4 ELSE replied_at END,
+            updated_at = NOW()
+         WHERE id = $1
+         RETURNING
+            id,
+            learner_id,
+            category::text AS category,
+            content,
+            screenshot_urls,
+            status::text AS status,
+            admin_reply,
+            replied_at,
+            created_at,
+            updated_at"
+    )
+    .bind(ticket_id)
+    .bind(&body.status)
+    .bind(&body.admin_reply)
+    .bind(replied_at)
+    .fetch_optional(pool)
+    .await
+    .map_err(|_| StatusError::internal_server_error())?
+    .ok_or_else(StatusError::not_found)?;
+
+    Ok(Json(ApiResponse::new(ticket)))
 }
 
 #[handler]
-pub async fn list_moderation_cases(_depot: &mut Depot) -> Result<Json<ApiResponse<serde_json::Value>>, StatusError> {
-    Ok(Json(ApiResponse::new(serde_json::json!({"items": []}))))
+pub async fn list_moderation_cases(req: &mut Request, depot: &mut Depot) -> Result<Json<ApiResponse<crate::models::ListResponse<AdminModerationListItem>>>, StatusError> {
+    let pool = depot.obtain::<PgPool>()
+        .map_err(|_| StatusError::internal_server_error())?;
+
+    let page = req.query::<i64>("page").unwrap_or(1).max(1);
+    let page_size = req.query::<i64>("page_size").unwrap_or(20).clamp(1, 100);
+    let offset = (page - 1) * page_size;
+
+    let rows = sqlx::query_as::<_, AdminModerationListRow>(
+        "SELECT
+            mc.id,
+            mc.case_type::text AS case_type,
+            mc.target_id,
+            mc.target_snapshot_json,
+            mc.status::text AS status,
+            mc.decision_reason,
+            mc.reviewed_by,
+            mc.reviewed_at,
+            mc.created_at,
+            mc.updated_at,
+            ap.display_name AS reviewer_display_name,
+            ap.avatar_url AS reviewer_avatar_url
+         FROM moderation_cases mc
+         LEFT JOIN admin_profiles ap ON ap.account_id = mc.reviewed_by
+         ORDER BY mc.created_at DESC
+         LIMIT $1 OFFSET $2"
+    )
+    .bind(page_size)
+    .bind(offset)
+    .fetch_all(pool)
+    .await
+    .map_err(|_| StatusError::internal_server_error())?;
+
+    let total: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM moderation_cases")
+        .fetch_one(pool)
+        .await
+        .map_err(|_| StatusError::internal_server_error())?;
+
+    let response = crate::models::ListResponse {
+        items: rows.into_iter().map(build_moderation_list_item).collect(),
+        meta: crate::models::ListMeta::new(page, page_size, total.0),
+    };
+
+    Ok(Json(ApiResponse::new(response)))
 }
 
 #[handler]
-pub async fn get_moderation_case(req: &mut Request, _depot: &mut Depot) -> Result<Json<ApiResponse<serde_json::Value>>, StatusError> {
-    let _case_id = req.param::<String>("case_id")
+pub async fn get_moderation_case(req: &mut Request, depot: &mut Depot) -> Result<Json<ApiResponse<ModerationCase>>, StatusError> {
+    let pool = depot.obtain::<PgPool>()
+        .map_err(|_| StatusError::internal_server_error())?;
+
+    let case_id = req.param::<String>("case_id")
         .ok_or_else(StatusError::bad_request)?;
-    Ok(Json(ApiResponse::new(serde_json::json!({}))))
+
+    let case_id = Uuid::parse_str(&case_id)
+        .map_err(|_| StatusError::bad_request().brief("Invalid moderation case ID"))?;
+
+    let case_record = sqlx::query_as::<_, ModerationCase>(
+        "SELECT
+            id,
+            case_type::text AS case_type,
+            target_id,
+            target_snapshot_json,
+            status::text AS status,
+            decision_reason,
+            reviewed_by,
+            reviewed_at,
+            created_at,
+            updated_at
+         FROM moderation_cases
+         WHERE id = $1"
+    )
+    .bind(case_id)
+    .fetch_optional(pool)
+    .await
+    .map_err(|_| StatusError::internal_server_error())?
+    .ok_or_else(StatusError::not_found)?;
+
+    Ok(Json(ApiResponse::new(case_record)))
 }
 
 #[handler]
-pub async fn update_moderation_case(req: &mut Request, _depot: &mut Depot) -> Result<StatusCode, StatusError> {
-    let _case_id = req.param::<String>("case_id")
+pub async fn update_moderation_case(req: &mut Request, depot: &mut Depot) -> Result<Json<ApiResponse<ModerationCase>>, StatusError> {
+    let pool = depot.obtain::<PgPool>()
+        .map_err(|_| StatusError::internal_server_error())?;
+
+    let case_id = req.param::<String>("case_id")
         .ok_or_else(StatusError::bad_request)?;
-    let _body = req.parse_json::<serde_json::Value>().await
+
+    let case_id = Uuid::parse_str(&case_id)
+        .map_err(|_| StatusError::bad_request().brief("Invalid moderation case ID"))?;
+
+    let body: UpdateModerationCaseRequest = req.parse_json().await
         .map_err(|_| StatusError::bad_request().brief("Invalid request body"))?;
-    Ok(StatusCode::OK)
+
+    match body.status.as_str() {
+        "pending" | "approved" | "rejected" => {}
+        _ => return Err(StatusError::bad_request().brief("Invalid moderation status")),
+    }
+
+    let reviewer_id = auth::get_current_account_id(depot)?;
+    let reviewed_at = if body.status == "pending" {
+        None
+    } else {
+        Some(Utc::now())
+    };
+
+    let case_record = sqlx::query_as::<_, ModerationCase>(
+        "UPDATE moderation_cases SET
+            status = $2::moderation_status,
+            decision_reason = $3,
+            reviewed_by = CASE WHEN $2 = 'pending' THEN NULL ELSE $4 END,
+            reviewed_at = CASE WHEN $2 = 'pending' THEN NULL ELSE $5 END,
+            updated_at = NOW()
+         WHERE id = $1
+         RETURNING
+            id,
+            case_type::text AS case_type,
+            target_id,
+            target_snapshot_json,
+            status::text AS status,
+            decision_reason,
+            reviewed_by,
+            reviewed_at,
+            created_at,
+            updated_at"
+    )
+    .bind(case_id)
+    .bind(&body.status)
+    .bind(&body.decision_reason)
+    .bind(reviewer_id)
+    .bind(reviewed_at)
+    .fetch_optional(pool)
+    .await
+    .map_err(|_| StatusError::internal_server_error())?
+    .ok_or_else(StatusError::not_found)?;
+
+    Ok(Json(ApiResponse::new(case_record)))
 }
 
 #[handler]
