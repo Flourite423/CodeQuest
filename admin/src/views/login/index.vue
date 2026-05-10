@@ -2,6 +2,7 @@
 import { reactive, ref, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { authApi } from '@/api/auth'
 import { User, Lock } from '@element-plus/icons-vue'
 import type { FormInstance, FormRules } from 'element-plus'
 
@@ -39,23 +40,34 @@ onMounted(() => {
 const handleLogin = async () => {
   if (!formRef.value) return
 
-  await formRef.value.validate((valid) => {
-    if (valid) {
-      loading.value = true
-      sessionExpired.value = false
-      loginError.value = ''
-      setTimeout(() => {
-        try {
-          authStore.setToken('mock_admin_token')
-          authStore.setUser({ username: form.email, role: 'admin' })
-          router.push('/')
-        } catch (err) {
-          loginError.value = '登录失败，请检查邮箱和密码'
-          loading.value = false
-        }
-      }, 1000)
+  try {
+    await formRef.value.validate()
+  } catch {
+    return // validation failed
+  }
+
+  loading.value = true
+  sessionExpired.value = false
+  loginError.value = ''
+
+  try {
+    const res = await authApi.login({ email: form.email, password: form.password })
+    authStore.setToken(res.data.access_token)
+    authStore.setUser({ username: res.data.account.email, role: 'admin' })
+    router.push('/')
+  } catch (err: any) {
+    const status = err.response?.status
+    if (status === 401) {
+      loginError.value = '邮箱或密码错误'
+    } else if (status === 403) {
+      loginError.value = '无权访问'
+    } else if (status === 500) {
+      loginError.value = '服务器错误，请稍后重试'
+    } else {
+      loginError.value = '登录失败，请稍后重试'
     }
-  })
+    loading.value = false
+  }
 }
 </script>
 
