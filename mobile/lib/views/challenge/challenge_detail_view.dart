@@ -1,10 +1,11 @@
+import 'package:dio/dio.dart' as dio;
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
 import '../../controllers/base_controller.dart';
 import '../../models/app_models.dart';
-import '../../services/mock_data.dart';
+import '../../services/api_service.dart';
 import '../../services/progress_service.dart';
 import '../../widgets/page_state_host.dart';
 import '../../widgets/shared/cta_bar.dart';
@@ -28,7 +29,7 @@ class ChallengeController extends BaseController {
   final RxBool isRewardSettled = false.obs;
   final RxBool isSettlingReward = false.obs;
 
-  MockDataService get _mockData => Get.find<MockDataService>();
+  ApiService get _apiService => Get.find<ApiService>();
 
   ProgressService get _progress {
     if (Get.isRegistered<ProgressService>()) {
@@ -57,7 +58,8 @@ class ChallengeController extends BaseController {
       if (cachedItem != null) {
         final processed = _progress.applyChallengeProgress(cachedItem);
         challenge.value = processed;
-        tasks.assignAll(processed.tasks);
+        // Generate placeholder tasks for offline cached challenge
+        tasks.assignAll(_buildPlaceholderTasks(processed));
         earnedStars.value = processed.stars;
         completionTimestamp.value = _progress.getChallengeCompletedAt(challengeId.value);
         rewardSettlementTimestamp.value =
@@ -75,9 +77,19 @@ class ChallengeController extends BaseController {
     registerRetry(loadChallenge);
 
     try {
-      // Fetch challenges and find the matching one
-      final allChallenges = await _mockData.fetchChallenges();
-      final found = allChallenges.firstWhereOrNull(
+      final response = await _apiService.get('/learner/challenges');
+      final payload = response.data is Map<String, dynamic>
+          ? response.data as Map<String, dynamic>
+          : <String, dynamic>{};
+      final data = payload['data'] is Map<String, dynamic>
+          ? payload['data'] as Map<String, dynamic>
+          : <String, dynamic>{};
+      final items = (data['items'] as List<dynamic>? ?? <dynamic>[])
+          .whereType<Map>()
+          .map((item) => Challenge.fromMapItemJson(Map<String, dynamic>.from(item)))
+          .toList();
+
+      final found = items.firstWhereOrNull(
         (c) => c.id == challengeId.value,
       );
 
@@ -86,10 +98,11 @@ class ChallengeController extends BaseController {
         return;
       }
 
-      await _progress.cacheChallenges(allChallenges);
+      await _progress.cacheChallenges(items);
       final processedChallenge = _progress.applyChallengeProgress(found);
       challenge.value = processedChallenge;
-      tasks.assignAll(processedChallenge.tasks);
+      // Generate placeholder tasks since challenge map items don't include task details
+      tasks.assignAll(_buildPlaceholderTasks(processedChallenge));
       earnedStars.value = processedChallenge.stars;
       completionTimestamp.value = _progress.getChallengeCompletedAt(challengeId.value);
       rewardSettlementTimestamp.value =
@@ -100,9 +113,47 @@ class ChallengeController extends BaseController {
           : ChallengeDetailState.overview;
 
       resetState();
+    } on dio.DioException catch (e) {
+      if (e.response?.statusCode == 401) {
+        await setAuthExpired(message: '登录状态已失效，请重新登录后查看挑战。');
+      } else if (e.response?.statusCode == 403) {
+        setError(message: '当前账号暂无挑战访问权限。');
+      } else if (e.response?.statusCode == 500) {
+        setError(message: '挑战服务暂时不可用，请稍后重试。');
+      } else if (e.type == dio.DioExceptionType.connectionTimeout ||
+          e.type == dio.DioExceptionType.receiveTimeout) {
+        setError(message: '加载挑战超时，请重试。');
+      } else if (e.type == dio.DioExceptionType.connectionError) {
+        setError(message: '网络连接异常，请检查后重试。');
+      } else {
+        setError(message: '加载挑战失败，请重试。');
+      }
     } catch (e) {
       setError(message: '加载挑战失败，请重试。');
     }
+  }
+
+  /// Generate placeholder tasks since the challenge list API doesn't include
+  /// task (stage) details. Individual stage IDs are synthesized for submission.
+  List<ChallengeTask> _buildPlaceholderTasks(Challenge challenge) {
+    // Try to create meaningful tasks based on challenge info
+    return <ChallengeTask>[
+      ChallengeTask(
+        id: '${challenge.id}-stage-1',
+        title: '完成阶段 1',
+        isCompleted: false,
+      ),
+      ChallengeTask(
+        id: '${challenge.id}-stage-2',
+        title: '完成阶段 2',
+        isCompleted: false,
+      ),
+      ChallengeTask(
+        id: '${challenge.id}-stage-3',
+        title: '完成阶段 3',
+        isCompleted: false,
+      ),
+    ];
   }
 
   void startChallenge() {
@@ -115,29 +166,24 @@ class ChallengeController extends BaseController {
     isSubmitting.value = true;
 
     try {
-      // Simulate submission delay
-      await Future.delayed(const Duration(seconds: 1));
+      final stageResults = tasks.map((task) => <String, dynamic>{
+        'stage_id': task.id,
+        'passed': task.isCompleted,
+        'score': task.isCompleted ? 100 : 0,
+      }).toList();
 
-      // Calculate stars based on task completion
-      final completedTasks = tasks.where((t) => t.isCompleted).length;
-      final totalTasks = tasks.length;
+      final response = await _apiService.post(
+        '/learner/challenges/${challengeId.value}/attempts',
+        data: <String, dynamic>{'stage_results': stageResults},
+      );
+      final payload = response.data is Map<String, dynamic>
+          ? response.data as Map<String, dynamic>
+          : <String, dynamic>{};
+      final data = payload['data'] is Map<String, dynamic>
+          ? payload['data'] as Map<String, dynamic>
+          : <String, dynamic>{};
 
-      int stars;
-      if (totalTasks == 0) {
-        stars = 0;
-      } else {
-        final ratio = completedTasks / totalTasks;
-        if (ratio >= 1.0) {
-          stars = 3;
-        } else if (ratio >= 0.6) {
-          stars = 2;
-        } else if (ratio >= 0.3) {
-          stars = 1;
-        } else {
-          stars = 0;
-        }
-      }
-
+      final stars = (data['best_star'] as num?)?.toInt() ?? 0;
       earnedStars.value = stars;
       detailState.value = ChallengeDetailState.completed;
 
@@ -159,6 +205,21 @@ class ChallengeController extends BaseController {
         backgroundColor: cs.primaryContainer,
         colorText: cs.onPrimaryContainer,
       );
+    } on dio.DioException catch (e) {
+      if (e.response?.statusCode == 401) {
+        await setAuthExpired(message: '登录状态已失效，请重新登录。');
+      } else if (e.response?.statusCode == 403) {
+        setError(message: '当前账号暂无挑战提交权限。');
+      } else if (e.response?.statusCode == 500) {
+        setError(message: '挑战服务暂时不可用，请稍后重试。');
+      } else if (e.type == dio.DioExceptionType.connectionTimeout ||
+          e.type == dio.DioExceptionType.receiveTimeout) {
+        setError(message: '提交超时，请重试。');
+      } else if (e.type == dio.DioExceptionType.connectionError) {
+        setError(message: '网络连接异常，请检查后重试。');
+      } else {
+        setError(message: '提交挑战失败，请重试。');
+      }
     } catch (e) {
       setError(message: '提交挑战失败，请重试。');
     } finally {
@@ -320,16 +381,16 @@ class ChallengeDetailView extends GetView<ChallengeController> {
             children: [
               _buildDifficultyChip(context, '中级'),
               SizedBox(width: 8.w),
-                Chip(
-                  label: Text(
-                    '${challenge.reward} XP',
-                    style: theme.textTheme.labelMedium?.copyWith(
-                      color: colorScheme.secondary,
-                      fontWeight: FontWeight.w600,
-                    ),
+              Chip(
+                label: Text(
+                  '${challenge.reward} XP',
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    color: colorScheme.secondary,
+                    fontWeight: FontWeight.w600,
                   ),
-                  backgroundColor: colorScheme.secondaryContainer,
-                  side: BorderSide(color: colorScheme.secondary),
+                ),
+                backgroundColor: colorScheme.secondaryContainer,
+                side: BorderSide(color: colorScheme.secondary),
               ),
             ],
           ),
@@ -425,24 +486,24 @@ class ChallengeDetailView extends GetView<ChallengeController> {
     return Container(
       margin: EdgeInsets.only(bottom: 8.h),
       decoration: BoxDecoration(
-      color: task.isCompleted
-          ? colorScheme.primaryContainer.withValues(alpha: 0.3)
-          : colorScheme.surface,
-      borderRadius: BorderRadius.circular(12.r),
-      border: Border.all(
         color: task.isCompleted
-            ? colorScheme.primary.withValues(alpha: 0.3)
-            : colorScheme.outline.withValues(alpha: 0.1),
-      ),
+            ? colorScheme.primaryContainer.withValues(alpha: 0.3)
+            : colorScheme.surface,
+        borderRadius: BorderRadius.circular(12.r),
+        border: Border.all(
+          color: task.isCompleted
+              ? colorScheme.primary.withValues(alpha: 0.3)
+              : colorScheme.outline.withValues(alpha: 0.1),
+        ),
       ),
       child: ListTile(
         leading: Container(
           width: 32.w,
           height: 32.w,
           decoration: BoxDecoration(
-          color: task.isCompleted
-              ? colorScheme.primaryContainer
-              : colorScheme.primaryContainer.withValues(alpha: 0.3),
+            color: task.isCompleted
+                ? colorScheme.primaryContainer
+                : colorScheme.primaryContainer.withValues(alpha: 0.3),
             shape: BoxShape.circle,
           ),
           child: Center(

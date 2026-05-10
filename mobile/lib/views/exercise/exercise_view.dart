@@ -1,12 +1,13 @@
 import 'dart:async';
 
+import 'package:dio/dio.dart' as dio;
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
 import '../../controllers/base_controller.dart';
 import '../../models/models.dart';
-import '../../services/mock_data.dart';
+import '../../services/api_service.dart';
 import '../../services/storage_service.dart';
 import '../../widgets/page_state_host.dart';
 import '../../widgets/shared/cta_bar.dart';
@@ -446,7 +447,7 @@ class _PreviewPanel extends StatelessWidget {
               color: colorScheme.surface,
               borderRadius: BorderRadius.circular(12.r),
             ),
-            child:               SelectableText(
+            child: SelectableText(
               code.trim().isEmpty ? '暂无预览。' : code.trim(),
               style: theme.textTheme.bodyMedium?.copyWith(
                 fontFamily: 'monospace',
@@ -810,7 +811,7 @@ class ExerciseChoiceOption {
 class ExerciseController extends BaseController {
   ExerciseController();
 
-  final MockDataService _mockDataService = Get.find<MockDataService>();
+  final ApiService _apiService = Get.find<ApiService>();
   final StorageService _storageService = Get.find<StorageService>();
 
   final RxString exerciseId = ''.obs;
@@ -822,7 +823,7 @@ class ExerciseController extends BaseController {
   final RxBool isSubmitting = false.obs;
   final RxBool isRequestingAiHelp = false.obs;
   final RxBool draftRestored = false.obs;
-  final RxString runSummary = '点击“运行”后可先做一次本地预检查。'.obs;
+  final RxString runSummary = '点击"运行"后可先做一次本地预检查。'.obs;
   final Rxn<DateTime> lastSavedAt = Rxn<DateTime>();
 
   final TextEditingController codeController = TextEditingController();
@@ -849,16 +850,6 @@ class ExerciseController extends BaseController {
   }
 
   String get _draftStorageKey => 'exercise_draft_${exerciseId.value}';
-
-  int get _seed {
-    final match = RegExp(r'(\d+)').firstMatch(exerciseId.value);
-    return int.tryParse(match?.group(1) ?? '') ?? 1;
-  }
-
-  String get _correctChoiceKey {
-    const keys = <String>['A', 'B', 'C', 'D'];
-    return keys[(_seed - 1) % keys.length];
-  }
 
   @override
   void onInit() {
@@ -887,8 +878,20 @@ class ExerciseController extends BaseController {
     registerRetry(loadExercise);
 
     try {
-      await Future<void>.delayed(MockDataService.defaultDelay);
-      final item = _mockDataService.buildExercise(seed: _seed);
+      final response = await _apiService.get('/learner/exercises/${exerciseId.value}');
+      final payload = response.data is Map<String, dynamic>
+          ? response.data as Map<String, dynamic>
+          : <String, dynamic>{};
+      final data = payload['data'] is Map<String, dynamic>
+          ? payload['data'] as Map<String, dynamic>
+          : <String, dynamic>{};
+
+      if (data.isEmpty) {
+        setEmpty(message: '练习数据不可用。');
+        return;
+      }
+
+      final item = Exercise.fromDetailJson(data);
       exercise.value = item;
       choiceOptions.assignAll(_buildChoiceOptions(item));
       await _restoreDraft(item);
@@ -899,8 +902,23 @@ class ExerciseController extends BaseController {
       }
 
       resetState();
-    } on MockDataException catch (error) {
-      setError(message: error.message);
+    } on dio.DioException catch (e) {
+      if (e.response?.statusCode == 401) {
+        await setAuthExpired(message: '登录状态已失效，请重新登录。');
+      } else if (e.response?.statusCode == 403) {
+        setError(message: '当前账号暂无练习访问权限。');
+      } else if (e.response?.statusCode == 404) {
+        setEmpty(message: '该练习未找到。');
+      } else if (e.response?.statusCode == 500) {
+        setError(message: '练习服务暂时不可用，请稍后重试。');
+      } else if (e.type == dio.DioExceptionType.connectionTimeout ||
+          e.type == dio.DioExceptionType.receiveTimeout) {
+        setError(message: '加载练习超时，请重试。');
+      } else if (e.type == dio.DioExceptionType.connectionError) {
+        setError(message: '网络连接异常，请检查后重试。');
+      } else {
+        setError(message: '加载练习失败，请重试。');
+      }
     } catch (_) {
       setError(message: '加载练习失败，请重试。');
     }
@@ -1016,49 +1034,42 @@ class ExerciseController extends BaseController {
     await saveDraft();
 
     try {
-      await Future<void>.delayed(MockDataService.defaultDelay);
-      final result = _buildSubmissionResult();
+      final body = <String, dynamic>{
+        'exercise_id': exerciseId.value,
+        'source_code': isCoding ? currentCode : selectedChoiceKey.value,
+      };
+
+      final response = await _apiService.post('/learner/submissions', data: body);
+      final payload = response.data is Map<String, dynamic>
+          ? response.data as Map<String, dynamic>
+          : <String, dynamic>{};
+      final data = payload['data'] is Map<String, dynamic>
+          ? payload['data'] as Map<String, dynamic>
+          : <String, dynamic>{};
+
+      final result = SubmissionResult.fromContracts(submission: data);
       latestSubmission.value = result;
       await _openSubmissionResultSheet(result);
+    } on dio.DioException catch (e) {
+      if (e.response?.statusCode == 401) {
+        await setAuthExpired(message: '登录状态已失效，请重新登录。');
+      } else if (e.response?.statusCode == 403) {
+        setError(message: '当前账号暂无提交权限。');
+      } else if (e.response?.statusCode == 500) {
+        setError(message: '评测服务暂时不可用，请稍后重试。');
+      } else if (e.type == dio.DioExceptionType.connectionTimeout ||
+          e.type == dio.DioExceptionType.receiveTimeout) {
+        setError(message: '提交超时，请重试。');
+      } else if (e.type == dio.DioExceptionType.connectionError) {
+        setError(message: '网络连接异常，请检查后重试。');
+      } else {
+        setError(message: '提交失败，请重试。');
+      }
+    } catch (_) {
+      setError(message: '提交失败，请重试。');
     } finally {
       isSubmitting.value = false;
     }
-  }
-
-  SubmissionResult _buildSubmissionResult() {
-    final totalCases = exercise.value?.testCases.length ?? 0;
-
-    if (isSingleChoice) {
-      final passed = selectedChoiceKey.value == _correctChoiceKey;
-      return SubmissionResult(
-        score: passed ? 100 : 40,
-        passedCases: passed ? totalCases : (totalCases > 0 ? 1 : 0),
-        totalCases: totalCases,
-        feedback: passed
-            ? '答题正确，继续下一步吧。'
-            : '当前答案没有满足题目要求，请重新检查题目中的关键约束。',
-        aiHelp: _buildLearnerSafeAiHelp(passed: passed),
-      );
-    }
-
-    final trimmed = currentCode.trim();
-    final containsStructure = trimmed.contains('<main') || trimmed.contains('<section');
-    final containsStyle = trimmed.contains('display') || trimmed.contains('class=');
-    final passedCases = [containsStructure, containsStyle, trimmed.length >= 40]
-        .where((item) => item)
-        .length
-        .clamp(0, totalCases);
-    final passed = totalCases == 0 ? trimmed.isNotEmpty : passedCases == totalCases;
-
-    return SubmissionResult(
-      score: passed ? 100 : 40 + passedCases * 20,
-      passedCases: passed ? totalCases : passedCases,
-      totalCases: totalCases,
-      feedback: passed
-          ? '公开用例全部通过，可以继续下一步。'
-          : '还有公开用例未通过。优先检查结构层级、类名和基础样式是否完整。',
-      aiHelp: _buildLearnerSafeAiHelp(passed: passed),
-    );
   }
 
   AIHelp _buildLearnerSafeAiHelp({required bool passed}) {
@@ -1074,7 +1085,7 @@ class ExerciseController extends BaseController {
       return const AIHelp(
         requestType: 'hint',
         status: 'succeeded',
-        content: '回到题干，先找“面向 learner 的正确做法”这一类描述，再排除会泄露答案或破坏结构的选项。',
+        content: '回到题干，先找"面向 learner 的正确做法"这一类描述，再排除会泄露答案或破坏结构的选项。',
       );
     }
 

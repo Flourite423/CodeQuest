@@ -1,12 +1,13 @@
 import 'dart:async';
 
+import 'package:dio/dio.dart' as dio;
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
 import '../../controllers/base_controller.dart';
 import '../../models/app_models.dart';
-import '../../services/mock_data.dart';
+import '../../services/api_service.dart';
 import '../../services/progress_service.dart';
 import '../../widgets/page_state_host.dart';
 import '../../widgets/shared/cta_bar.dart';
@@ -26,7 +27,7 @@ class DailyChallengeController extends BaseController {
   Timer? _countdownTimer;
   DateTime? _nextResetTime;
 
-  MockDataService get _mockData => Get.find<MockDataService>();
+  ApiService get _apiService => Get.find<ApiService>();
 
   ProgressService get _progress {
     if (Get.isRegistered<ProgressService>()) {
@@ -70,11 +71,26 @@ class DailyChallengeController extends BaseController {
     registerRetry(loadDailyChallenge);
 
     try {
-      final challenge = await _mockData.fetchDailyChallenge();
-      if (challenge == null) {
+      final response = await _apiService.get('/learner/daily-challenges/today');
+      final payload = response.data is Map<String, dynamic>
+          ? response.data as Map<String, dynamic>
+          : <String, dynamic>{};
+      final data = payload['data'] is Map<String, dynamic>
+          ? payload['data'] as Map<String, dynamic>
+          : <String, dynamic>{};
+
+      if (data.isEmpty) {
         setEmpty(message: '今日暂无每日挑战。');
         return;
       }
+
+      final challengeData = data['daily_challenge'] as JsonMap? ?? <String, dynamic>{};
+      final recordData = data['learner_record'] as JsonMap?;
+
+      final challenge = DailyChallenge.fromContracts(
+        challenge: challengeData,
+        record: recordData,
+      );
 
       final merged = _progress.applyDailyChallengeProgress(challenge);
       dailyChallenge.value = merged;
@@ -94,6 +110,23 @@ class DailyChallengeController extends BaseController {
       _startCountdown();
 
       resetState();
+    } on dio.DioException catch (e) {
+      if (e.response?.statusCode == 401) {
+        await setAuthExpired(message: '登录状态已失效，请重新登录。');
+      } else if (e.response?.statusCode == 403) {
+        setError(message: '当前账号暂无每日挑战访问权限。');
+      } else if (e.response?.statusCode == 404) {
+        setEmpty(message: '今日暂无每日挑战。');
+      } else if (e.response?.statusCode == 500) {
+        setError(message: '每日挑战服务暂时不可用，请稍后重试。');
+      } else if (e.type == dio.DioExceptionType.connectionTimeout ||
+          e.type == dio.DioExceptionType.receiveTimeout) {
+        setError(message: '加载每日挑战超时，请重试。');
+      } else if (e.type == dio.DioExceptionType.connectionError) {
+        setError(message: '网络连接异常，请检查后重试。');
+      } else {
+        setError(message: '加载每日挑战失败，请重试。');
+      }
     } catch (e) {
       setError(message: '加载每日挑战失败，请重试。');
     }
@@ -134,11 +167,19 @@ class DailyChallengeController extends BaseController {
     isSubmitting.value = true;
 
     try {
-      // Simulate challenge attempt
-      await Future.delayed(const Duration(seconds: 2));
+      final challengeId = dailyChallenge.value?.id ?? '';
+      if (challengeId.isEmpty) return;
+
+      await _apiService.post(
+        '/learner/daily-challenges/$challengeId/submit',
+        data: <String, dynamic>{
+          'source_code': '',
+          'elapsed_seconds': 0,
+        },
+      );
 
       await _progress.saveDailyChallengeCompletion(
-        challengeId: dailyChallenge.value?.id ?? 'daily-1',
+        challengeId: challengeId,
       );
       status.value = DailyChallengeStatus.attempted;
 
@@ -151,6 +192,47 @@ class DailyChallengeController extends BaseController {
         backgroundColor: cs.primaryContainer,
         colorText: cs.onPrimaryContainer,
       );
+    } on dio.DioException catch (e) {
+      if (e.response?.statusCode == 401) {
+        await setAuthExpired(message: '登录状态已失效，请重新登录。');
+      } else if (e.response?.statusCode == 403) {
+        Get.snackbar(
+          '错误',
+          '当前账号暂无每日挑战提交权限。',
+          snackPosition: SnackPosition.BOTTOM,
+          margin: const EdgeInsets.all(16),
+          backgroundColor: Theme.of(Get.context!).colorScheme.errorContainer,
+          colorText: Theme.of(Get.context!).colorScheme.onErrorContainer,
+        );
+      } else if (e.type == dio.DioExceptionType.connectionTimeout ||
+          e.type == dio.DioExceptionType.receiveTimeout) {
+        Get.snackbar(
+          '错误',
+          '提交超时，请重试。',
+          snackPosition: SnackPosition.BOTTOM,
+          margin: const EdgeInsets.all(16),
+          backgroundColor: Theme.of(Get.context!).colorScheme.errorContainer,
+          colorText: Theme.of(Get.context!).colorScheme.onErrorContainer,
+        );
+      } else if (e.type == dio.DioExceptionType.connectionError) {
+        Get.snackbar(
+          '错误',
+          '网络连接异常，请检查后重试。',
+          snackPosition: SnackPosition.BOTTOM,
+          margin: const EdgeInsets.all(16),
+          backgroundColor: Theme.of(Get.context!).colorScheme.errorContainer,
+          colorText: Theme.of(Get.context!).colorScheme.onErrorContainer,
+        );
+      } else {
+        Get.snackbar(
+          '错误',
+          '提交每日挑战失败，请重试。',
+          snackPosition: SnackPosition.BOTTOM,
+          margin: const EdgeInsets.all(16),
+          backgroundColor: Theme.of(Get.context!).colorScheme.errorContainer,
+          colorText: Theme.of(Get.context!).colorScheme.onErrorContainer,
+        );
+      }
     } catch (e) {
       final cs = Theme.of(Get.context!).colorScheme;
       Get.snackbar(
