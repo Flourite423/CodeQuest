@@ -1,0 +1,2 @@
+- Task 5: Design-required learner fields still missing from current contract set include dashboard aggregate cards, standalone chapter DTO, challenge detail task/star-rule projection, badge definition metadata on rewards, settings preference groups, and overlay filter schemas.
+- [F1 Audit] Filter sheet overlay is missing from the implementation. The course list uses a text search bar, and rewards center lacks filter logic entirely.

@@ -1,5 +1,10 @@
 # OS-generated files
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
 Thumbs.db
 
 # Editor settings and swap files
@@ -8,6 +13,9 @@ Thumbs.db
 *.swp
 *.swo
 *~
+*.iml
+*.ipr
+*.iws
 
 # Logs
 *.log
@@ -37,6 +45,8 @@ config/local.toml
 /tmp/
 /temp/
 *.tmp
+*.temp
+*.bak
 
 # Rust / Cargo
 target/
@@ -47,6 +57,7 @@ Cargo.lock
 node_modules/
 package-lock.json
 yarn.lock
+bun.lock
 
 # Flutter / Dart
 .dart_tool/
@@ -61,6 +72,14 @@ ios/Pods/
 ios/.symlinks/
 *.g.dart
 *.freezed.dart
+*.mocks.dart
+pubspec.lock
+
+# Java
+*.class
+*.jar
+*.war
+*.ear
 
 # Build outputs
 dist/
@@ -84,6 +103,19 @@ admin/*.tsbuildinfo
 mobile/.metadata
 mobile/ios/Flutter/Generated.xcconfig
 mobile/android/local.properties
+mobile/android/app/debug/
+mobile/android/app/profile/
+mobile/android/app/release/
 
 # Backend specific
 backend/target/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# OpenCode skills data (large CSV files)
+.opencode/skills/ui-ux-pro-max/scripts/__pycache__/
+.opencode/skills/ui-ux-pro-max/data/
+.opencode/skills/ui-ux-pro-max/data/stacks/

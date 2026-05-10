@@ -1,22 +1,9 @@
 {
-  "active_plan": "/home/ltc/.local/share/opencode/worktree/fb38d988bb0526ceccf255d23722a8655dd6e4f2/hidden-falcon/.sisyphus/plans/admin-page-design.md",
-  "started_at": "2026-05-09T07:49:19.750Z",
-  "session_ids": [
-    "ses_1f4a4d797ffevLVZpWrzAbuufl"
-  ],
-  "session_origins": {
-    "ses_1f4a4d797ffevLVZpWrzAbuufl": "direct"
-  },
-  "plan_name": "admin-page-design",
-  "agent": "atlas",
-  "task_sessions": {
-    "final-wave:f1": {
-      "task_key": "final-wave:f1",
-      "task_label": "F1",
-      "task_title": "Plan Compliance Audit — oracle",
-      "session_id": "ses_1f4092622ffe4jo3cx3hJJPUVz",
-      "agent": "oracle",
-      "updated_at": "2026-05-09T09:08:47.887Z"
-    }
-  }
+  "active_plan": null,
+  "started_at": null,
+  "session_ids": [],
+  "session_origins": {},
+  "plan_name": null,
+  "agent": null,
+  "task_sessions": {}
 }
