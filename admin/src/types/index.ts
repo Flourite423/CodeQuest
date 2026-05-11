@@ -323,10 +323,14 @@ export interface LoginRequest {
 }
 
 export interface LoginResponse {
+  account_id: string
+  active_role: UserRole
   access_token: string
   refresh_token: string
   expires_in: number
-  account: Account
+  session_id: string
+  token_type: string
+  profile: Record<string, unknown>
 }
 
 // List query parameters

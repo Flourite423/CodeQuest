@@ -615,11 +615,17 @@ pub async fn create_challenge(req: &mut Request, depot: &mut Depot) -> Result<Js
         "hard" => crate::models::DifficultyLevel::Hard,
         _ => crate::models::DifficultyLevel::Easy,
     };
+    let status = body.get("status").and_then(|v| v.as_str()).unwrap_or("draft");
+    let published_at = if status == "published" {
+        Some(chrono::Utc::now())
+    } else {
+        None
+    };
     
     let challenge = sqlx::query_as::<_, crate::models::Challenge>(
-        "INSERT INTO challenges (id, challenge_code, title, summary, difficulty, reward_xp, status) 
-         VALUES ($1, $2, $3, $4, $5, $6, 'draft')
-         RETURNING id, challenge_code, title, summary, related_course_id, difficulty::text, reward_xp, status::text, sort_order, content_version, created_at, updated_at"
+        "INSERT INTO challenges (id, challenge_code, title, summary, difficulty, reward_xp, status, published_at) 
+         VALUES ($1, $2, $3, $4, $5, $6, $7::course_status, $8)
+         RETURNING id, challenge_code, title, summary, related_course_id, difficulty::text, reward_xp, status::text, sort_order, content_version, published_at, created_at, updated_at"
     )
     .bind(id)
     .bind(body.get("challenge_code").and_then(|v| v.as_str()).unwrap_or(""))
@@ -627,6 +633,8 @@ pub async fn create_challenge(req: &mut Request, depot: &mut Depot) -> Result<Js
     .bind(body.get("summary").and_then(|v| v.as_str()).unwrap_or(""))
     .bind(difficulty_enum)
     .bind(body.get("reward_xp").and_then(|v| v.as_i64()).unwrap_or(0) as i32)
+    .bind(status)
+    .bind(published_at)
     .fetch_one(pool)
     .await
     .map_err(|e| {
@@ -655,11 +663,17 @@ pub async fn create_challenge_with_status(req: &mut Request, depot: &mut Depot) 
         "hard" => crate::models::DifficultyLevel::Hard,
         _ => crate::models::DifficultyLevel::Easy,
     };
+    let status = body.get("status").and_then(|v| v.as_str()).unwrap_or("draft");
+    let published_at = if status == "published" {
+        Some(chrono::Utc::now())
+    } else {
+        None
+    };
     
     let challenge = sqlx::query_as::<_, crate::models::Challenge>(
-        "INSERT INTO challenges (id, challenge_code, title, summary, difficulty, reward_xp, status) 
-         VALUES ($1, $2, $3, $4, $5, $6, 'draft')
-         RETURNING id, challenge_code, title, summary, related_course_id, difficulty::text, reward_xp, status::text, sort_order, content_version, created_at, updated_at"
+        "INSERT INTO challenges (id, challenge_code, title, summary, difficulty, reward_xp, status, published_at) 
+         VALUES ($1, $2, $3, $4, $5, $6, $7::course_status, $8)
+         RETURNING id, challenge_code, title, summary, related_course_id, difficulty::text, reward_xp, status::text, sort_order, content_version, published_at, created_at, updated_at"
     )
     .bind(id)
     .bind(body.get("challenge_code").and_then(|v| v.as_str()).unwrap_or(""))
@@ -667,6 +681,8 @@ pub async fn create_challenge_with_status(req: &mut Request, depot: &mut Depot) 
     .bind(body.get("summary").and_then(|v| v.as_str()).unwrap_or(""))
     .bind(difficulty_enum)
     .bind(body.get("reward_xp").and_then(|v| v.as_i64()).unwrap_or(0) as i32)
+    .bind(status)
+    .bind(published_at)
     .fetch_one(pool)
     .await
     .map_err(|e| {
@@ -715,6 +731,11 @@ pub async fn update_challenge(req: &mut Request, depot: &mut Depot) -> Result<St
         "hard" => crate::models::DifficultyLevel::Hard,
         _ => crate::models::DifficultyLevel::Easy,
     });
+    let published_at = if body.get("status").and_then(|v| v.as_str()) == Some("published") {
+        Some(chrono::Utc::now())
+    } else {
+        None
+    };
     
     sqlx::query(
         "UPDATE challenges SET 
@@ -723,6 +744,7 @@ pub async fn update_challenge(req: &mut Request, depot: &mut Depot) -> Result<St
          difficulty = COALESCE($4, difficulty),
          reward_xp = COALESCE($5, reward_xp),
          status = COALESCE($6, status),
+         published_at = COALESCE($7, published_at),
          updated_at = NOW()
          WHERE id = $1"
     )
@@ -732,6 +754,7 @@ pub async fn update_challenge(req: &mut Request, depot: &mut Depot) -> Result<St
     .bind(difficulty_enum)
     .bind(body.get("reward_xp").and_then(|v| v.as_i64()).map(|v| v as i32))
     .bind(body.get("status").and_then(|v| v.as_str()))
+    .bind(published_at)
     .execute(pool)
     .await
     .map_err(|e| {

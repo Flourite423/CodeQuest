@@ -53,7 +53,7 @@ const handleLogin = async () => {
   try {
     const res = await authApi.login({ email: form.email, password: form.password })
     authStore.setToken(res.data.access_token)
-    authStore.setUser({ username: res.data.account.email, role: 'admin' })
+    authStore.setUser({ username: form.email, role: res.data.active_role ?? 'admin' })
     router.push('/')
   } catch (err: any) {
     const status = err.response?.status

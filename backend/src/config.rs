@@ -13,6 +13,10 @@ pub struct AppConfig {
     pub database_url: String,
     pub jwt_secret: String,
     pub jwt_expiration: i64,
+    #[serde(default)]
+    pub auto_run_migrations: bool,
+    #[serde(default)]
+    pub seed_dev_accounts: bool,
     pub ai: AiConfig,
 }
 

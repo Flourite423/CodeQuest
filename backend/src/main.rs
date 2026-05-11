@@ -26,10 +26,25 @@ async fn main() {
     let pool = db::create_pool(&cfg.database_url)
         .await
         .expect("Failed to create database pool");
+
+    if cfg.auto_run_migrations {
+        db::run_migrations(&pool)
+            .await
+            .expect("Failed to run database migrations");
+        info!("Database migrations completed");
+    }
+
+    if cfg.seed_dev_accounts {
+        db::seed_dev_accounts(&pool)
+            .await
+            .expect("Failed to seed development accounts");
+        info!("Development accounts are ready");
+    }
     
     info!("Database connected successfully");
 
     let router = routes::create_router()
+        .hoop(middleware::cors::dev_cors())
         .hoop(affix_state::inject(pool))
         .hoop(affix_state::inject(cfg))
         .hoop(middleware::logging::request_logger);

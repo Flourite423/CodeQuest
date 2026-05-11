@@ -13,7 +13,7 @@ class ApiService extends GetxService {
   void onInit() {
     super.onInit();
     _dio = dio.Dio(dio.BaseOptions(
-      baseUrl: 'http://localhost:8080/api/v1',
+      baseUrl: 'http://localhost:3001/api/v1',
       connectTimeout: const Duration(seconds: 30),
       receiveTimeout: const Duration(seconds: 30),
       headers: {

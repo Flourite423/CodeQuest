@@ -21,7 +21,14 @@ pub async fn setup_test_db() -> PgPool {
         .await
         .expect("Failed to verify test database connection");
 
-    let _ = db::run_migrations(&pool).await;
+    if let Err(error) = db::run_migrations(&pool).await {
+        eprintln!("Test database migrations did not complete cleanly: {error}");
+    }
+
+    sqlx::query("ALTER TABLE challenges ADD COLUMN IF NOT EXISTS published_at TIMESTAMPTZ")
+        .execute(&pool)
+        .await
+        .expect("Failed to ensure challenges.published_at exists for tests");
 
     sqlx::query("ALTER TABLE sessions ALTER COLUMN refresh_token_hash TYPE TEXT")
         .execute(&pool)
@@ -85,6 +92,8 @@ pub fn create_test_service(pool: PgPool) -> Service {
         database_url: "postgres://postgres:postgres@localhost/learning_app_test".to_string(),
         jwt_secret: "test-secret-key-at-least-32-bytes-long!!".to_string(),
         jwt_expiration: 86400,
+        auto_run_migrations: false,
+        seed_dev_accounts: false,
         ai: learning_app_backend::config::AiConfig {
             provider: "mock".to_string(),
             mock_response: "Test response".to_string(),

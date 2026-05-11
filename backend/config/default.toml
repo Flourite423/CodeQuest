@@ -1,7 +1,9 @@
-server_addr = "0.0.0.0:8080"
+server_addr = "0.0.0.0:3001"
 database_url = "postgres://postgres:postgres@localhost/learning_app"
 jwt_secret = "your-secret-key-change-in-production"
 jwt_expiration = 86400
+auto_run_migrations = false
+seed_dev_accounts = false
 
 [ai]
 provider = "mock"

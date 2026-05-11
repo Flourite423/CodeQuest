@@ -2,6 +2,8 @@ server_addr = "127.0.0.1:3001"
 database_url = "postgres://postgres:postgres@localhost/codequest_test"
 jwt_secret = "dev-secret-key-minimum-32-characters-long-for-testing"
 jwt_expiration = 86400
+auto_run_migrations = true
+seed_dev_accounts = true
 
 [ai]
 provider = "mock"
