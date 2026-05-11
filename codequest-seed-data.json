@@ -1,0 +1,2781 @@
+{
+  "admin_users": [
+    {
+      "email": "admin@codequest.dev",
+      "password": "Admin12345",
+      "display_name": "系统管理员"
+    }
+  ],
+  "learner_users": [
+    {
+      "email": "learner1@example.com",
+      "password": "Learner123",
+      "nickname": "前端小白",
+      "total_xp": 1500,
+      "current_level": 5,
+      "streak_days": 7
+    },
+    {
+      "email": "learner2@example.com",
+      "password": "Learner123",
+      "nickname": "代码猎人",
+      "total_xp": 3200,
+      "current_level": 12,
+      "streak_days": 14
+    },
+    {
+      "email": "learner3@example.com",
+      "password": "Learner123",
+      "nickname": "CSS魔法师",
+      "total_xp": 800,
+      "current_level": 3,
+      "streak_days": 2
+    }
+  ],
+  "courses": [
+    {
+      "course_code": "html-basics",
+      "title": "HTML 基础入门",
+      "summary": "从零基础学习 HTML，掌握网页标记语言的核心语法、语义化标签和表单构建",
+      "description": "本课程基于 MDN Web Docs 官方学习路径，系统讲解 HTML5 的核心概念。你将从最简单的文档结构开始，逐步学习文本处理、超链接、图片多媒体、表格和表单等完整内容。课程包含大量编码练习和选择题，帮助你建立扎实的 HTML 基础。",
+      "difficulty": "beginner",
+      "estimated_minutes": 180,
+      "status": "published",
+      "chapters": [
+        {
+          "chapter_code": "html-ch1-doc-structure",
+          "title": "HTML 文档结构",
+          "summary": "学习 HTML 基础语法、文档类型声明和页面基本结构",
+          "learning_content_markdown": "# HTML 文档结构\n\n## 什么是 HTML\n\nHTML（HyperText Markup Language，超文本标记语言）是构建 Web 的标准标记语言。它由一系列**元素（elements）**组成，用于描述网页的结构和内容。\n\n## HTML 元素的剖析\n\n一个完整的 HTML 元素通常包含：\n- **开始标签**：如 `<p>`\n- **内容**：标签之间的文本或其他内容\n- **结束标签**：如 `</p>`\n\n```html\n<p>这是一个段落元素</p>\n```\n\n**空元素**（void elements）不需要结束标签，如 `<img>`、`<br>`、`<input>`。\n\n## HTML 属性\n\n属性为元素提供额外信息：\n```html\n<a href=\"https://example.com\">链接文本</a>\n<img src=\"photo.jpg\" alt=\"描述文字\">\n```\n\n属性语法：`name=\"value\"`。布尔属性如 `disabled`、`required` 无需值。\n\n## HTML 文档基本结构\n\n```html\n<!DOCTYPE html>\n<html lang=\"zh-CN\">\n<head>\n    <meta charset=\"UTF-8\">\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n    <title>页面标题</title>\n</head>\n<body>\n    <!-- 可见内容放在这里 -->\n</body>\n</html>\n```\n\n## head 中的元信息\n\n- `<title>`：页面标题，显示在浏览器标签页\n- `<meta charset=\"UTF-8\">`：字符编码\n- `<meta name=\"description\">`：页面描述，用于 SEO\n- `<meta name=\"viewport\">`：响应式视口设置\n- `<link rel=\"stylesheet\">`：引入 CSS 文件",
+          "estimated_minutes": 25,
+          "exercises": [
+            {
+              "exercise_code": "html-ex1-hello-world",
+              "title": "创建你的第一个 HTML 页面",
+              "prompt": "创建一个包含完整文档结构的 HTML 页面。要求：\n1. 添加正确的 DOCTYPE 声明\n2. html 标签设置 lang=\"zh-CN\"\n3. head 区域包含 charset=UTF-8、viewport meta 标签和 title（内容为'我的第一个网页'）\n4. body 中包含一个 h1 标题（内容为'你好，HTML!'）和一个 p 段落（内容为'这是我创建的第一个网页。'）",
+              "exercise_type": "coding",
+              "starter_code": "<!DOCTYPE html>\n<html>\n<head>\n  <!-- 在这里添加 meta 标签和标题 -->\n</head>\n<body>\n  <!-- 在这里添加 h1 标题和段落 -->\n</body>\n</html>",
+              "language": "html_css",
+              "difficulty": "beginner",
+              "test_cases": [
+                {
+                  "case_name": "has_doctype",
+                  "case_type": "text_match",
+                  "expected_payload_json": {
+                    "pattern": "<!DOCTYPE html>",
+                    "match_type": "contains"
+                  }
+                },
+                {
+                  "case_name": "html_lang_zh",
+                  "case_type": "dom_snapshot",
+                  "expected_payload_json": {
+                    "selector": "html",
+                    "attribute": "lang",
+                    "equals": "zh-CN"
+                  }
+                },
+                {
+                  "case_name": "has_charset_meta",
+                  "case_type": "text_match",
+                  "expected_payload_json": {
+                    "pattern": "charset=\"UTF-8\"",
+                    "match_type": "contains"
+                  }
+                },
+                {
+                  "case_name": "title_correct",
+                  "case_type": "dom_snapshot",
+                  "expected_payload_json": {
+                    "selector": "title",
+                    "textContent": "我的第一个网页"
+                  }
+                },
+                {
+                  "case_name": "h1_content",
+                  "case_type": "dom_snapshot",
+                  "expected_payload_json": {
+                    "selector": "h1",
+                    "textContent": "你好，HTML!"
+                  }
+                },
+                {
+                  "case_name": "p_content",
+                  "case_type": "dom_snapshot",
+                  "expected_payload_json": {
+                    "selector": "p",
+                    "textContent": "这是我创建的第一个网页。"
+                  }
+                }
+              ]
+            },
+            {
+              "exercise_code": "html-ex1-quiz-elements",
+              "title": "HTML 元素与属性小测验",
+              "prompt": "回答以下关于 HTML 元素和属性的问题：",
+              "exercise_type": "single_choice",
+              "language": "html_css",
+              "difficulty": "beginner",
+              "exercise_options": [
+                {
+                  "option_text": "以下哪个是空元素（void element）？",
+                  "option_code": null,
+                  "choices": [
+                    "<div>",
+                    "<span>",
+                    "<img>",
+                    "<p>"
+                  ],
+                  "correct_index": 2,
+                  "explanation": "<img> 是空元素，它不需要结束标签。其他元素都需要成对的开始和结束标签。"
+                },
+                {
+                  "option_text": "HTML 中用于指定字符编码的 meta 标签属性是？",
+                  "option_code": null,
+                  "choices": [
+                    "<meta encoding=\"UTF-8\">",
+                    "<meta charset=\"UTF-8\">",
+                    "<meta code=\"UTF-8\">",
+                    "<meta type=\"UTF-8\">"
+                  ],
+                  "correct_index": 1,
+                  "explanation": "charset 属性用于指定文档的字符编码，这是 HTML5 的标准写法。"
+                },
+                {
+                  "option_text": "以下哪个标签定义了 HTML 文档的可见内容区域？",
+                  "option_code": null,
+                  "choices": [
+                    "<head>",
+                    "<meta>",
+                    "<body>",
+                    "<html>"
+                  ],
+                  "correct_index": 2,
+                  "explanation": "<body> 标签包含了所有在浏览器中可见的页面内容。<head> 区域存放元数据，对用户不可见。"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "chapter_code": "html-ch2-text-formatting",
+          "title": "文本处理与格式",
+          "summary": "掌握标题、段落、列表和文本强调元素的使用",
+          "learning_content_markdown": "# 文本处理与格式\n\n## 标题元素 h1 ~ h6\n\nHTML 提供六级标题，h1 为最高级别，h6 为最低。每个页面应只使用一个 h1。\n\n```html\n<h1>主标题（文章标题）</h1>\n<h2>二级标题（章节标题）</h2>\n<h3>三级标题（小节标题）</h3>\n```\n\n## 段落 p\n\n```html\n<p>这是一个段落。浏览器会自动在段落之间添加间距。</p>\n```\n\n## 强调元素\n\n- `<strong>`：表示强烈重要性（默认粗体）\n- `<em>`：表示强调（默认斜体）\n- `<b>` / `<i>`：仅视觉样式，无语义\n\n```html\n<p><strong>警告：</strong>请勿在 <em>生产环境</em> 中调试代码。</p>\n```\n\n## 列表\n\n**无序列表**（项目符号）：\n```html\n<ul>\n  <li>HTML</li>\n  <li>CSS</li>\n  <li>JavaScript</li>\n</ul>\n```\n\n**有序列表**（编号）：\n```html\n<ol>\n  <li>第一步：安装编辑器</li>\n  <li>第二步：创建项目文件夹</li>\n  <li>第三步：编写代码</li>\n</ol>\n```\n\n**定义列表**：\n```html\n<dl>\n  <dt>HTML</dt><dd>超文本标记语言</dd>\n  <dt>CSS</dt><dd>层叠样式表</dd>\n</dl>\n```\n\n## 其他文本元素\n\n- `<mark>`：高亮标记文本\n- `<small>`：小号字体/法律声明\n- `<sub>` / `<sup>`：下标/上标\n- `<del>` / `<ins>`：删除/插入文本\n- `<code>`：行内代码\n- `<pre>`：预格式化文本\n- `<blockquote>`：块级引用",
+          "estimated_minutes": 20,
+          "exercises": [
+            {
+              "exercise_code": "html-ex2-article-structure",
+              "title": "文章结构标记练习",
+              "prompt": "为一篇技术博客文章添加正确的 HTML 标记。要求：\n1. 一个 h1 标题：'HTML 入门指南'\n2. 一个引言段落，其中'重要'一词使用 strong 强调\n3. 一个 h2 子标题：'学习路径'\n4. 在 h2 下方创建一个无序列表，包含3项：'HTML 基础语法'、'CSS 样式设计'、'JavaScript 交互'\n5. 一个 h2 子标题：'准备工作'\n6. 在第二个 h2 下方创建一个有序列表，包含2项：'安装 VS Code 编辑器'、'创建项目文件夹'",
+              "exercise_type": "coding",
+              "starter_code": "<!DOCTYPE html>\n<html lang=\"zh-CN\">\n<head>\n  <meta charset=\"UTF-8\">\n  <title>文章结构练习</title>\n</head>\n<body>\n  <!-- 在这里添加文章结构 -->\n</body>\n</html>",
+              "language": "html_css",
+              "difficulty": "beginner",
+              "test_cases": [
+                {
+                  "case_name": "has_h1_title",
+                  "case_type": "dom_snapshot",
+                  "expected_payload_json": {
+                    "selector": "h1",
+                    "textContent": "HTML 入门指南"
+                  }
+                },
+                {
+                  "case_name": "strong_in_intro",
+                  "case_type": "dom_snapshot",
+                  "expected_payload_json": {
+                    "selector": "strong",
+                    "textContent": "重要"
+                  }
+                },
+                {
+                  "case_name": "two_h2_sections",
+                  "case_type": "dom_snapshot",
+                  "expected_payload_json": {
+                    "selector": "h2",
+                    "count": 2
+                  }
+                },
+                {
+                  "case_name": "unordered_list_items",
+                  "case_type": "dom_snapshot",
+                  "expected_payload_json": {
+                    "selector": "ul li",
+                    "count": 3
+                  }
+                },
+                {
+                  "case_name": "ordered_list_items",
+                  "case_type": "dom_snapshot",
+                  "expected_payload_json": {
+                    "selector": "ol li",
+                    "count": 2
+                  }
+                }
+              ]
+            },
+            {
+              "exercise_code": "html-ex2-quiz-semantics",
+              "title": "文本语义化选择",
+              "prompt": "选择最适合的标签来完成以下文本标记任务：",
+              "exercise_type": "single_choice",
+              "language": "html_css",
+              "difficulty": "beginner",
+              "exercise_options": [
+                {
+                  "option_text": "要标记一个化学公式中的下标数字（如 H₂O），应使用哪个标签？",
+                  "option_code": null,
+                  "choices": [
+                    "<sub>",
+                    "<sup>",
+                    "<small>",
+                    "<i>"
+                  ],
+                  "correct_index": 0,
+                  "explanation": "<sub> 用于下标，适合化学公式。H<sub>2</sub>O 会渲染为 H₂O。"
+                },
+                {
+                  "option_text": "在网页中表示一段重要警告信息，应该使用哪个标签？",
+                  "option_code": null,
+                  "choices": [
+                    "<b>",
+                    "<i>",
+                    "<strong>",
+                    "<mark>"
+                  ],
+                  "correct_index": 2,
+                  "explanation": "<strong> 表示内容的重要性，具有语义含义。<b> 仅表示视觉粗体，没有语义含义。"
+                },
+                {
+                  "option_text": "以下代码中，哪种列表最适合表示食谱的步骤说明？",
+                  "option_code": "<ol>\n  <li>准备食材</li>\n  <li>加热锅具</li>\n</ol>",
+                  "choices": [
+                    "<ul> 无序列表",
+                    "<ol> 有序列表",
+                    "<dl> 定义列表",
+                    "都可以"
+                  ],
+                  "correct_index": 1,
+                  "explanation": "食谱步骤有明确的先后顺序，应使用有序列表 <ol>（ordered list）。"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "chapter_code": "html-ch3-semantic",
+          "title": "语义化与文档结构",
+          "summary": "学习语义化 HTML5 标签和页面区域划分",
+          "learning_content_markdown": "# 语义化与文档结构\n\n## 为什么要语义化\n\n语义化 HTML 指的是使用恰当的标签来描述内容的含义，而非仅仅关注视觉效果。语义化的好处：\n\n- **可访问性**：屏幕阅读器能正确解读页面结构\n- **SEO**：搜索引擎更容易理解页面内容\n- **维护性**：代码更易读、更易维护\n\n## HTML5 语义化结构元素\n\n```html\n<body>\n  <header>\n    <h1>网站标题</h1>\n    <nav>\n      <ul>\n        <li><a href=\"/\">首页</a></li>\n        <li><a href=\"/about\">关于</a></li>\n      </ul>\n    </nav>\n  </header>\n\n  <main>\n    <article>\n      <header>\n        <h2>文章标题</h2>\n        <time datetime=\"2025-01-15\">2025年1月15日</time>\n      </header>\n      <section>\n        <h3>第一节</h3>\n        <p>内容...</p>\n      </section>\n      <section>\n        <h3>第二节</h3>\n        <p>内容...</p>\n      </section>\n    </article>\n\n    <aside>\n      <h3>相关推荐</h3>\n      <ul>...</ul>\n    </aside>\n  </main>\n\n  <footer>\n    <p>&copy; 2025 我的网站</p>\n  </footer>\n</body>\n```\n\n## 语义化元素详解\n\n| 元素 | 用途 |\n|------|------|\n| `<header>` | 页面或区块的头部，通常包含标题和导航 |\n| `<nav>` | 导航链接区域 |\n| `<main>` | 页面主要内容（每个页面仅一个） |\n| `<article>` | 独立可复用的内容块，如博客文章 |\n| `<section>` | 文档中的主题性分组 |\n| `<aside>` | 侧边栏或间接相关内容 |\n| `<footer>` | 页面或区块的底部 |\n| `<time>` | 日期/时间，datetime 属性提供机器可读格式 |\n\n## div vs 语义化标签\n\n- `<div>`：无语义，仅作为通用容器\n- 语义化标签：有明确含义，优先使用\n- 仅在无合适语义标签时使用 div",
+          "estimated_minutes": 25,
+          "exercises": [
+            {
+              "exercise_code": "html-ex3-blog-layout",
+              "title": "博客页面语义化结构",
+              "prompt": "创建一个语义化的博客文章页面。要求：\n1. 使用 header 包裹 h1 标题'我的博客'和 nav 导航（包含2个链接：首页 / 关于）\n2. 使用 main 包裹主要内容\n3. 在 main 中使用 article 包裹文章，article 内包含 h2 标题'HTML5 语义化指南'\n4. 使用 section 将文章分为两节（每节有 h3 子标题和 p 段落）\n5. 使用 aside 创建侧边栏，包含 h3'相关文章'和一个 ul 列表（2个 li）\n6. 使用 footer 创建页脚，包含 p 标签和版权信息'© 2025 我的博客'",
+              "exercise_type": "coding",
+              "starter_code": "<!DOCTYPE html>\n<html lang=\"zh-CN\">\n<head>\n  <meta charset=\"UTF-8\">\n  <title>语义化博客</title>\n</head>\n<body>\n  <!-- 在这里构建语义化博客页面 -->\n</body>\n</html>",
+              "language": "html_css",
+              "difficulty": "intermediate",
+              "test_cases": [
+                {
+                  "case_name": "has_header_nav",
+                  "case_type": "dom_snapshot",
+                  "expected_payload_json": {
+                    "selector": "header nav",
+                    "exists": true
+                  }
+                },
+                {
+                  "case_name": "nav_links_count",
+                  "case_type": "dom_snapshot",
+                  "expected_payload_json": {
+                    "selector": "nav a",
+                    "count": 2
+                  }
+                },
+                {
+                  "case_name": "has_main_article",
+                  "case_type": "dom_snapshot",
+                  "expected_payload_json": {
+                    "selector": "main article",
+                    "exists": true
+                  }
+                },
+                {
+                  "case_name": "sections_count",
+                  "case_type": "dom_snapshot",
+                  "expected_payload_json": {
+                    "selector": "article section",
+                    "count": 2
+                  }
+                },
+                {
+                  "case_name": "has_aside",
+                  "case_type": "dom_snapshot",
+                  "expected_payload_json": {
+                    "selector": "aside",
+                    "exists": true
+                  }
+                },
+                {
+                  "case_name": "has_footer",
+                  "case_type": "dom_snapshot",
+                  "expected_payload_json": {
+                    "selector": "footer",
+                    "exists": true
+                  }
+                }
+              ]
+            },
+            {
+              "exercise_code": "html-ex3-quiz-semantic",
+              "title": "语义化标签选择",
+              "prompt": "为以下场景选择最合适的 HTML5 语义化标签：",
+              "exercise_type": "single_choice",
+              "language": "html_css",
+              "difficulty": "intermediate",
+              "exercise_options": [
+                {
+                  "option_text": "一个新闻网站中，每篇独立的新闻报道最适合使用哪个标签包裹？",
+                  "option_code": null,
+                  "choices": [
+                    "<div class=\"news\">",
+                    "<section>",
+                    "<article>",
+                    "<main>"
+                  ],
+                  "correct_index": 2,
+                  "explanation": "<article> 表示独立、可复用的内容块，适合博客文章、新闻报道等独立内容。"
+                },
+                {
+                  "option_text": "以下哪种写法是错误的（一个页面中不应该出现的情况）？",
+                  "option_code": null,
+                  "choices": [
+                    "包含两个 <nav> 元素",
+                    "包含两个 <main> 元素",
+                    "<article> 内嵌套 <section>",
+                    "<section> 内嵌套 <article>"
+                  ],
+                  "correct_index": 1,
+                  "explanation": "HTML 规范规定每个页面只能有一个 <main> 元素，它不能是其他元素的子元素。"
+                },
+                {
+                  "option_text": "对于页面中的面包屑导航和文章标签云，分别最适合使用什么标签？",
+                  "option_code": null,
+                  "choices": [
+                    "都用 <nav>",
+                    "面包屑用 <nav>，标签云用 <aside>",
+                    "都用 <div>",
+                    "面包屑用 <aside>，标签云用 <nav>"
+                  ],
+                  "correct_index": 1,
+                  "explanation": "面包屑是主要导航，用 <nav>；标签云是间接相关内容，用 <aside>。"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "chapter_code": "html-ch4-links-images",
+          "title": "超链接与图片",
+          "summary": "学习创建超链接、导航菜单和插入图片",
+          "learning_content_markdown": "# 超链接与图片\n\n## 创建超链接\n\n使用 `<a>` 标签创建超链接：\n\n```html\n<!-- 链接到其他页面 -->\n<a href=\"https://developer.mozilla.org\">MDN Web Docs</a>\n\n<!-- 链接到页面内锚点 -->\n<a href=\"#section2\">跳转到第二节</a>\n<section id=\"section2\">...</section>\n\n<!-- 邮件链接 -->\n<a href=\"mailto:contact@example.com\">发送邮件</a>\n\n<!-- 电话链接 -->\n<a href=\"tel:+8613800138000\">拨打电话</a>\n```\n\n## 链接属性\n\n| 属性 | 说明 |\n|------|------|\n| `href` | 目标地址（必需） |\n| `target=\"_blank\"` | 在新标签页打开 |\n| `rel=\"noopener noreferrer\"` | 安全属性，配合 target=\"_blank\" 使用 |\n| `download` | 提示下载链接目标 |\n\n## 图片 img\n\n```html\n<img src=\"photo.jpg\" alt=\"照片描述\" width=\"400\" height=\"300\">\n```\n\n**重要属性**：\n- `src`：图片路径（必需）\n- `alt`：替代文本（必需，用于可访问性和图片加载失败时）\n- `width` / `height`：尺寸（建议设置防止布局偏移）\n\n## 响应式图片\n\n```html\n<picture>\n  <source srcset=\"large.jpg\" media=\"(min-width: 800px)\">\n  <source srcset=\"medium.jpg\" media=\"(min-width: 400px)\">\n  <img src=\"small.jpg\" alt=\"响应式图片\">\n</picture>\n```\n\n## 导航菜单\n\n使用 nav 包裹导航链接：\n\n```html\n<nav>\n  <ul>\n    <li><a href=\"/\">首页</a></li>\n    <li><a href=\"/about\">关于我们</a></li>\n    <li><a href=\"/contact\">联系方式</a></li>\n  </ul>\n</nav>\n```\n\n## 图片格式\n\n| 格式 | 特点 | 适用场景 |\n|------|------|----------|\n| JPEG | 有损压缩，文件小 | 照片 |\n| PNG | 支持透明，无损 | 图标、截图 |\n| WebP | 压缩率高，现代格式 | 推荐用于 Web |\n| SVG | 矢量，缩放不失真 | 图标、Logo |",
+          "estimated_minutes": 20,
+          "exercises": [
+            {
+              "exercise_code": "html-ex4-personal-site",
+              "title": "创建个人网站导航",
+              "prompt": "创建一个包含导航菜单的图片画廊页面。要求：\n1. 使用 nav 包含一个无序列表，列表中有4个 li，每个 li 包含一个 a 链接\n2. 4个链接分别是：首页(href='/')、关于(href='/about')、作品集(href='/portfolio')、联系(href='#contact')\n3. 在 nav 下方创建一个 h1 标题'我的作品集'\n4. 创建一个 div，内部使用 img 插入两张图片\n5. 第一张图片：src='https://picsum.photos/300/200?random=1'，alt='项目截图1'\n6. 第二张图片：src='https://picsum.photos/300/200?random=2'，alt='项目截图2'\n7. 在页面底部创建一个 id='contact' 的 div，内部包含一个邮件链接 mailto:hello@example.com",
+              "exercise_type": "coding",
+              "starter_code": "<!DOCTYPE html>\n<html lang=\"zh-CN\">\n<head>\n  <meta charset=\"UTF-8\">\n  <title>个人网站</title>\n</head>\n<body>\n  <!-- 在这里添加导航和图片 -->\n</body>\n</html>",
+              "language": "html_css",
+              "difficulty": "beginner",
+              "test_cases": [
+                {
+                  "case_name": "nav_structure",
+                  "case_type": "dom_snapshot",
+                  "expected_payload_json": {
+                    "selector": "nav ul li a",
+                    "count": 4
+                  }
+                },
+                {
+                  "case_name": "anchor_link",
+                  "case_type": "text_match",
+                  "expected_payload_json": {
+                    "pattern": "href=\"#contact\"",
+                    "match_type": "contains"
+                  }
+                },
+                {
+                  "case_name": "images_count",
+                  "case_type": "dom_snapshot",
+                  "expected_payload_json": {
+                    "selector": "img",
+                    "count": 2
+                  }
+                },
+                {
+                  "case_name": "alt_text",
+                  "case_type": "dom_snapshot",
+                  "expected_payload_json": {
+                    "selector": "img[alt]",
+                    "count": 2
+                  }
+                },
+                {
+                  "case_name": "mailto_link",
+                  "case_type": "text_match",
+                  "expected_payload_json": {
+                    "pattern": "mailto:hello@example.com",
+                    "match_type": "contains"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "chapter_code": "html-ch5-tables",
+          "title": "表格基础",
+          "summary": "学习创建语义化的 HTML 表格",
+          "learning_content_markdown": "# 表格基础\n\n## 基本表格结构\n\n```html\n<table>\n  <caption>学生成绩表</caption>\n  <thead>\n    <tr>\n      <th scope=\"col\">姓名</th>\n      <th scope=\"col\">数学</th>\n      <th scope=\"col\">英语</th>\n    </tr>\n  </thead>\n  <tbody>\n    <tr>\n      <th scope=\"row\">张三</th>\n      <td>90</td>\n      <td>85</td>\n    </tr>\n    <tr>\n      <th scope=\"row\">李四</th>\n      <td>78</td>\n      <td>92</td>\n    </tr>\n  </tbody>\n</table>\n```\n\n## 表格元素\n\n| 元素 | 说明 |\n|------|------|\n| `<table>` | 表格容器 |\n| `<caption>` | 表格标题 |\n| `<thead>` | 表头区域 |\n| `<tbody>` | 表体区域 |\n| `<tfoot>` | 表尾区域（可选） |\n| `<tr>` | 表格行 |\n| `<th>` | 表头单元格（默认粗体居中） |\n| `<td>` | 数据单元格 |\n\n## 表格属性\n\n- `colspan`：跨列合并\n- `rowspan`：跨行合并\n- `scope=\"col/row\"`：表头作用范围（可访问性）\n\n## 表格最佳实践\n\n1. 始终使用 caption 描述表格内容\n2. 使用 thead/tbody 分区\n3. 为 th 添加 scope 属性\n4. **不要使用表格进行页面布局**，应使用 CSS Flexbox/Grid",
+          "estimated_minutes": 15,
+          "exercises": [
+            {
+              "exercise_code": "html-ex5-student-table",
+              "title": "创建学生信息表",
+              "prompt": "创建一个完整的学生信息表格。要求：\n1. table 标签内包含 caption'2025年春季学生成绩表'\n2. 使用 thead 包含表头行，3列：姓名(scope=col)、数学(scope=col)、英语(scope=col)\n3. 使用 tbody 包含2行数据\n4. 第一行：张三(行头，scope=row)、90、85\n5. 第二行：李四(行头，scope=row)、78、92\n6. 为表格添加 border=\"1\" 属性",
+              "exercise_type": "coding",
+              "starter_code": "<!DOCTYPE html>\n<html>\n<head>\n  <meta charset=\"UTF-8\">\n  <title>学生成绩表</title>\n</head>\n<body>\n  <!-- 在这里创建表格 -->\n</body>\n</html>",
+              "language": "html_css",
+              "difficulty": "beginner",
+              "test_cases": [
+                {
+                  "case_name": "has_caption",
+                  "case_type": "dom_snapshot",
+                  "expected_payload_json": {
+                    "selector": "caption",
+                    "textContent": "2025年春季学生成绩表"
+                  }
+                },
+                {
+                  "case_name": "thead_structure",
+                  "case_type": "dom_snapshot",
+                  "expected_payload_json": {
+                    "selector": "thead th",
+                    "count": 3
+                  }
+                },
+                {
+                  "case_name": "tbody_rows",
+                  "case_type": "dom_snapshot",
+                  "expected_payload_json": {
+                    "selector": "tbody tr",
+                    "count": 2
+                  }
+                },
+                {
+                  "case_name": "scope_attrs",
+                  "case_type": "text_match",
+                  "expected_payload_json": {
+                    "pattern": "scope=\"col\"",
+                    "match_type": "contains"
+                  }
+                }
+              ]
+            },
+            {
+              "exercise_code": "html-ex5-quiz-table",
+              "title": "表格知识测验",
+              "prompt": "回答以下关于 HTML 表格的问题：",
+              "exercise_type": "single_choice",
+              "language": "html_css",
+              "difficulty": "beginner",
+              "exercise_options": [
+                {
+                  "option_text": "在表格中，以下哪个元素用于定义列的标题？",
+                  "option_code": null,
+                  "choices": [
+                    "<td>",
+                    "<tr>",
+                    "<th>",
+                    "<col>"
+                  ],
+                  "correct_index": 2,
+                  "explanation": "<th>（table header）用于定义表头单元格，默认以粗体和居中显示。"
+                },
+                {
+                  "option_text": "要让一个单元格横跨两列，应该使用哪个属性？",
+                  "option_code": null,
+                  "choices": [
+                    "rowspan=\"2\"",
+                    "colspan=\"2\"",
+                    "span=\"2\"",
+                    "merge=\"2\""
+                  ],
+                  "correct_index": 1,
+                  "explanation": "colspan 属性定义单元格应横跨的列数，rowspan 定义应纵跨的行数。"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "chapter_code": "html-ch6-forms",
+          "title": "表单与输入控件",
+          "summary": "掌握 HTML 表单元素、输入类型和客户端验证",
+          "learning_content_markdown": "# 表单与输入控件\n\n## form 元素\n\n```html\n<form action=\"/submit\" method=\"POST\">\n  <!-- 表单控件放在这里 -->\n</form>\n```\n\n- `action`：表单提交目标 URL\n- `method`：HTTP 方法（GET 或 POST）\n\n## 常用 input 类型\n\n```html\n<!-- 文本输入 -->\n<input type=\"text\" name=\"username\" placeholder=\"请输入用户名\">\n\n<!-- 邮箱（自动验证格式） -->\n<input type=\"email\" name=\"email\" required>\n\n<!-- 密码（隐藏输入） -->\n<input type=\"password\" name=\"password\" minlength=\"8\">\n\n<!-- 数字 -->\n<input type=\"number\" name=\"age\" min=\"1\" max=\"120\">\n\n<!-- 日期 -->\n<input type=\"date\" name=\"birthday\">\n\n<!-- 复选框 -->\n<input type=\"checkbox\" name=\"hobby\" value=\"reading\"> 阅读\n<input type=\"checkbox\" name=\"hobby\" value=\"sports\"> 运动\n\n<!-- 单选按钮 -->\n<input type=\"radio\" name=\"gender\" value=\"male\"> 男\n<input type=\"radio\" name=\"gender\" value=\"female\"> 女\n```\n\n## label 元素\n\nlabel 用于描述表单控件，提升可访问性：\n\n```html\n<label for=\"username\">用户名：</label>\n<input type=\"text\" id=\"username\" name=\"username\">\n\n<!-- 或使用隐式关联 -->\n<label>\n  <input type=\"checkbox\" name=\"agree\"> 我同意服务条款\n</label>\n```\n\n## 其他表单控件\n\n```html\n<!-- 下拉选择 -->\n<select name=\"city\">\n  <option value=\"\">请选择城市</option>\n  <option value=\"beijing\">北京</option>\n  <option value=\"shanghai\">上海</option>\n</select>\n\n<!-- 多行文本 -->\n<textarea name=\"message\" rows=\"4\" cols=\"50\" placeholder=\"请输入留言...\"></textarea>\n\n<!-- 按钮 -->\n<button type=\"submit\">提交</button>\n<button type=\"reset\">重置</button>\n<button type=\"button\">普通按钮</button>\n```\n\n## 表单验证属性\n\n| 属性 | 说明 |\n|------|------|\n| `required` | 必填字段 |\n| `minlength` / `maxlength` | 字符长度限制 |\n| `min` / `max` | 数值范围 |\n| `pattern` | 正则表达式验证 |\n| `placeholder` | 输入提示 |\n\n```html\n<input type=\"text\" pattern=\"[A-Za-z]{3}\" title=\"三个字母\">\n```",
+          "estimated_minutes": 30,
+          "exercises": [
+            {
+              "exercise_code": "html-ex6-register-form",
+              "title": "用户注册表单",
+              "prompt": "创建一个完整的用户注册表单。要求：\n1. form 标签设置 method=\"POST\"，action=\"/register\"\n2. 用户名输入：type=text，name=username，required，placeholder='请输入用户名'\n3. 邮箱输入：type=email，name=email，required\n4. 密码输入：type=password，name=password，required，minlength=8\n5. 性别选择：两个 radio，name=gender，value 分别为 male 和 female，使用 label 包裹\n6. 兴趣复选框：name=hobby，三个选项 value 分别为 coding、music、sports\n7. 城市下拉：select name=city，包含3个 option（北京、上海、广州）\n8. 个人简介：textarea name=bio，rows=3\n9. 提交按钮：type=submit，文字'注册'",
+              "exercise_type": "coding",
+              "starter_code": "<!DOCTYPE html>\n<html>\n<head>\n  <meta charset=\"UTF-8\">\n  <title>用户注册</title>\n</head>\n<body>\n  <h1>用户注册</h1>\n  <!-- 在这里创建表单 -->\n</body>\n</html>",
+              "language": "html_css",
+              "difficulty": "intermediate",
+              "test_cases": [
+                {
+                  "case_name": "form_attributes",
+                  "case_type": "text_match",
+                  "expected_payload_json": {
+                    "pattern": "method=\"POST\"",
+                    "match_type": "contains"
+                  }
+                },
+                {
+                  "case_name": "text_input",
+                  "case_type": "dom_snapshot",
+                  "expected_payload_json": {
+                    "selector": "input[name=\"username\"]",
+                    "attribute": "type",
+                    "equals": "text"
+                  }
+                },
+                {
+                  "case_name": "email_input",
+                  "case_type": "dom_snapshot",
+                  "expected_payload_json": {
+                    "selector": "input[name=\"email\"]",
+                    "attribute": "type",
+                    "equals": "email"
+                  }
+                },
+                {
+                  "case_name": "password_minlength",
+                  "case_type": "dom_snapshot",
+                  "expected_payload_json": {
+                    "selector": "input[name=\"password\"]",
+                    "attribute": "minlength",
+                    "equals": "8"
+                  }
+                },
+                {
+                  "case_name": "radio_buttons",
+                  "case_type": "dom_snapshot",
+                  "expected_payload_json": {
+                    "selector": "input[type=\"radio\"]",
+                    "count": 2
+                  }
+                },
+                {
+                  "case_name": "checkboxes",
+                  "case_type": "dom_snapshot",
+                  "expected_payload_json": {
+                    "selector": "input[type=\"checkbox\"]",
+                    "count": 3
+                  }
+                },
+                {
+                  "case_name": "select_options",
+                  "case_type": "dom_snapshot",
+                  "expected_payload_json": {
+                    "selector": "select option",
+                    "count": 4
+                  }
+                },
+                {
+                  "case_name": "submit_button",
+                  "case_type": "dom_snapshot",
+                  "expected_payload_json": {
+                    "selector": "button[type=\"submit\"]",
+                    "exists": true
+                  }
+                }
+              ]
+            },
+            {
+              "exercise_code": "html-ex6-quiz-forms",
+              "title": "表单控件测验",
+              "prompt": "回答以下关于 HTML 表单的问题：",
+              "exercise_type": "single_choice",
+              "language": "html_css",
+              "difficulty": "intermediate",
+              "exercise_options": [
+                {
+                  "option_text": "要让一组单选按钮互斥（只能选一个），需要设置什么属性相同？",
+                  "option_code": null,
+                  "choices": [
+                    "id",
+                    "class",
+                    "name",
+                    "value"
+                  ],
+                  "correct_index": 2,
+                  "explanation": "name 属性相同的 radio 按钮属于同一组，只能选中其中一个。"
+                },
+                {
+                  "option_text": "input type=\"email\" 的优势是什么？",
+                  "option_code": null,
+                  "choices": [
+                    "只能输入字母",
+                    "自动验证邮箱格式",
+                    "自动填充域名",
+                    "限制输入长度"
+                  ],
+                  "correct_index": 1,
+                  "explanation": "email 类型的输入框会自动验证输入内容是否符合邮箱格式，并在提交表单时进行校验。"
+                },
+                {
+                  "option_text": "label 元素的 for 属性应该与哪个属性值对应？",
+                  "option_code": null,
+                  "choices": [
+                    "input 的 name 属性",
+                    "input 的 id 属性",
+                    "input 的 class 属性",
+                    "input 的 value 属性"
+                  ],
+                  "correct_index": 1,
+                  "explanation": "label 的 for 属性值必须等于关联表单控件的 id 属性值，这样点击标签时就会聚焦到对应输入框。"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "course_code": "css-basics",
+      "title": "CSS 样式基础",
+      "summary": "掌握 CSS 选择器、盒模型、颜色、字体和背景等核心样式技能",
+      "description": "本课程基于 MDN CSS 学习路径，系统讲解 CSS 的核心概念。你将学习如何选择元素、理解盒模型、设置颜色和字体、控制背景和边框等。课程采用理论与实践结合的方式，通过大量编码练习帮助你建立扎实的 CSS 基础。",
+      "difficulty": "beginner",
+      "estimated_minutes": 200,
+      "status": "published",
+      "chapters": [
+        {
+          "chapter_code": "css-ch1-selectors",
+          "title": "CSS 选择器与优先级",
+          "summary": "学习基础选择器、组合器和选择器优先级的计算",
+          "learning_content_markdown": "# CSS 选择器与优先级\n\n## 什么是 CSS\n\nCSS（Cascading Style Sheets，层叠样式表）用于控制 HTML 元素的视觉呈现，实现了内容（HTML）与表现（CSS）的分离。\n\n```css\n/* 选择器 { 属性: 值; } */\nh1 {\n  color: blue;\n  font-size: 24px;\n}\n```\n\n## CSS 引入方式\n\n1. **外部样式表**（推荐）：`<link rel=\"stylesheet\" href=\"style.css\">`\n2. **内部样式表**：`<style>` 标签\n3. **内联样式**：`style` 属性（不推荐，优先级最高）\n\n## 基础选择器\n\n```css\n/* 元素选择器 */\np { color: black; }\n\n/* 类选择器 */\n.highlight { background-color: yellow; }\n\n/* ID 选择器 */\n#header { height: 60px; }\n\n/* 通用选择器 */\n* { margin: 0; padding: 0; }\n```\n\n## 关系选择器（组合器）\n\n```css\n/* 后代选择器：nav 内的所有 a */\nnav a { text-decoration: none; }\n\n/* 子选择器：ul 的直接子元素 li */\nul > li { list-style: none; }\n\n/* 相邻兄弟选择器：紧跟 h2 的第一个 p */\nh2 + p { font-weight: bold; }\n\n/* 通用兄弟选择器：h2 之后的所有 p */\nh2 ~ p { color: gray; }\n```\n\n## 伪类\n\n```css\n/* 链接状态 */\na:link { color: blue; }      /* 未访问 */\na:visited { color: purple; } /* 已访问 */\na:hover { color: red; }      /* 悬停 */\na:active { color: green; }   /* 激活 */\n\n/* 结构伪类 */\nli:first-child { font-weight: bold; }\nli:last-child { color: gray; }\nli:nth-child(odd) { background: #f5f5f5; }\n\n/* 表单伪类 */\ninput:focus { outline: 2px solid blue; }\ninput:valid { border-color: green; }\ninput:invalid { border-color: red; }\n```\n\n## 伪元素\n\n```css\n/* 在元素前后插入内容 */\n.quote::before { content: '\"'; }\n.quote::after { content: '\"'; }\n\n/* 首行/首字 */\np::first-line { font-weight: bold; }\np::first-letter { font-size: 2em; }\n```\n\n## 选择器优先级（Specificity）\n\n优先级权重计算：`行内 > ID > 类/伪类/属性 > 元素/伪元素`\n\n| 选择器 | 权重值 |\n|--------|--------|\n| `p` | 0-0-1 |\n| `.nav` | 0-1-0 |\n| `#logo` | 1-0-0 |\n| `#nav .item a:hover` | 1-2-1 |\n\n!important 可覆盖所有规则，应谨慎使用。",
+          "estimated_minutes": 25,
+          "exercises": [
+            {
+              "exercise_code": "css-ex1-selector-practice",
+              "title": "导航菜单样式设计",
+              "prompt": "为一个导航菜单编写 CSS 样式。HTML 结构已给定，请添加 style 标签完成以下样式：\n1. nav 元素内的所有 a 标签：去掉下划线(text-decoration: none)，颜色为 #333\n2. nav 元素内 a 标签的悬停状态：颜色变为 #007bff\n3. class 为 active 的 a 标签：颜色为 #007bff，字体加粗(font-weight: bold)\n4. nav 的直接子元素 ul：去掉列表符号(list-style: none)，内边距为 0\n5. nav 内的 li 元素：display 设置为 inline-block，右边距 20px",
+              "exercise_type": "coding",
+              "starter_code": "<!DOCTYPE html>\n<html>\n<head>\n  <meta charset=\"UTF-8\">\n  <title>导航样式</title>\n  <!-- 在这里添加 style 标签 -->\n</head>\n<body>\n  <nav>\n    <ul>\n      <li><a href=\"#\">首页</a></li>\n      <li><a href=\"#\" class=\"active\">课程</a></li>\n      <li><a href=\"#\">练习</a></li>\n      <li><a href=\"#\">关于</a></li>\n    </ul>\n  </nav>\n</body>\n</html>",
+              "language": "html_css",
+              "difficulty": "beginner",
+              "test_cases": [
+                {
+                  "case_name": "nav_link_color",
+                  "case_type": "css_assert",
+                  "expected_payload_json": {
+                    "selector": "nav a",
+                    "property": "color",
+                    "equals": "#333"
+                  }
+                },
+                {
+                  "case_name": "nav_hover_color",
+                  "case_type": "css_assert",
+                  "expected_payload_json": {
+                    "selector": "nav a:hover",
+                    "property": "color",
+                    "equals": "#007bff"
+                  }
+                },
+                {
+                  "case_name": "active_class",
+                  "case_type": "css_assert",
+                  "expected_payload_json": {
+                    "selector": "a.active",
+                    "property": "font-weight",
+                    "equals": "bold"
+                  }
+                },
+                {
+                  "case_name": "ul_list_style",
+                  "case_type": "css_assert",
+                  "expected_payload_json": {
+                    "selector": "nav > ul",
+                    "property": "list-style",
+                    "equals": "none"
+                  }
+                }
+              ]
+            },
+            {
+              "exercise_code": "css-ex1-quiz-specificity",
+              "title": "选择器优先级计算",
+              "prompt": "计算以下选择器的优先级权重，并回答相关问题：",
+              "exercise_type": "single_choice",
+              "language": "html_css",
+              "difficulty": "intermediate",
+              "exercise_options": [
+                {
+                  "option_text": "选择器 '#nav .menu-item a:hover' 的优先级权重是多少？",
+                  "option_code": null,
+                  "choices": [
+                    "0-1-2-1（ID-类-元素）",
+                    "1-2-1-0（ID-类-元素）",
+                    "0-2-1-1（类-ID-元素）",
+                    "1-1-2-0（ID-类-伪类）"
+                  ],
+                  "correct_index": 0,
+                  "explanation": "#nav(1个ID) .menu-item(1个类) a:hover(1个元素+1个伪类) = 0-1-2-1（行内-ID-类-元素）"
+                },
+                {
+                  "option_text": "以下哪种方式引入的 CSS 优先级最高？",
+                  "option_code": null,
+                  "choices": [
+                    "外部样式表(link)",
+                    "内部样式表(style)",
+                    "内联样式(style属性)",
+                    "三者优先级相同"
+                  ],
+                  "correct_index": 2,
+                  "explanation": "内联样式（style属性）的优先级最高。当优先级相同时，后定义的规则会覆盖先定义的规则。"
+                },
+                {
+                  "option_text": "要让所有奇数行的 li 背景色为灰色，应该使用哪个选择器？",
+                  "option_code": null,
+                  "choices": [
+                    "li:odd",
+                    "li:nth-child(odd)",
+                    "li:nth-of-type(odd)",
+                    "li:child(odd)"
+                  ],
+                  "correct_index": 1,
+                  "explanation": ":nth-child(odd) 选中父元素中奇数位置的子元素。这是结构伪类的经典应用。"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "chapter_code": "css-ch2-box-model",
+          "title": "CSS 盒模型",
+          "summary": "深入理解盒模型、box-sizing 和常见布局模式",
+          "learning_content_markdown": "# CSS 盒模型\n\n## 盒模型的组成\n\n每个 HTML 元素都可以看作一个盒子，由以下部分组成：\n\n```\n┌─────────────────────────────┐\n│          Margin（外边距）     │  ← 盒子与其他盒子之间的距离\n│   ┌─────────────────────┐   │\n│   │     Border（边框）   │   │  ← 盒子的边界\n│   │   ┌─────────────┐   │   │\n│   │   │  Padding（内边距）│   │   │  ← 内容与边框之间的距离\n│   │   │   ┌─────┐   │   │   │\n│   │   │   │Content│   │   │   │  ← 实际内容区域\n│   │   │   └─────┘   │   │   │\n│   │   └─────────────┘   │   │\n│   └─────────────────────┘   │\n└─────────────────────────────┘\n```\n\n## 尺寸计算\n\n默认情况下（content-box）：\n```\n总宽度 = width + padding-left + padding-right + border-left + border-right + margin-left + margin-right\n总高度 = height + padding-top + padding-bottom + border-top + border-bottom + margin-top + margin-bottom\n```\n\n## box-sizing\n\n```css\n/* 默认值：width/height 只包含 content */\n.box1 { box-sizing: content-box; }\n\n/* 推荐值：width/height 包含 content + padding + border */\n.box2 { box-sizing: border-box; }\n```\n\n**推荐使用 border-box**，这样设置 width 就是最终可见宽度。\n\n```css\n/* 全局设置 */\n*, *::before, *::after {\n  box-sizing: border-box;\n}\n```\n\n## margin 和 padding\n\n```css\n.box {\n  /* 四个方向相同 */\n  margin: 20px;\n  padding: 10px;\n\n  /* 上下 | 左右 */\n  margin: 10px 20px;\n\n  /* 上 | 右 | 下 | 左 */\n  padding: 10px 15px 10px 15px;\n\n  /* 单独设置 */\n  margin-top: 10px;\n  padding-left: 20px;\n}\n```\n\n## 边框\n\n```css\n.border-demo {\n  border-width: 2px;\n  border-style: solid;   /* solid | dashed | dotted | double */\n  border-color: #333;\n\n  /* 简写 */\n  border: 2px solid #333;\n\n  /* 单独设置边 */\n  border-top: 1px dashed red;\n\n  /* 圆角 */\n  border-radius: 8px;        /* 四个角 */\n  border-radius: 8px 16px;   /* 左上右下 | 右上左下 */\n\n  /* 圆形 */\n  border-radius: 50%;\n}\n```\n\n## margin 塌陷\n\n垂直相邻的两个块级元素，margin 会合并（取最大值）：\n\n```html\n<style>\n  .box1 { margin-bottom: 20px; }\n  .box2 { margin-top: 30px; }  /* 实际间距是 30px，不是 50px */\n</style>\n<div class=\"box1\">Box 1</div>\n<div class=\"box2\">Box 2</div>\n```\n\n**解决方法**：使用 padding 代替 margin，或创建 BFC。",
+          "estimated_minutes": 25,
+          "exercises": [
+            {
+              "exercise_code": "css-ex2-card-component",
+              "title": "产品卡片组件",
+              "prompt": "创建一个精美的产品卡片组件。HTML 结构已给定，请添加 style 标签完成以下样式：\n1. .card 类：宽度 300px，边框 1px solid #ddd，圆角 12px\n2. .card-image：宽度 100%，高度 180px，背景色 #f0f0f0\n3. .card-body：内边距 16px\n4. .card-title：字体大小 20px，底部外边距 8px，颜色 #333\n5. .card-price：颜色 #e74c3c，字体大小 18px，字体加粗\n6. .card-button：宽度 100%，背景色 #3498db，文字颜色白色，边框无，内边距 10px，圆角 6px\n7. 全局设置 box-sizing: border-box",
+              "exercise_type": "coding",
+              "starter_code": "<!DOCTYPE html>\n<html>\n<head>\n  <meta charset=\"UTF-8\">\n  <title>产品卡片</title>\n  <!-- 在这里添加 style 标签 -->\n</head>\n<body>\n  <div class=\"card\">\n    <div class=\"card-image\"></div>\n    <div class=\"card-body\">\n      <h3 class=\"card-title\">无线蓝牙耳机</h3>\n      <p class=\"card-price\">¥299</p>\n      <button class=\"card-button\">加入购物车</button>\n    </div>\n  </div>\n</body>\n</html>",
+              "language": "html_css",
+              "difficulty": "beginner",
+              "test_cases": [
+                {
+                  "case_name": "card_width",
+                  "case_type": "css_assert",
+                  "expected_payload_json": {
+                    "selector": ".card",
+                    "property": "width",
+                    "equals": "300px"
+                  }
+                },
+                {
+                  "case_name": "card_border_radius",
+                  "case_type": "css_assert",
+                  "expected_payload_json": {
+                    "selector": ".card",
+                    "property": "border-radius",
+                    "equals": "12px"
+                  }
+                },
+                {
+                  "case_name": "body_padding",
+                  "case_type": "css_assert",
+                  "expected_payload_json": {
+                    "selector": ".card-body",
+                    "property": "padding",
+                    "equals": "16px"
+                  }
+                },
+                {
+                  "case_name": "title_color",
+                  "case_type": "css_assert",
+                  "expected_payload_json": {
+                    "selector": ".card-title",
+                    "property": "color",
+                    "equals": "#333"
+                  }
+                },
+                {
+                  "case_name": "button_bg",
+                  "case_type": "css_assert",
+                  "expected_payload_json": {
+                    "selector": ".card-button",
+                    "property": "background-color",
+                    "equals": "#3498db"
+                  }
+                }
+              ]
+            },
+            {
+              "exercise_code": "css-ex2-quiz-boxmodel",
+              "title": "盒模型知识测验",
+              "prompt": "回答以下关于 CSS 盒模型的问题：",
+              "exercise_type": "single_choice",
+              "language": "html_css",
+              "difficulty": "beginner",
+              "exercise_options": [
+                {
+                  "option_text": "在默认的 content-box 模式下，一个元素设置 width: 300px, padding: 20px, border: 5px，它的实际占据宽度是多少？",
+                  "option_code": null,
+                  "choices": [
+                    "300px",
+                    "320px",
+                    "330px",
+                    "350px"
+                  ],
+                  "correct_index": 3,
+                  "explanation": "content-box 下，width 只包含 content。总宽度 = 300 + 20*2(padding) + 5*2(border) = 350px。"
+                },
+                {
+                  "option_text": "以下哪个是全局设置 border-box 的推荐写法？",
+                  "option_code": null,
+                  "choices": [
+                    "body { box-sizing: border-box; }",
+                    "div { box-sizing: border-box; }",
+                    "*, *::before, *::after { box-sizing: border-box; }",
+                    "html { box-sizing: border-box; }"
+                  ],
+                  "correct_index": 2,
+                  "explanation": "推荐对所有元素及其伪元素设置 border-box，这样可以统一盒模型计算方式。"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "chapter_code": "css-ch3-text-font",
+          "title": "文字样式与排版",
+          "summary": "学习字体、颜色、行高和文字装饰等排版属性",
+          "learning_content_markdown": "# 文字样式与排版\n\n## 颜色设置\n\n```css\n/* 颜色名称 */\nh1 { color: red; }\n\n/* 十六进制 */\np { color: #333333; }  /* 可简写为 #333 */\na { color: #3498db; }\n\n/* RGB / RGBA */\n.button {\n  color: rgb(52, 152, 219);\n  background-color: rgba(52, 152, 219, 0.1);  /* 10% 不透明度 */\n}\n\n/* HSL / HSLA */\n.alert {\n  color: hsl(0, 80%, 50%);\n  background-color: hsla(0, 80%, 50%, 0.1);\n}\n```\n\n## 字体设置\n\n```css\nbody {\n  /* 字体栈：优先使用前面的字体 */\n  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,\n               'Helvetica Neue', Arial, sans-serif;\n\n  /* 字体大小 */\n  font-size: 16px;\n\n  /* 行高：无单位数值是相对于字体大小的倍数 */\n  line-height: 1.6;\n\n  /* 字体粗细 */\n  font-weight: 400;  /* normal = 400, bold = 700 */\n\n  /* 字体样式 */\n  font-style: italic;\n}\n```\n\n## 文本对齐与装饰\n\n```css\n.text-demo {\n  /* 对齐方式 */\n  text-align: center;  /* left | right | center | justify */\n\n  /* 文字装饰 */\n  text-decoration: none;      /* underline | overline | line-through */\n\n  /* 文字转换 */\n  text-transform: uppercase;  /* lowercase | capitalize */\n\n  /* 文字阴影 */\n  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);\n  /* 水平偏移 垂直偏移 模糊半径 颜色 */\n\n  /* 字母/单词间距 */\n  letter-spacing: 1px;\n  word-spacing: 2px;\n}\n```\n\n## 单位\n\n### 绝对单位\n- `px`：像素，最常用的单位\n\n### 相对单位\n- `em`：相对于父元素的字体大小\n- `rem`：相对于根元素（html）的字体大小，推荐用于字体\n- `%`：相对于父元素的百分比\n- `vw` / `vh`：视口宽度/高度的百分比\n\n```css\nhtml { font-size: 16px; }\n.parent { font-size: 20px; }\n\n.em-demo {\n  font-size: 1.5em;    /* 相对于父元素 = 30px */\n  padding: 1em;        /* 30px */\n}\n\n.rem-demo {\n  font-size: 1.25rem;  /* 相对于根元素 = 20px */\n  margin: 1rem;        /* 16px */\n}\n```\n\n## font 简写\n\n```css\n/* font: style weight size/line-height family */\n.title {\n  font: italic 700 24px/1.5 Arial, sans-serif;\n}\n```\n\n## Google Fonts 使用\n\n```html\n<link href=\"https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap\" rel=\"stylesheet\">\n```\n\n```css\nbody {\n  font-family: 'Roboto', sans-serif;\n}\n```",
+          "estimated_minutes": 20,
+          "exercises": [
+            {
+              "exercise_code": "css-ex3-article-typography",
+              "title": "文章排版设计",
+              "prompt": "为一篇博客文章设计排版样式。HTML 结构已给定，请添加 style 标签：\n1. body：字体栈 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif，字体大小 16px，行高 1.8，颜色 #333\n2. h1：字体大小 32px，底部外边距 16px，颜色 #2c3e50，文字居中对齐\n3. h2：字体大小 24px，底部外边距 12px，顶部外边距 32px，颜色 #34495e\n4. p：底部外边距 16px，文本对齐 justify\n5. .author：文字颜色 #7f8c8d，字体大小 14px，文字居中对齐\n6. .highlight：背景色 #fff3cd，内边距 2px 4px\n7. .intro：字体大小 18px，颜色 #555，左侧边框 4px solid #3498db，左侧内边距 16px，斜体",
+              "exercise_type": "coding",
+              "starter_code": "<!DOCTYPE html>\n<html>\n<head>\n  <meta charset=\"UTF-8\">\n  <title>文章排版</title>\n  <!-- 在这里添加 style 标签 -->\n</head>\n<body>\n  <h1>深入理解 CSS 盒模型</h1>\n  <p class=\"author\">作者：前端小白 | 2025年3月15日</p>\n  <p class=\"intro\">CSS 盒模型是前端开发中最基础也是最重要的概念之一，理解它对于页面布局至关重要。</p>\n  <h2>什么是盒模型</h2>\n  <p>每个 HTML 元素都可以看作一个<span class=\"highlight\">矩形盒子</span>，这个盒子由内容区、内边距、边框和外边距组成。</p>\n  <h2>box-sizing 属性</h2>\n  <p>通过设置 box-sizing 属性，我们可以改变宽度的计算方式，让布局更加直观。</p>\n</body>\n</html>",
+              "language": "html_css",
+              "difficulty": "beginner",
+              "test_cases": [
+                {
+                  "case_name": "body_font",
+                  "case_type": "css_assert",
+                  "expected_payload_json": {
+                    "selector": "body",
+                    "property": "font-size",
+                    "equals": "16px"
+                  }
+                },
+                {
+                  "case_name": "h1_style",
+                  "case_type": "css_assert",
+                  "expected_payload_json": {
+                    "selector": "h1",
+                    "property": "text-align",
+                    "equals": "center"
+                  }
+                },
+                {
+                  "case_name": "intro_border",
+                  "case_type": "css_assert",
+                  "expected_payload_json": {
+                    "selector": ".intro",
+                    "property": "border-left",
+                    "equals": "4px solid #3498db"
+                  }
+                },
+                {
+                  "case_name": "highlight_bg",
+                  "case_type": "css_assert",
+                  "expected_payload_json": {
+                    "selector": ".highlight",
+                    "property": "background-color",
+                    "equals": "#fff3cd"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "chapter_code": "css-ch4-background-border",
+          "title": "背景与边框效果",
+          "summary": "学习背景颜色、图片、渐变和边框效果的实现",
+          "learning_content_markdown": "# 背景与边框效果\n\n## 背景颜色\n\n```css\n.box {\n  background-color: #f5f5f5;\n  background-color: rgba(0, 0, 0, 0.05);\n}\n```\n\n## 背景图片\n\n```css\n.hero {\n  /* 图片地址 */\n  background-image: url('bg.jpg');\n\n  /* 不重复 */\n  background-repeat: no-repeat;  /* repeat | repeat-x | repeat-y */\n\n  /* 图片位置 */\n  background-position: center;    /* top | bottom | left | right | center */\n\n  /* 图片大小 */\n  background-size: cover;         /* contain | cover | 100% 100% */\n\n  /* 简写 */\n  background: url('bg.jpg') no-repeat center/cover;\n}\n```\n\n## 渐变背景\n\n```css\n/* 线性渐变 */\n.gradient-1 {\n  background: linear-gradient(to right, #3498db, #2ecc71);\n}\n\n.gradient-2 {\n  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);\n}\n\n/* 多色渐变 */\n.gradient-3 {\n  background: linear-gradient(to right, red, yellow, green);\n}\n\n/* 径向渐变 */\n.radial {\n  background: radial-gradient(circle, #fff, #ddd);\n}\n```\n\n## 边框进阶\n\n```css\n.border-advanced {\n  /* 分别设置四个角 */\n  border-radius: 10px 20px 30px 40px;\n  /* 左上 右上 右下 左下 */\n\n  /* 椭圆角 */\n  border-radius: 50% 20% / 10% 40%;\n}\n\n/* 圆形头像 */\n.avatar {\n  width: 100px;\n  height: 100px;\n  border-radius: 50%;\n  object-fit: cover;\n}\n\n/* 圆角按钮 */\n.btn {\n  padding: 10px 24px;\n  border: none;\n  border-radius: 25px;  /* 药丸形状 */\n  background: linear-gradient(to right, #3498db, #2980b9);\n  color: white;\n  cursor: pointer;\n}\n```\n\n## 阴影效果\n\n```css\n/* 盒子阴影 */\n.card {\n  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);\n  /* 水平偏移 垂直偏移 模糊半径 扩散半径 颜色 */\n}\n\n.card-hover:hover {\n  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);\n}\n\n/* 多层阴影 */\n.layered {\n  box-shadow: \n    0 1px 2px rgba(0,0,0,0.1),\n    0 4px 8px rgba(0,0,0,0.1),\n    0 8px 16px rgba(0,0,0,0.1);\n}\n\n/* 内阴影 */\n.inset {\n  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);\n}\n```\n\n## outline 轮廓\n\n```css\ninput:focus {\n  outline: 2px solid #3498db;\n  outline-offset: 2px;  /* 轮廓与边框的距离 */\n}\n```\n\noutline 不占据空间，不影响布局。",
+          "estimated_minutes": 25,
+          "exercises": [
+            {
+              "exercise_code": "css-ex4-gradient-btn",
+              "title": "渐变按钮与卡片",
+              "prompt": "创建一组使用渐变和阴影效果的 UI 元素。请添加 style 标签：\n1. .gradient-btn：背景为 linear-gradient(to right, #667eea, #764ba2)，文字颜色白色，边框无，内边距 12px 32px，字体大小 16px，圆角 25px\n2. .gradient-btn:hover：鼠标悬停时 box-shadow 为 0 4px 15px rgba(102, 126, 234, 0.4)\n3. .card-gradient：宽度 300px，高度 200px，背景为 linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)，圆角 16px\n4. .card-gradient 的 box-shadow 为 0 10px 30px rgba(0,0,0,0.1)\n5. body 使用 flex 布局使所有元素水平和垂直居中，高度 100vh，背景色 #f0f2f5，gap 40px",
+              "exercise_type": "coding",
+              "starter_code": "<!DOCTYPE html>\n<html>\n<head>\n  <meta charset=\"UTF-8\">\n  <title>渐变效果</title>\n  <!-- 在这里添加 style 标签 -->\n</head>\n<body>\n  <button class=\"gradient-btn\">立即开始</button>\n  <div class=\"card-gradient\"></div>\n</body>\n</html>",
+              "language": "html_css",
+              "difficulty": "intermediate",
+              "test_cases": [
+                {
+                  "case_name": "btn_gradient",
+                  "case_type": "text_match",
+                  "expected_payload_json": {
+                    "pattern": "linear-gradient.*667eea.*764ba2",
+                    "match_type": "regex_contains"
+                  }
+                },
+                {
+                  "case_name": "btn_border_radius",
+                  "case_type": "css_assert",
+                  "expected_payload_json": {
+                    "selector": ".gradient-btn",
+                    "property": "border-radius",
+                    "equals": "25px"
+                  }
+                },
+                {
+                  "case_name": "card_dimensions",
+                  "case_type": "css_assert",
+                  "expected_payload_json": {
+                    "selector": ".card-gradient",
+                    "property": "width",
+                    "equals": "300px"
+                  }
+                },
+                {
+                  "case_name": "body_flex",
+                  "case_type": "css_assert",
+                  "expected_payload_json": {
+                    "selector": "body",
+                    "property": "display",
+                    "equals": "flex"
+                  }
+                }
+              ]
+            },
+            {
+              "exercise_code": "css-ex4-quiz-background",
+              "title": "背景与边框测验",
+              "prompt": "回答以下关于 CSS 背景和边框的问题：",
+              "exercise_type": "single_choice",
+              "language": "html_css",
+              "difficulty": "beginner",
+              "exercise_options": [
+                {
+                  "option_text": "background-size: cover 和 contain 的区别是什么？",
+                  "option_code": null,
+                  "choices": [
+                    "cover 保持比例填满容器，可能裁剪; contain 保持比例完整显示，可能有留白",
+                    "cover 拉伸填满容器; contain 保持原始尺寸",
+                    "两者效果相同",
+                    "cover 只覆盖宽度; contain 覆盖宽高"
+                  ],
+                  "correct_index": 0,
+                  "explanation": "cover 保持图片比例，裁剪多余部分以填满容器；contain 保持比例缩放，确保图片完整显示，可能有留白区域。"
+                },
+                {
+                  "option_text": "要将一个元素设置为正圆形，border-radius 应该设置为什么值？",
+                  "option_code": null,
+                  "choices": [
+                    "100%",
+                    "50%",
+                    "999px",
+                    "circle"
+                  ],
+                  "correct_index": 1,
+                  "explanation": "border-radius: 50% 将正方形元素变为圆形。当宽高相等时是正圆，不等时是椭圆。"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "chapter_code": "css-ch5-positioning",
+          "title": "定位与层叠",
+          "summary": "掌握 position 属性和 z-index 层叠控制",
+          "learning_content_markdown": "# 定位与层叠\n\n## position 属性\n\n```css\n.element {\n  position: static;     /* 默认值，正常文档流 */\n  position: relative;   /* 相对定位 */\n  position: absolute;   /* 绝对定位 */\n  position: fixed;      /* 固定定位 */\n  position: sticky;     /* 粘性定位 */\n}\n```\n\n## relative 相对定位\n\n相对于元素在文档流中的原始位置进行偏移：\n\n```css\n.box {\n  position: relative;\n  top: 10px;      /* 向下移动 10px */\n  left: 20px;     /* 向右移动 20px */\n}\n```\n\n**特点**：\n- 保留原位置空间（不脱离文档流）\n- 常用于作为 absolute 子元素的定位上下文\n\n## absolute 绝对定位\n\n相对于最近的非 static 定位祖先元素：\n\n```css\n.parent {\n  position: relative;  /* 创建定位上下文 */\n}\n\n.child {\n  position: absolute;\n  top: 0;\n  right: 0;  /* 定位在父元素右上角 */\n}\n```\n\n**特点**：\n- 脱离文档流（不占据空间）\n- 若无定位祖先，则相对于初始包含块（html）\n\n## fixed 固定定位\n\n相对于视口定位，滚动时保持不动：\n\n```css\n.back-to-top {\n  position: fixed;\n  bottom: 20px;\n  right: 20px;\n}\n\n.navbar {\n  position: fixed;\n  top: 0;\n  left: 0;\n  width: 100%;\n}\n```\n\n## sticky 粘性定位\n\nrelative 和 fixed 的混合，滚动到阈值时固定：\n\n```css\n.section-header {\n  position: sticky;\n  top: 0;  /* 滚动到视口顶部时粘住 */\n  background: white;\n}\n```\n\n## z-index 层叠\n\n控制定位元素的层叠顺序（值越大越在上层）：\n\n```css\n.modal {\n  position: fixed;\n  z-index: 1000;  /* 在最上层 */\n}\n\n.overlay {\n  position: fixed;\n  z-index: 999;   /* 在 modal 下层 */\n}\n```\n\n**注意**：z-index 只对定位元素（非 static）有效。\n\n## 实用定位模式\n\n### 模态框居中\n\n```css\n.modal {\n  position: fixed;\n  top: 50%;\n  left: 50%;\n  transform: translate(-50%, -50%);\n  z-index: 1000;\n}\n\n.overlay {\n  position: fixed;\n  inset: 0;  /* top:0 right:0 bottom:0 left:0 */\n  background: rgba(0, 0, 0, 0.5);\n  z-index: 999;\n}\n```\n\n### 角标\n\n```css\n.badge {\n  position: absolute;\n  top: -8px;\n  right: -8px;\n  width: 20px;\n  height: 20px;\n  border-radius: 50%;\n  background: red;\n  color: white;\n  font-size: 12px;\n  text-align: center;\n  line-height: 20px;\n}\n```",
+          "estimated_minutes": 25,
+          "exercises": [
+            {
+              "exercise_code": "css-ex5-modal",
+              "title": "居中模态框",
+              "prompt": "创建一个居中的模态框和背景遮罩。请添加 style 标签：\n1. .overlay：position fixed，inset 0（即 top/right/bottom/left 都是 0），背景色 rgba(0,0,0,0.5)\n2. .modal：position fixed，top 50%，left 50%，宽度 400px，内边距 24px，背景色白色，圆角 12px\n3. .modal 使用 transform: translate(-50%, -50%) 实现完美居中\n4. .modal 的 z-index 为 1000，.overlay 的 z-index 为 999\n5. .close-btn：position absolute，top 16px，right 16px，背景无边框，字体大小 20px，光标 pointer",
+              "exercise_type": "coding",
+              "starter_code": "<!DOCTYPE html>\n<html>\n<head>\n  <meta charset=\"UTF-8\">\n  <title>模态框</title>\n  <!-- 在这里添加 style 标签 -->\n</head>\n<body>\n  <div class=\"overlay\"></div>\n  <div class=\"modal\">\n    <button class=\"close-btn\">&times;</button>\n    <h2>提示</h2>\n    <p>这是一个模态框示例！</p>\n  </div>\n</body>\n</html>",
+              "language": "html_css",
+              "difficulty": "intermediate",
+              "test_cases": [
+                {
+                  "case_name": "overlay_position",
+                  "case_type": "css_assert",
+                  "expected_payload_json": {
+                    "selector": ".overlay",
+                    "property": "position",
+                    "equals": "fixed"
+                  }
+                },
+                {
+                  "case_name": "modal_center",
+                  "case_type": "css_assert",
+                  "expected_payload_json": {
+                    "selector": ".modal",
+                    "property": "top",
+                    "equals": "50%"
+                  }
+                },
+                {
+                  "case_name": "modal_transform",
+                  "case_type": "css_assert",
+                  "expected_payload_json": {
+                    "selector": ".modal",
+                    "property": "transform",
+                    "equals": "translate(-50%, -50%)"
+                  }
+                },
+                {
+                  "case_name": "z_index_order",
+                  "case_type": "css_assert",
+                  "expected_payload_json": {
+                    "selector": ".modal",
+                    "property": "z-index",
+                    "equals": "1000"
+                  }
+                },
+                {
+                  "case_name": "close_btn_position",
+                  "case_type": "css_assert",
+                  "expected_payload_json": {
+                    "selector": ".close-btn",
+                    "property": "position",
+                    "equals": "absolute"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "course_code": "css-layout",
+      "title": "CSS 布局精通",
+      "summary": "深入学习 Flexbox 弹性布局和 Grid 网格布局，掌握响应式设计",
+      "description": "本课程专注于 CSS 现代布局技术，系统讲解 Flexbox 和 CSS Grid 两种强大的布局方式。你将学习如何使用 Flexbox 处理一维布局，使用 Grid 处理二维布局，以及如何通过媒体查询实现响应式设计。课程包含大量实战练习，帮助你成为 CSS 布局高手。",
+      "difficulty": "intermediate",
+      "estimated_minutes": 220,
+      "status": "published",
+      "chapters": [
+        {
+          "chapter_code": "layout-ch1-flexbox-basics",
+          "title": "Flexbox 弹性盒子基础",
+          "summary": "学习 Flexbox 的核心概念、容器属性和项目属性",
+          "learning_content_markdown": "# Flexbox 弹性盒子基础\n\n## 什么是 Flexbox\n\nFlexbox（弹性盒子布局）是一种一维布局模型，非常适合处理行或列方向上的布局。\n\n```css\n.container {\n  display: flex;         /* 块级弹性容器 */\n  display: inline-flex;  /* 行内弹性容器 */\n}\n```\n\n## Flex 容器属性\n\n### flex-direction 主轴方向\n\n```css\n.container {\n  flex-direction: row;            /* 水平排列（默认） */\n  flex-direction: row-reverse;    /* 水平反向 */\n  flex-direction: column;         /* 垂直排列 */\n  flex-direction: column-reverse; /* 垂直反向 */\n}\n```\n\n### flex-wrap 换行\n\n```css\n.container {\n  flex-wrap: nowrap;         /* 不换行（默认） */\n  flex-wrap: wrap;           /* 允许换行 */\n  flex-wrap: wrap-reverse;   /* 反向换行 */\n}\n\n/* 简写 */\nflex-flow: row wrap;\n```\n\n### justify-content 主轴对齐\n\n```css\n.container {\n  justify-content: flex-start;     /* 起点对齐（默认） */\n  justify-content: flex-end;       /* 终点对齐 */\n  justify-content: center;         /* 居中对齐 */\n  justify-content: space-between;  /* 两端对齐，中间等分 */\n  justify-content: space-around;   /* 每项两侧等距 */\n  justify-content: space-evenly;   /* 所有间距相等 */\n}\n```\n\n### align-items 交叉轴对齐\n\n```css\n.container {\n  align-items: stretch;       /* 拉伸填满（默认） */\n  align-items: flex-start;    /* 起点对齐 */\n  align-items: flex-end;      /* 终点对齐 */\n  align-items: center;        /* 居中对齐 */\n  align-items: baseline;      /* 基线对齐 */\n}\n```\n\n### gap 间距\n\n```css\n.container {\n  gap: 16px;              /* 行和列间距 */\n  row-gap: 16px;          /* 行间距 */\n  column-gap: 24px;       /* 列间距 */\n}\n```\n\n## Flex 项目属性\n\n### flex-grow 增长比例\n\n```css\n.item {\n  flex-grow: 0;   /* 不增长（默认） */\n  flex-grow: 1;   /* 等分剩余空间 */\n  flex-grow: 2;   /* 获得2倍剩余空间 */\n}\n```\n\n### flex-shrink 收缩比例\n\n```css\n.item {\n  flex-shrink: 1;   /* 允许收缩（默认） */\n  flex-shrink: 0;   /* 不收缩 */\n}\n```\n\n### flex-basis 基础大小\n\n```css\n.item {\n  flex-basis: auto;     /* 根据内容大小（默认） */\n  flex-basis: 200px;    /* 固定基础大小 */\n  flex-basis: 30%;      /* 百分比基础大小 */\n}\n```\n\n### flex 简写\n\n```css\n/* flex: grow shrink basis */\n.item {\n  flex: 1;            /* 1 1 0% */\n  flex: auto;         /* 1 1 auto */\n  flex: none;         /* 0 0 auto */\n  flex: 0 1 200px;    /* 明确指定 */\n}\n```\n\n### align-self 单独对齐\n\n```css\n.item {\n  align-self: center;   /* 覆盖容器的 align-items */\n}\n```\n\n## 常见 Flexbox 布局模式\n\n### 水平垂直居中\n\n```css\n.center {\n  display: flex;\n  justify-content: center;\n  align-items: center;\n}\n```\n\n### 侧边栏 + 主内容\n\n```css\n.layout {\n  display: flex;\n}\n.sidebar {\n  width: 250px;\n  flex-shrink: 0;  /* 侧边栏不收缩 */\n}\n.main {\n  flex: 1;         /* 主内容占据剩余空间 */\n}\n```\n\n### 等分布局\n\n```css\n.equal {\n  display: flex;\n}\n.equal > * {\n  flex: 1;\n}\n```",
+          "estimated_minutes": 35,
+          "exercises": [
+            {
+              "exercise_code": "layout-ex1-flex-center",
+              "title": "Flexbox 完美居中",
+              "prompt": "使用 Flexbox 创建一个水平垂直居中的登录卡片。请添加 style 标签：\n1. body：display flex，justify-content center，align-items center，高度 100vh，背景色 #f0f2f5，margin 0\n2. .login-card：宽度 360px，内边距 40px，背景色白色，圆角 12px\n3. .login-card 的 box-shadow 为 0 4px 20px rgba(0,0,0,0.08)\n4. .input-group：display flex，flex-direction column，底部外边距 20px\n5. .input-group 的 label：底部外边距 8px，颜色 #555，字体大小 14px\n6. .input-group 的 input：内边距 12px，边框 1px solid #ddd，圆角 6px，字体大小 14px\n7. button[type=submit]：宽度 100%，内边距 12px，背景色 #4a90d9，颜色白色，边框无，圆角 6px，字体大小 16px\n8. button 的 margin-top 为 8px",
+              "exercise_type": "coding",
+              "starter_code": "<!DOCTYPE html>\n<html>\n<head>\n  <meta charset=\"UTF-8\">\n  <title>登录卡片</title>\n  <!-- 在这里添加 style 标签 -->\n</head>\n<body>\n  <div class=\"login-card\">\n    <h2>欢迎登录</h2>\n    <div class=\"input-group\">\n      <label>邮箱</label>\n      <input type=\"email\" placeholder=\"请输入邮箱\">\n    </div>\n    <div class=\"input-group\">\n      <label>密码</label>\n      <input type=\"password\" placeholder=\"请输入密码\">\n    </div>\n    <button type=\"submit\">登录</button>\n  </div>\n</body>\n</html>",
+              "language": "html_css",
+              "difficulty": "beginner",
+              "test_cases": [
+                {
+                  "case_name": "body_flex_center",
+                  "case_type": "css_assert",
+                  "expected_payload_json": {
+                    "selector": "body",
+                    "property": "display",
+                    "equals": "flex"
+                  }
+                },
+                {
+                  "case_name": "justify_center",
+                  "case_type": "css_assert",
+                  "expected_payload_json": {
+                    "selector": "body",
+                    "property": "justify-content",
+                    "equals": "center"
+                  }
+                },
+                {
+                  "case_name": "align_center",
+                  "case_type": "css_assert",
+                  "expected_payload_json": {
+                    "selector": "body",
+                    "property": "align-items",
+                    "equals": "center"
+                  }
+                },
+                {
+                  "case_name": "card_shadow",
+                  "case_type": "css_assert",
+                  "expected_payload_json": {
+                    "selector": ".login-card",
+                    "property": "border-radius",
+                    "equals": "12px"
+                  }
+                },
+                {
+                  "case_name": "input_flex_col",
+                  "case_type": "css_assert",
+                  "expected_payload_json": {
+                    "selector": ".input-group",
+                    "property": "flex-direction",
+                    "equals": "column"
+                  }
+                },
+                {
+                  "case_name": "submit_btn_width",
+                  "case_type": "css_assert",
+                  "expected_payload_json": {
+                    "selector": "button[type=\"submit\"]",
+                    "property": "width",
+                    "equals": "100%"
+                  }
+                }
+              ]
+            },
+            {
+              "exercise_code": "layout-ex1-quiz-flexbox",
+              "title": "Flexbox 知识测验",
+              "prompt": "回答以下关于 Flexbox 的问题：",
+              "exercise_type": "single_choice",
+              "language": "html_css",
+              "difficulty": "intermediate",
+              "exercise_options": [
+                {
+                  "option_text": "在 Flexbox 中，哪个属性用于设置项目在主轴上的对齐方式？",
+                  "option_code": null,
+                  "choices": [
+                    "align-items",
+                    "justify-content",
+                    "align-content",
+                    "flex-direction"
+                  ],
+                  "correct_index": 1,
+                  "explanation": "justify-content 控制项目在主轴（main axis）上的对齐方式，align-items 控制交叉轴（cross axis）上的对齐。"
+                },
+                {
+                  "option_text": "flex: 1 是以下哪种写法的简写？",
+                  "option_code": null,
+                  "choices": [
+                    "flex: 1 1 0%",
+                    "flex: 1 0 auto",
+                    "flex: 0 1 auto",
+                    "flex: 1 1 auto"
+                  ],
+                  "correct_index": 0,
+                  "explanation": "flex: 1 等价于 flex: 1 1 0%，即 flex-grow: 1, flex-shrink: 1, flex-basis: 0%。"
+                },
+                {
+                  "option_text": "要让三个 flex 项目均分容器宽度（每个占 1/3），以下哪种写法是正确的？",
+                  "option_code": null,
+                  "choices": [
+                    ".item { width: 33.33%; }",
+                    ".item { flex: 1; }",
+                    ".item { flex-grow: 33%; }",
+                    ".container { gap: 33%; }"
+                  ],
+                  "correct_index": 1,
+                  "explanation": "flex: 1 让所有项目等分剩余空间，是最简洁且正确的均分方式。"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "chapter_code": "layout-ch2-flexbox-patterns",
+          "title": "Flexbox 实战布局模式",
+          "summary": "学习常见的 Flexbox 布局模式和实际应用场景",
+          "learning_content_markdown": "# Flexbox 实战布局模式\n\n## 导航栏布局\n\n```css\n.navbar {\n  display: flex;\n  justify-content: space-between;  /* 两端对齐 */\n  align-items: center;             /* 垂直居中 */\n  padding: 0 20px;\n  height: 60px;\n  background: #333;\n}\n\n.nav-links {\n  display: flex;\n  gap: 24px;\n  list-style: none;\n}\n\n.nav-links a {\n  color: white;\n  text-decoration: none;\n}\n```\n\n## 卡片列表布局\n\n```css\n.card-list {\n  display: flex;\n  flex-wrap: wrap;\n  gap: 20px;\n}\n\n.card {\n  flex: 1 1 300px;  /* 可增长、可收缩、基础300px */\n  /* 等效于：flex-basis: 300px; flex-grow: 1; */\n}\n```\n\n这样卡片至少 300px 宽，空间充足时等分，不足时换行。\n\n## 底部固定布局\n\n```css\nbody {\n  min-height: 100vh;\n  display: flex;\n  flex-direction: column;\n}\n\nmain {\n  flex: 1;  /* 主内容占据剩余空间 */\n}\n\nfooter {\n  /* footer 始终在底部 */\n}\n```\n\n## 居中布局的多种方式\n\n```css\n/* 方式1：Flexbox */\n.flex-center {\n  display: flex;\n  justify-content: center;\n  align-items: center;\n}\n\n/* 方式2：Flexbox + margin */\n.auto-center {\n  display: flex;\n}\n.auto-center .item {\n  margin: auto;\n}\n\n/* 方式3：Grid */\n.grid-center {\n  display: grid;\n  place-items: center;\n}\n```\n\n## 顺序控制\n\n```css\n.item1 { order: 3; }\n.item2 { order: 1; }\n.item3 { order: 2; }\n```\n\n所有项目默认 order: 0，值小的排在前面。\n\n## 自适应导航\n\n```css\n.nav {\n  display: flex;\n  flex-wrap: wrap;\n  gap: 10px;\n}\n\n.nav-item {\n  flex: 1 1 auto;  /* 自动适应内容 */\n  white-space: nowrap;\n}\n```\n\n## 表单标签对齐\n\n```css\n.form-row {\n  display: flex;\n  align-items: center;\n  gap: 16px;\n}\n\n.form-row label {\n  width: 100px;\n  flex-shrink: 0;  /* 标签宽度固定 */\n  text-align: right;\n}\n\n.form-row input {\n  flex: 1;  /* 输入框占据剩余空间 */\n}\n```",
+          "estimated_minutes": 25,
+          "exercises": [
+            {
+              "exercise_code": "layout-ex2-navbar",
+              "title": "响应式导航栏",
+              "prompt": "创建一个响应式导航栏。请添加 style 标签：\n1. .navbar：display flex，justify-content space-between，align-items center，高度 64px，内边距 0 32px，背景色 #2c3e50\n2. .logo：颜色白色，字体大小 22px，字体加粗\n3. .nav-links：display flex，列表样式 none，gap 32px，margin 0，padding 0\n4. .nav-links 的 a 链接：颜色 rgba(255,255,255,0.85)，文字装饰 none，字体大小 15px\n5. .nav-links 的 a:hover：颜色白色\n6. .cta-btn：背景色 #3498db，颜色白色，内边距 8px 20px，圆角 6px，文字装饰 none\n7. body 的 margin 设为 0，字体栈 system-ui, -apple-system, sans-serif",
+              "exercise_type": "coding",
+              "starter_code": "<!DOCTYPE html>\n<html>\n<head>\n  <meta charset=\"UTF-8\">\n  <title>导航栏</title>\n  <!-- 在这里添加 style 标签 -->\n</head>\n<body>\n  <nav class=\"navbar\">\n    <div class=\"logo\">CodeQuest</div>\n    <ul class=\"nav-links\">\n      <li><a href=\"#\">课程</a></li>\n      <li><a href=\"#\">练习</a></li>\n      <li><a href=\"#\">社区</a></li>\n      <li><a href=\"#\" class=\"cta-btn\">开始学习</a></li>\n    </ul>\n  </nav>\n</body>\n</html>",
+              "language": "html_css",
+              "difficulty": "intermediate",
+              "test_cases": [
+                {
+                  "case_name": "navbar_flex",
+                  "case_type": "css_assert",
+                  "expected_payload_json": {
+                    "selector": ".navbar",
+                    "property": "display",
+                    "equals": "flex"
+                  }
+                },
+                {
+                  "case_name": "navbar_justify",
+                  "case_type": "css_assert",
+                  "expected_payload_json": {
+                    "selector": ".navbar",
+                    "property": "justify-content",
+                    "equals": "space-between"
+                  }
+                },
+                {
+                  "case_name": "nav_links_flex",
+                  "case_type": "css_assert",
+                  "expected_payload_json": {
+                    "selector": ".nav-links",
+                    "property": "display",
+                    "equals": "flex"
+                  }
+                },
+                {
+                  "case_name": "cta_btn_bg",
+                  "case_type": "css_assert",
+                  "expected_payload_json": {
+                    "selector": ".cta-btn",
+                    "property": "background-color",
+                    "equals": "#3498db"
+                  }
+                },
+                {
+                  "case_name": "navbar_height",
+                  "case_type": "css_assert",
+                  "expected_payload_json": {
+                    "selector": ".navbar",
+                    "property": "height",
+                    "equals": "64px"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "chapter_code": "layout-ch3-grid-basics",
+          "title": "CSS Grid 网格布局",
+          "summary": "学习 CSS Grid 的核心概念和二维布局技术",
+          "learning_content_markdown": "# CSS Grid 网格布局\n\n## 什么是 Grid\n\nCSS Grid 是一种二维布局系统，可以同时处理行和列，非常适合复杂的页面布局。\n\n```css\n.container {\n  display: grid;          /* 块级网格容器 */\n  display: inline-grid;   /* 行内网格容器 */\n}\n```\n\n## 定义网格\n\n### grid-template-columns 定义列\n\n```css\n.container {\n  /* 三列，每列等宽 */\n  grid-template-columns: 1fr 1fr 1fr;\n\n  /* 使用 repeat 简写 */\n  grid-template-columns: repeat(3, 1fr);\n\n  /* 不同宽度 */\n  grid-template-columns: 200px 1fr 2fr;\n\n  /* 自适应列数 */\n  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));\n}\n```\n\n### grid-template-rows 定义行\n\n```css\n.container {\n  grid-template-rows: 100px 1fr 80px;\n  /* 第一行 100px，中间行自适应，最后一行 80px */\n}\n```\n\n### fr 单位\n\nfr（fraction）表示剩余空间的比例分配：\n\n```css\ngrid-template-columns: 1fr 2fr;  /* 第二列是第一列的两倍宽 */\n```\n\n### minmax() 函数\n\n```css\ngrid-template-columns: repeat(3, minmax(200px, 1fr));\n/* 每列至少 200px，最大等分剩余空间 */\n```\n\n## 间距\n\n```css\n.container {\n  gap: 20px;           /* 行和列间距 */\n  row-gap: 16px;       /* 行间距 */\n  column-gap: 24px;    /* 列间距 */\n}\n```\n\n## 项目放置\n\n### grid-column 和 grid-row\n\n```css\n.item1 {\n  grid-column: 1 / 3;  /* 从第1列线到第3列线，横跨2列 */\n  grid-row: 1 / 2;     /* 在第1行 */\n}\n\n/* 使用 span */\n.item2 {\n  grid-column: span 2; /* 横跨2列 */\n}\n```\n\n### grid-area 命名区域\n\n```css\n.container {\n  grid-template-areas:\n    \"header header header\"\n    \"sidebar main main\"\n    \"footer footer footer\";\n  grid-template-columns: 200px 1fr 1fr;\n  grid-template-rows: auto 1fr auto;\n}\n\n.header { grid-area: header; }\n.sidebar { grid-area: sidebar; }\n.main { grid-area: main; }\n.footer { grid-area: footer; }\n```\n\n## 对齐\n\n### 项目对齐（单个项目）\n\n```css\n.item {\n  justify-self: center;   /* 水平方向：start | end | center | stretch */\n  align-self: center;     /* 垂直方向：start | end | center | stretch */\n}\n```\n\n### 批量对齐（所有项目）\n\n```css\n.container {\n  justify-items: center;  /* 水平方向 */\n  align-items: center;    /* 垂直方向 */\n  place-items: center;    /* 两者简写 */\n}\n```\n\n### 网格整体对齐\n\n```css\n.container {\n  justify-content: center;  /* 网格在容器内水平对齐 */\n  align-content: center;    /* 网格在容器内垂直对齐 */\n}\n```\n\n## 隐式网格\n\n```css\n.container {\n  grid-auto-rows: 200px;     /* 自动行的尺寸 */\n  grid-auto-columns: 100px;  /* 自动列的尺寸 */\n  grid-auto-flow: row;       /* 放置方向：row | column | dense */\n}\n```",
+          "estimated_minutes": 35,
+          "exercises": [
+            {
+              "exercise_code": "layout-ex3-grid-gallery",
+              "title": "照片墙网格布局",
+              "prompt": "创建一个响应式照片墙网格。请添加 style 标签：\n1. .gallery：display grid，grid-template-columns 为 repeat(auto-fill, minmax(200px, 1fr))，gap 16px，最大宽度 1200px，水平居中（margin 0 auto），内边距 20px\n2. .gallery-item：圆角 12px，overflow hidden，box-shadow 为 0 2px 8px rgba(0,0,0,0.1)\n3. .gallery-item 的 img：宽度 100%，高度 200px，object-fit cover，显示 block\n4. 第一个 .gallery-item（使用 .featured 类）：grid-column 为 span 2，grid-row 为 span 2\n5. body 背景色 #f5f5f5",
+              "exercise_type": "coding",
+              "starter_code": "<!DOCTYPE html>\n<html>\n<head>\n  <meta charset=\"UTF-8\">\n  <title>照片墙</title>\n  <!-- 在这里添加 style 标签 -->\n</head>\n<body>\n  <div class=\"gallery\">\n    <div class=\"gallery-item featured\">\n      <img src=\"https://picsum.photos/400/400?random=1\" alt=\"Featured\">\n    </div>\n    <div class=\"gallery-item\">\n      <img src=\"https://picsum.photos/200/200?random=2\" alt=\"Photo 2\">\n    </div>\n    <div class=\"gallery-item\">\n      <img src=\"https://picsum.photos/200/200?random=3\" alt=\"Photo 3\">\n    </div>\n    <div class=\"gallery-item\">\n      <img src=\"https://picsum.photos/200/200?random=4\" alt=\"Photo 4\">\n    </div>\n    <div class=\"gallery-item\">\n      <img src=\"https://picsum.photos/200/200?random=5\" alt=\"Photo 5\">\n    </div>\n    <div class=\"gallery-item\">\n      <img src=\"https://picsum.photos/200/200?random=6\" alt=\"Photo 6\">\n    </div>\n  </div>\n</body>\n</html>",
+              "language": "html_css",
+              "difficulty": "intermediate",
+              "test_cases": [
+                {
+                  "case_name": "gallery_grid",
+                  "case_type": "css_assert",
+                  "expected_payload_json": {
+                    "selector": ".gallery",
+                    "property": "display",
+                    "equals": "grid"
+                  }
+                },
+                {
+                  "case_name": "auto_fill",
+                  "case_type": "text_match",
+                  "expected_payload_json": {
+                    "pattern": "auto-fill",
+                    "match_type": "contains"
+                  }
+                },
+                {
+                  "case_name": "minmax_usage",
+                  "case_type": "text_match",
+                  "expected_payload_json": {
+                    "pattern": "minmax",
+                    "match_type": "contains"
+                  }
+                },
+                {
+                  "case_name": "featured_span",
+                  "case_type": "css_assert",
+                  "expected_payload_json": {
+                    "selector": ".featured",
+                    "property": "grid-column",
+                    "equals": "span 2"
+                  }
+                },
+                {
+                  "case_name": "img_object_fit",
+                  "case_type": "css_assert",
+                  "expected_payload_json": {
+                    "selector": ".gallery-item img",
+                    "property": "object-fit",
+                    "equals": "cover"
+                  }
+                }
+              ]
+            },
+            {
+              "exercise_code": "layout-ex3-quiz-grid",
+              "title": "Grid 知识测验",
+              "prompt": "回答以下关于 CSS Grid 的问题：",
+              "exercise_type": "single_choice",
+              "language": "html_css",
+              "difficulty": "intermediate",
+              "exercise_options": [
+                {
+                  "option_text": "CSS Grid 中的 1fr 单位表示什么？",
+                  "option_code": null,
+                  "choices": [
+                    "1 像素",
+                    "1 厘米",
+                    "剩余空间的一份",
+                    "字体大小的 1 倍"
+                  ],
+                  "correct_index": 2,
+                  "explanation": "fr（fraction）是 CSS Grid 的专属单位，表示剩余空间的一份。多个 fr 值按比例分配剩余空间。"
+                },
+                {
+                  "option_text": "grid-template-areas 中，用什么符号表示空白单元格？",
+                  "option_code": null,
+                  "choices": [
+                    ".",
+                    "-",
+                    "_",
+                    "空字符串"
+                  ],
+                  "correct_index": 0,
+                  "explanation": "句点（.）表示空白单元格。例如：grid-template-areas: 'header header' 'sidebar .' 表示右侧主内容区留空。"
+                },
+                {
+                  "option_text": "以下哪个属性用于让 Grid 项目在其单元格内水平居中？",
+                  "option_code": null,
+                  "choices": [
+                    "align-items",
+                    "justify-items",
+                    "align-self",
+                    "grid-align"
+                  ],
+                  "correct_index": 1,
+                  "explanation": "justify-items 控制项目在单元格内的水平对齐（inline axis），align-items 控制垂直对齐（block axis）。"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "chapter_code": "layout-ch4-responsive",
+          "title": "响应式设计与媒体查询",
+          "summary": "学习使用媒体查询创建适配不同设备的响应式布局",
+          "learning_content_markdown": "# 响应式设计与媒体查询\n\n## 视口设置\n\n首先需要在 HTML head 中添加 viewport meta 标签：\n\n```html\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n```\n\n## 媒体查询语法\n\n```css\n/* 基本语法 */\n@media media-type and (media-feature) {\n  /* CSS 规则 */\n}\n\n/* 常见断点 */\n@media (max-width: 576px) { /* 手机 */ }\n@media (min-width: 577px) and (max-width: 768px) { /* 平板 */ }\n@media (min-width: 769px) and (max-width: 992px) { /* 小型桌面 */ }\n@media (min-width: 993px) { /* 大型桌面 */ }\n```\n\n## 常用媒体特性\n\n| 特性 | 说明 | 示例 |\n|------|------|------|\n| width | 视口宽度 | `(min-width: 768px)` |\n| height | 视口高度 | `(max-height: 600px)` |\n| orientation | 方向 | `(orientation: landscape)` |\n| prefers-color-scheme | 暗色模式 | `(prefers-color-scheme: dark)` |\n\n## 移动优先写法\n\n推荐从小屏幕开始，逐步增强：\n\n```css\n/* 基础样式（手机） */\n.card {\n  width: 100%;\n  margin-bottom: 16px;\n}\n\n/* 平板 */\n@media (min-width: 768px) {\n  .card {\n    width: 48%;\n  }\n}\n\n/* 桌面 */\n@media (min-width: 1024px) {\n  .card {\n    width: 31%;\n  }\n}\n```\n\n## 响应式 Grid\n\n```css\n.grid {\n  display: grid;\n  gap: 20px;\n  /* 手机：单列 */\n  grid-template-columns: 1fr;\n}\n\n@media (min-width: 768px) {\n  .grid {\n    /* 平板：两列 */\n    grid-template-columns: repeat(2, 1fr);\n  }\n}\n\n@media (min-width: 1024px) {\n  .grid {\n    /* 桌面：三列 */\n    grid-template-columns: repeat(3, 1fr);\n  }\n}\n```\n\n## 响应式 Flexbox\n\n```css\n.navbar {\n  display: flex;\n  flex-direction: column;  /* 手机：垂直堆叠 */\n}\n\n@media (min-width: 768px) {\n  .navbar {\n    flex-direction: row;   /* 平板及以上：水平排列 */\n    justify-content: space-between;\n  }\n}\n```\n\n## 响应式图片\n\n```css\nimg {\n  max-width: 100%;   /* 图片不超过容器宽度 */\n  height: auto;      /* 高度自动调整 */\n}\n```\n\n## 隐藏/显示元素\n\n```css\n.desktop-only {\n  display: none;\n}\n\n@media (min-width: 1024px) {\n  .desktop-only {\n    display: block;\n  }\n  .mobile-only {\n    display: none;\n  }\n}\n```",
+          "estimated_minutes": 30,
+          "exercises": [
+            {
+              "exercise_code": "layout-ex4-responsive-cards",
+              "title": "响应式卡片布局",
+              "prompt": "创建一个响应式卡片布局。请添加 style 标签：\n1. .container：display grid，gap 20px，最大宽度 1200px，margin 0 auto，内边距 20px\n2. 默认（手机）：grid-template-columns 1fr\n3. @media (min-width: 600px)：grid-template-columns repeat(2, 1fr)\n4. @media (min-width: 900px)：grid-template-columns repeat(3, 1fr)\n5. .card：背景色白色，圆角 12px，overflow hidden，box-shadow 0 2px 12px rgba(0,0,0,0.08)\n6. .card-body：内边距 20px\n7. .card-title：margin 0 0 12px，颜色 #2c3e50，字体大小 20px\n8. .card-text：颜色 #666，行高 1.6，margin 0\n9. body 背景色 #f0f2f5，字体 system-ui",
+              "exercise_type": "coding",
+              "starter_code": "<!DOCTYPE html>\n<html>\n<head>\n  <meta charset=\"UTF-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n  <title>响应式卡片</title>\n  <!-- 在这里添加 style 标签 -->\n</head>\n<body>\n  <div class=\"container\">\n    <div class=\"card\">\n      <div class=\"card-body\">\n        <h3 class=\"card-title\">HTML 基础</h3>\n        <p class=\"card-text\">学习 HTML 标签和页面结构，从零开始构建网页。</p>\n      </div>\n    </div>\n    <div class=\"card\">\n      <div class=\"card-body\">\n        <h3 class=\"card-title\">CSS 样式</h3>\n        <p class=\"card-text\">掌握 CSS 选择器和盒模型，美化你的网页。</p>\n      </div>\n    </div>\n    <div class=\"card\">\n      <div class=\"card-body\">\n        <h3 class=\"card-title\">响应式设计</h3>\n        <p class=\"card-text\">让你的网站在手机、平板和电脑上都能完美显示。</p>\n      </div>\n    </div>\n  </div>\n</body>\n</html>",
+              "language": "html_css",
+              "difficulty": "intermediate",
+              "test_cases": [
+                {
+                  "case_name": "container_grid",
+                  "case_type": "css_assert",
+                  "expected_payload_json": {
+                    "selector": ".container",
+                    "property": "display",
+                    "equals": "grid"
+                  }
+                },
+                {
+                  "case_name": "mobile_col",
+                  "case_type": "css_assert",
+                  "expected_payload_json": {
+                    "selector": ".container",
+                    "property": "grid-template-columns",
+                    "equals": "1fr"
+                  }
+                },
+                {
+                  "case_name": "media_query_600",
+                  "case_type": "text_match",
+                  "expected_payload_json": {
+                    "pattern": "@media.*min-width.*600",
+                    "match_type": "regex_contains"
+                  }
+                },
+                {
+                  "case_name": "media_query_900",
+                  "case_type": "text_match",
+                  "expected_payload_json": {
+                    "pattern": "@media.*min-width.*900",
+                    "match_type": "regex_contains"
+                  }
+                },
+                {
+                  "case_name": "card_shadow",
+                  "case_type": "css_assert",
+                  "expected_payload_json": {
+                    "selector": ".card",
+                    "property": "border-radius",
+                    "equals": "12px"
+                  }
+                }
+              ]
+            },
+            {
+              "exercise_code": "layout-ex4-quiz-responsive",
+              "title": "响应式设计测验",
+              "prompt": "回答以下关于响应式设计的问题：",
+              "exercise_type": "single_choice",
+              "language": "html_css",
+              "difficulty": "intermediate",
+              "exercise_options": [
+                {
+                  "option_text": "移动优先（Mobile First）的设计策略是指？",
+                  "option_code": null,
+                  "choices": [
+                    "先设计桌面版，再适配手机",
+                    "先设计手机版，再通过媒体查询增强大屏幕体验",
+                    "只设计手机版",
+                    "使用固定像素值设计"
+                  ],
+                  "correct_index": 1,
+                  "explanation": "移动优先策略从小屏幕开始设计基础样式，然后通过 min-width 媒体查询逐步为大屏幕添加更复杂的布局。"
+                },
+                {
+                  "option_text": "以下哪个 viewport meta 标签设置是正确的？",
+                  "option_code": null,
+                  "choices": [
+                    "<meta name=\"viewport\" content=\"width=1024\">",
+                    "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">",
+                    "<meta viewport=\"width=device-width\">",
+                    "<meta name=\"responsive\" content=\"true\">"
+                  ],
+                  "correct_index": 1,
+                  "explanation": "width=device-width 让视口宽度等于设备宽度，initial-scale=1.0 设置初始缩放比例为1，这是响应式设计的标准写法。"
+                },
+                {
+                  "option_text": "在响应式设计中，图片应该使用什么 CSS 属性确保不溢出容器？",
+                  "option_code": null,
+                  "choices": [
+                    "width: 100%; height: 100%",
+                    "max-width: 100%; height: auto",
+                    "width: auto; height: auto",
+                    "overflow: hidden"
+                  ],
+                  "correct_index": 1,
+                  "explanation": "max-width: 100% 确保图片不超过容器宽度，height: auto 保持原始宽高比。这是响应式图片的标准做法。"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "chapter_code": "layout-ch5-holy-grail",
+          "title": "圣杯布局实战",
+          "summary": "综合运用 Flexbox 和 Grid 实现经典圣杯布局",
+          "learning_content_markdown": "# 圣杯布局实战\n\n## 什么是圣杯布局\n\n圣杯布局（Holy Grail Layout）是 Web 开发中最经典的页面布局模式，包含：\n- 顶部 Header\n- 左侧 Sidebar\n- 中间 Main Content\n- 右侧 Aside\n- 底部 Footer\n\n## 使用 Grid 实现\n\n```css\n.layout {\n  display: grid;\n  min-height: 100vh;\n  grid-template-columns: 250px 1fr 200px;\n  grid-template-rows: auto 1fr auto;\n  grid-template-areas:\n    \"header header header\"\n    \"sidebar main aside\"\n    \"footer footer footer\";\n}\n\n.header { grid-area: header; background: #333; color: white; padding: 1rem; }\n.sidebar { grid-area: sidebar; background: #f0f0f0; padding: 1rem; }\n.main { grid-area: main; padding: 1rem; }\n.aside { grid-area: aside; background: #f0f0f0; padding: 1rem; }\n.footer { grid-area: footer; background: #333; color: white; padding: 1rem; }\n```\n\n## 响应式改造\n\n```css\n@media (max-width: 768px) {\n  .layout {\n    grid-template-columns: 1fr;\n    grid-template-rows: auto auto 1fr auto auto;\n    grid-template-areas:\n      \"header\"\n      \"sidebar\"\n      \"main\"\n      \"aside\"\n      \"footer\";\n  }\n}\n```\n\n## 使用 Flexbox 实现\n\n```css\n.flex-layout {\n  display: flex;\n  flex-direction: column;\n  min-height: 100vh;\n}\n\n.flex-layout > * {\n  padding: 1rem;\n}\n\n.content-wrapper {\n  display: flex;\n  flex: 1;\n}\n\n.sidebar { width: 250px; background: #f0f0f0; }\n.main { flex: 1; }\n.aside { width: 200px; background: #f0f0f0; }\n\n@media (max-width: 768px) {\n  .content-wrapper {\n    flex-direction: column;\n  }\n  .sidebar, .aside {\n    width: auto;\n  }\n}\n```\n\n## 现代 Grid 简写\n\n```css\n.modern-layout {\n  display: grid;\n  grid-template:\n    \"header header\" auto\n    \"sidebar main\" 1fr\n    \"footer footer\" auto\n    / 250px 1fr;\n  min-height: 100vh;\n  gap: 1rem;\n}\n```\n\n使用 `grid-template` 可以同时定义行和列。",
+          "estimated_minutes": 30,
+          "exercises": [
+            {
+              "exercise_code": "layout-ex5-holy-grail",
+              "title": "Grid 圣杯布局",
+              "prompt": "使用 CSS Grid 创建圣杯布局。请添加 style 标签：\n1. .layout：display grid，min-height 100vh，grid-template-columns 240px 1fr 200px，grid-template-rows auto 1fr auto，gap 0\n2. .layout 的 grid-template-areas 为：'header header header' 'nav main aside' 'footer footer footer'\n3. .header：grid-area header，背景色 #2c3e50，颜色白色，内边距 16px 24px\n4. .nav：grid-area nav，背景色 #ecf0f1，内边距 20px\n5. .main：grid-area main，内边距 24px，背景色白色\n6. .aside：grid-area aside，背景色 #ecf0f1，内边距 20px\n7. .footer：grid-area footer，背景色 #34495e，颜色白色，内边距 16px 24px，文字居中\n8. body 的 margin 0，字体 system-ui\n9. @media (max-width: 768px)：grid-template-columns 1fr，grid-template-rows auto auto 1fr auto auto，areas 改为垂直排列的五行",
+              "exercise_type": "coding",
+              "starter_code": "<!DOCTYPE html>\n<html>\n<head>\n  <meta charset=\"UTF-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n  <title>圣杯布局</title>\n  <!-- 在这里添加 style 标签 -->\n</head>\n<body>\n  <div class=\"layout\">\n    <header class=\"header\">\n      <h1>CodeQuest 学习平台</h1>\n    </header>\n    <nav class=\"nav\">\n      <h3>导航</h3>\n      <p>HTML 基础</p>\n      <p>CSS 样式</p>\n      <p>JavaScript</p>\n    </nav>\n    <main class=\"main\">\n      <h2>欢迎来到 CodeQuest</h2>\n      <p>这里是你学习前端开发的最佳平台。</p>\n    </main>\n    <aside class=\"aside\">\n      <h3>推荐课程</h3>\n      <p>Flexbox 布局指南</p>\n    </aside>\n    <footer class=\"footer\">\n      <p>&copy; 2025 CodeQuest. All rights reserved.</p>\n    </footer>\n  </div>\n</body>\n</html>",
+              "language": "html_css",
+              "difficulty": "intermediate",
+              "test_cases": [
+                {
+                  "case_name": "layout_grid",
+                  "case_type": "css_assert",
+                  "expected_payload_json": {
+                    "selector": ".layout",
+                    "property": "display",
+                    "equals": "grid"
+                  }
+                },
+                {
+                  "case_name": "grid_template_areas",
+                  "case_type": "text_match",
+                  "expected_payload_json": {
+                    "pattern": "header header header",
+                    "match_type": "contains"
+                  }
+                },
+                {
+                  "case_name": "header_area",
+                  "case_type": "css_assert",
+                  "expected_payload_json": {
+                    "selector": ".header",
+                    "property": "grid-area",
+                    "equals": "header"
+                  }
+                },
+                {
+                  "case_name": "media_query",
+                  "case_type": "text_match",
+                  "expected_payload_json": {
+                    "pattern": "@media.*max-width.*768",
+                    "match_type": "regex_contains"
+                  }
+                },
+                {
+                  "case_name": "footer_align",
+                  "case_type": "css_assert",
+                  "expected_payload_json": {
+                    "selector": ".footer",
+                    "property": "text-align",
+                    "equals": "center"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "course_code": "js-basics",
+      "title": "JavaScript 基础入门",
+      "summary": "掌握 JavaScript 核心语法，从变量函数到 DOM 操作与事件处理",
+      "description": "本课程基于 MDN JavaScript 学习路径，系统讲解 JS 的核心概念。你将学习变量与数据类型、运算符、条件循环、函数、数组、对象等基础语法，最终掌握 DOM 操作和事件处理，为网页添加交互功能。课程包含丰富的编码练习和选择题，帮助你建立扎实的 JavaScript 编程基础。",
+      "difficulty": "beginner",
+      "estimated_minutes": 240,
+      "status": "published",
+      "chapters": [
+        {
+          "chapter_code": "js-ch1-variables-types",
+          "title": "变量与数据类型",
+          "summary": "学习 JavaScript 变量声明、基本数据类型和类型转换",
+          "learning_content_markdown": "# 变量与数据类型\n\n## JavaScript 是什么\n\nJavaScript 是 Web 的编程语言，与 HTML（结构）和 CSS（样式）协同工作，实现网页的动态交互功能。\n\n## 变量声明\n\nJavaScript 有三种声明变量的方式：\n\n```javascript\n// let - 可重新赋值的变量（块级作用域，推荐）\nlet name = \"Alice\";\nname = \"Bob\";  // ✓ 可以重新赋值\n\n// const - 常量，声明时必须初始化（块级作用域，推荐）\nconst PI = 3.14159;\n// PI = 3.14;  // ✗ 错误！不能重新赋值\n\n// var - 函数作用域（旧用法，不推荐）\nvar age = 25;\n```\n\n**最佳实践**：默认使用 `const`，需要重新赋值时使用 `let`，避免使用 `var`。\n\n## 数据类型\n\n### 基本类型（Primitive）\n\n```javascript\n// String - 字符串\nlet username = \"CodeQuest\";\n\n// Number - 数字（包括整数和浮点数）\nlet score = 95;\nlet price = 19.99;\n\n// Boolean - 布尔值\nlet isActive = true;   // 或 false\n\n// Undefined - 未定义\nlet data;              // 声明但未赋值，值为 undefined\n\n// Null - 空值\nlet user = null;       // 表示\"无\"或\"空\"\n\n// Symbol - 唯一标识（ES6）\nlet id = Symbol(\"id\");\n```\n\n### 引用类型\n\n```javascript\n// Object - 对象\nlet person = { name: \"Tom\", age: 25 };\n\n// Array - 数组\nlet fruits = [\"apple\", \"banana\", \"cherry\"];\n\n// Function - 函数\nfunction greet() { return \"Hello\"; }\n```\n\n## typeof 操作符\n\n用于检测数据类型：\n\n```javascript\ntypeof \"hello\";      // \"string\"\ntypeof 42;           // \"number\"\ntypeof true;         // \"boolean\"\ntypeof undefined;    // \"undefined\"\ntypeof null;         // \"object\" （历史 bug，需注意）\ntypeof {};           // \"object\"\ntypeof [];           // \"object\" （数组也是对象）\ntypeof function(){}; // \"function\"\n```\n\n## 类型转换\n\n```javascript\n// 显式转换\nNumber(\"42\");        // 42\nString(123);         // \"123\"\nBoolean(1);          // true\n\n// 模板字符串（推荐）\nlet name = \"Alice\";\nlet age = 25;\nconsole.log(`我叫 ${name}，今年 ${age} 岁`);\n// 输出：我叫 Alice，今年 25 岁\n```\n\n## 命名规范\n\n- 使用驼峰命名法：`userName`, `totalScore`\n- 常量全大写下划线：`MAX_SIZE`\n- 变量名要有意义，避免单字母（循环中除外）\n- 不能以数字开头，不能是保留字",
+          "estimated_minutes": 25,
+          "exercises": [
+            {
+              "exercise_code": "js-ex1-variable-types",
+              "title": "变量声明与类型检测",
+              "prompt": "在 script 标签中完成以下任务：\n1. 使用 const 声明变量 siteName，值为 'CodeQuest'\n2. 使用 let 声明变量 userCount，值为 1000\n3. 使用 let 声明变量 isOnline，值为 true\n4. 使用 let 声明变量 nextLesson（不赋值）\n5. 使用 const 声明变量 admin，值为 null\n6. 在 console.log 中输出这5个变量的 typeof 结果，用逗号分隔\n   格式：typeof(siteName), typeof(userCount), typeof(isOnline), typeof(nextLesson), typeof(admin)",
+              "exercise_type": "coding",
+              "starter_code": "<!DOCTYPE html>\n<html>\n<head>\n  <meta charset=\"UTF-8\">\n  <title>变量与类型</title>\n</head>\n<body>\n  <script>\n    // 在这里声明变量\n\n    // 在这里输出 typeof 结果\n  </script>\n</body>\n</html>",
+              "language": "html_css",
+              "difficulty": "beginner",
+              "test_cases": [
+                {
+                  "case_name": "siteName_const",
+                  "case_type": "text_match",
+                  "expected_payload_json": {
+                    "pattern": "const siteName",
+                    "match_type": "contains"
+                  }
+                },
+                {
+                  "case_name": "siteName_value",
+                  "case_type": "text_match",
+                  "expected_payload_json": {
+                    "pattern": "['\"]CodeQuest['\"]",
+                    "match_type": "regex_contains"
+                  }
+                },
+                {
+                  "case_name": "userCount_let",
+                  "case_type": "text_match",
+                  "expected_payload_json": {
+                    "pattern": "let userCount",
+                    "match_type": "contains"
+                  }
+                },
+                {
+                  "case_name": "typeof_output",
+                  "case_type": "text_match",
+                  "expected_payload_json": {
+                    "pattern": "typeof\\s*\\(?\\s*siteName\\s*\\)?",
+                    "match_type": "regex_contains"
+                  }
+                }
+              ]
+            },
+            {
+              "exercise_code": "js-ex1-quiz-variables",
+              "title": "变量与数据类型测验",
+              "prompt": "回答以下关于 JavaScript 变量和数据类型的问题：",
+              "exercise_type": "single_choice",
+              "language": "html_css",
+              "difficulty": "beginner",
+              "exercise_options": [
+                {
+                  "option_text": "以下哪个声明方式具有块级作用域？",
+                  "option_code": null,
+                  "choices": [
+                    "var",
+                    "let 和 const",
+                    "function",
+                    "以上都是"
+                  ],
+                  "correct_index": 1,
+                  "explanation": "let 和 const 具有块级作用域（在 {} 内有效），而 var 只有函数作用域。"
+                },
+                {
+                  "option_text": "typeof null 的返回值是什么？",
+                  "option_code": null,
+                  "choices": [
+                    "'null'",
+                    "'undefined'",
+                    "'object'",
+                    "'number'"
+                  ],
+                  "correct_index": 2,
+                  "explanation": "typeof null 返回 'object'，这是 JavaScript 诞生之初的历史 bug，为了保持兼容性一直没有修复。"
+                },
+                {
+                  "option_text": "const 声明的变量能否重新赋值？",
+                  "option_code": null,
+                  "choices": [
+                    "可以",
+                    "不可以",
+                    "只能重新赋值一次",
+                    "取决于变量类型"
+                  ],
+                  "correct_index": 1,
+                  "explanation": "const 声明的是常量，不能重新赋值。但如果值是对象或数组，可以修改其内部属性。"
+                },
+                {
+                  "option_text": "以下哪个是模板字符串的正确语法？",
+                  "option_code": null,
+                  "choices": [
+                    "'Hello ${name}'",
+                    "`Hello ${name}`",
+                    "\"Hello ${name}\"",
+                    "\"Hello #{name}\""
+                  ],
+                  "correct_index": 1,
+                  "explanation": "模板字符串使用反引号（`）包裹，可以在 ${} 中嵌入变量或表达式。"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "chapter_code": "js-ch2-operators",
+          "title": "运算符与表达式",
+          "summary": "掌握算术、比较、逻辑和赋值运算符的使用",
+          "learning_content_markdown": "# 运算符与表达式\n\n## 算术运算符\n\n```javascript\nlet a = 10, b = 3;\n\nconsole.log(a + b);   // 13 - 加法\nconsole.log(a - b);   // 7  - 减法\nconsole.log(a * b);   // 30 - 乘法\nconsole.log(a / b);   // 3.333... - 除法\nconsole.log(a % b);   // 1  - 取模（余数）\nconsole.log(a ** b);  // 1000 - 幂运算（10的3次方）\n\n// 自增/自减\nlet count = 0;\ncount++;  // 先使用，后加1\n++count;  // 先加1，后使用\n```\n\n## 比较运算符\n\n```javascript\n// === 严格相等（值和类型都相同，推荐）\n5 === 5;     // true\n5 === \"5\";   // false（类型不同）\n\n// !== 严格不等\n5 !== \"5\";   // true\n\n// == 松散相等（会进行类型转换，避免使用）\n5 == \"5\";    // true（不推荐）\n0 == false;  // true（不推荐）\n\"\" == false; // true（不推荐）\n\n// 大小比较\n10 > 5;      // true\n10 <= 10;    // true\n```\n\n**黄金法则**：始终使用 `===` 和 `!==`，避免 `==` 和 `!=` 带来的类型转换陷阱。\n\n## 逻辑运算符\n\n```javascript\n// && 与（AND）- 两个都为真才为真\ntrue && true;   // true\ntrue && false;  // false\n\n// || 或（OR）- 至少一个为真就为真\ntrue || false;  // true\nfalse || false; // false\n\n// ! 非（NOT）- 取反\n!true;          // false\n!false;         // true\n\n// 短路求值\nlet name = userName || \"访客\";  // 如果 userName 为假值，使用默认值\nlet result = isValid && submit(); // 如果 isValid 为 false，不执行 submit\n```\n\n## 赋值运算符\n\n```javascript\nlet x = 10;\nx += 5;   // x = x + 5;  → 15\nx -= 3;   // x = x - 3;  → 12\nx *= 2;   // x = x * 2;  → 24\nx /= 4;   // x = x / 4;  → 6\nx %= 4;   // x = x % 4;  → 2\n```\n\n## 运算符优先级\n\n```javascript\n// 1. 括号 () 最高\n// 2. 自增/自减 ++ --\n// 3. 乘除取模 * / %\n// 4. 加减 + -\n// 5. 比较 > < >= <=\n// 6. 相等 === !== == !=\n// 7. 逻辑与 &&\n// 8. 逻辑或 ||\n// 9. 赋值 = 最低\n\nlet result = 2 + 3 * 4;      // 14（先乘后加）\nlet result2 = (2 + 3) * 4;   // 20（括号优先）\n```\n\n## 真值与假值\n\n在条件判断中，以下值被视为**假值**（falsy）：\n- `false`\n- `0`\n- `\"\"`（空字符串）\n- `null`\n- `undefined`\n- `NaN`\n\n**其余所有值都是真值**（truthy），包括 `[]`、`{}`、`\"0\"`、`\"false\"`。",
+          "estimated_minutes": 20,
+          "exercises": [
+            {
+              "exercise_code": "js-ex2-temperature-converter",
+              "title": "温度转换器",
+              "prompt": "在 script 标签中编写一个温度转换器：\n1. 使用 const 声明 celsius，值为 25\n2. 使用公式 fahrenheit = celsius * 9 / 5 + 32 计算华氏温度\n3. 使用 console.log 输出：'25°C = 77°F'（使用模板字符串和变量，不要硬编码数字）\n4. 然后添加一行：比较 fahrenheit === 77 的结果，输出 '温度相等: true'",
+              "exercise_type": "coding",
+              "starter_code": "<!DOCTYPE html>\n<html>\n<head>\n  <meta charset=\"UTF-8\">\n  <title>温度转换</title>\n</head>\n<body>\n  <script>\n    // 在这里编写温度转换器\n  </script>\n</body>\n</html>",
+              "language": "html_css",
+              "difficulty": "beginner",
+              "test_cases": [
+                {
+                  "case_name": "celsius_const",
+                  "case_type": "text_match",
+                  "expected_payload_json": {
+                    "pattern": "const celsius",
+                    "match_type": "contains"
+                  }
+                },
+                {
+                  "case_name": "formula_correct",
+                  "case_type": "text_match",
+                  "expected_payload_json": {
+                    "pattern": "celsius\\s*\\*\\s*9\\s*/\\s*5\\s*\\+\\s*32",
+                    "match_type": "regex_contains"
+                  }
+                },
+                {
+                  "case_name": "template_string",
+                  "case_type": "text_match",
+                  "expected_payload_json": {
+                    "pattern": "`.*\\$\\{.*\\}.*`",
+                    "match_type": "regex_contains"
+                  }
+                },
+                {
+                  "case_name": "strict_equality",
+                  "case_type": "text_match",
+                  "expected_payload_json": {
+                    "pattern": "===",
+                    "match_type": "contains"
+                  }
+                }
+              ]
+            },
+            {
+              "exercise_code": "js-ex2-quiz-operators",
+              "title": "运算符测验",
+              "prompt": "回答以下关于 JavaScript 运算符的问题：",
+              "exercise_type": "single_choice",
+              "language": "html_css",
+              "difficulty": "beginner",
+              "exercise_options": [
+                {
+                  "option_text": "表达式 0 == false && '' == false 的结果是？",
+                  "option_code": null,
+                  "choices": [
+                    "true",
+                    "false",
+                    "undefined",
+                    "报错"
+                  ],
+                  "correct_index": 0,
+                  "explanation": "== 会进行类型转换，0 和 '' 在松散比较时都会转换为 false。但推荐使用 === 避免此类问题。"
+                },
+                {
+                  "option_text": "let result = 10 + 5 * 2 - 8 / 4; result 的值是？",
+                  "option_code": null,
+                  "choices": [
+                    "24",
+                    "28",
+                    "14",
+                    "18"
+                  ],
+                  "correct_index": 0,
+                  "explanation": "10 + (5*2) - (8/4) = 10 + 10 - 2 = 18。先乘除后加减。"
+                },
+                {
+                  "option_text": "以下哪个表达式结果为 true？",
+                  "option_code": null,
+                  "choices": [
+                    "0 === false",
+                    "'' === false",
+                    "null === undefined",
+                    "'5' !== 5"
+                  ],
+                  "correct_index": 3,
+                  "explanation": "'5' !== 5 为 true，因为 === 比较类型和值，字符串 '5' 和数字 5 类型不同。"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "chapter_code": "js-ch3-conditionals",
+          "title": "条件语句",
+          "summary": "学习 if/else、switch 和三元运算符进行条件判断",
+          "learning_content_markdown": "# 条件语句\n\n## if...else 语句\n\n```javascript\nlet score = 85;\n\nif (score >= 90) {\n  console.log(\"优秀\");\n} else if (score >= 80) {\n  console.log(\"良好\");\n} else if (score >= 70) {\n  console.log(\"中等\");\n} else if (score >= 60) {\n  console.log(\"及格\");\n} else {\n  console.log(\"不及格\");\n}\n```\n\n## 三元运算符\n\n简单的二选一，语法更简洁：\n\n```javascript\nlet age = 18;\nlet status = age >= 18 ? \"成年人\" : \"未成年人\";\n\n// 嵌套三元（不推荐过多嵌套）\nlet label = score >= 90 ? \"A\" : score >= 80 ? \"B\" : \"C\";\n```\n\n## switch 语句\n\n用于多值匹配的场景：\n\n```javascript\nlet day = 1;\n\nswitch (day) {\n  case 1:\n    console.log(\"星期一\");\n    break;  // 不要忘记 break，否则会穿透到下一个 case\n  case 2:\n    console.log(\"星期二\");\n    break;\n  case 3:\n    console.log(\"星期三\");\n    break;\n  case 4:\n    console.log(\"星期四\");\n    break;\n  case 5:\n    console.log(\"星期五\");\n    break;\n  default:\n    console.log(\"周末\");\n}\n\n// 多个 case 共享代码\nswitch (fruit) {\n  case \"apple\":\n  case \"pear\":\n  case \"peach\":\n    console.log(\"蔷薇科水果\");\n    break;\n  case \"orange\":\n  case \"lemon\":\n    console.log(\"柑橘类水果\");\n    break;\n}\n```\n\n## 条件中的常见模式\n\n```javascript\n// 检查变量是否有值\nif (name) { ... }  // 等价于 if (name !== \"\" && name !== null && name !== undefined)\n\n// 使用逻辑或设置默认值\nlet username = input || \"匿名用户\";\n\n// 可选执行（条件为真时才执行）\nisLoggedIn && showUserProfile();\n\n// 检查数组非空\nif (items.length > 0) { ... }\n// 或\nif (items.length) { ... }\n```\n\n## 注意事项\n\n```javascript\n// 常见陷阱：== 的类型转换\nif (0 == false) { ... }   // true！使用 === 避免\n\n// 正确做法\nif (isValid === true) { ... }  // 明确比较\nif (isValid) { ... }           // 隐式转换，简洁但需理解真值假值\n\n// 检查 null 或 undefined\nif (value == null) { ... }  // 同时匹配 null 和 undefined（唯一适合用 == 的场景）\nif (value === null || value === undefined) { ... }  // 等价的严格比较写法\n```",
+          "estimated_minutes": 20,
+          "exercises": [
+            {
+              "exercise_code": "js-ex3-grade-calculator",
+              "title": "成绩等级计算器",
+              "prompt": "在 script 标签中编写成绩评级函数：\n1. 使用 const 声明 score，值为 82\n2. 使用 if/else if/else 判断等级：\n   - score >= 90 → 'A'\n   - score >= 80 → 'B'\n   - score >= 70 → 'C'\n   - score >= 60 → 'D'\n   - 否则 → 'F'\n3. 将结果存入变量 grade\n4. 使用 console.log 输出：'成绩: 82, 等级: B'（使用模板字符串和变量）",
+              "exercise_type": "coding",
+              "starter_code": "<!DOCTYPE html>\n<html>\n<head>\n  <meta charset=\"UTF-8\">\n  <title>成绩计算</title>\n</head>\n<body>\n  <script>\n    // 在这里编写成绩评级\n  </script>\n</body>\n</html>",
+              "language": "html_css",
+              "difficulty": "beginner",
+              "test_cases": [
+                {
+                  "case_name": "score_const",
+                  "case_type": "text_match",
+                  "expected_payload_json": {
+                    "pattern": "const score",
+                    "match_type": "contains"
+                  }
+                },
+                {
+                  "case_name": "if_structure",
+                  "case_type": "text_match",
+                  "expected_payload_json": {
+                    "pattern": "if.*score\\s*>=\\s*90",
+                    "match_type": "regex_contains"
+                  }
+                },
+                {
+                  "case_name": "else_if_80",
+                  "case_type": "text_match",
+                  "expected_payload_json": {
+                    "pattern": "else if.*score\\s*>=\\s*80",
+                    "match_type": "regex_contains"
+                  }
+                },
+                {
+                  "case_name": "template_output",
+                  "case_type": "text_match",
+                  "expected_payload_json": {
+                    "pattern": "`.*等级.*\\$\\{grade\\}.*`",
+                    "match_type": "regex_contains"
+                  }
+                }
+              ]
+            },
+            {
+              "exercise_code": "js-ex3-quiz-conditionals",
+              "title": "条件语句测验",
+              "prompt": "回答以下关于 JavaScript 条件语句的问题：",
+              "exercise_type": "single_choice",
+              "language": "html_css",
+              "difficulty": "beginner",
+              "exercise_options": [
+                {
+                  "option_text": "以下代码的输出是什么？\nlet x = 5;\nif (x) { console.log('A'); } else { console.log('B'); }",
+                  "option_code": null,
+                  "choices": [
+                    "'A'",
+                    "'B'",
+                    "undefined",
+                    "报错"
+                  ],
+                  "correct_index": 0,
+                  "explanation": "数字 5 是真值（truthy），所以条件为真，输出 'A'。"
+                },
+                {
+                  "option_text": "switch 语句中忘记写 break 会导致什么？",
+                  "option_code": null,
+                  "choices": [
+                    "程序报错",
+                    "跳过所有后续 case",
+                    "穿透到下一个 case（fall-through）",
+                    "自动跳出 switch"
+                  ],
+                  "correct_index": 2,
+                  "explanation": "没有 break 时，代码会继续执行下一个 case 的代码，称为 'fall-through'（穿透）。有时可以利用这个特性让多个 case 共享代码。"
+                },
+                {
+                  "option_text": "let result = 0 ? 'yes' : 'no'; result 的值是？",
+                  "option_code": null,
+                  "choices": [
+                    "'yes'",
+                    "'no'",
+                    "0",
+                    "undefined"
+                  ],
+                  "correct_index": 1,
+                  "explanation": "0 是假值（falsy），所以三元运算符返回冒号后面的 'no'。"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "chapter_code": "js-ch4-loops",
+          "title": "循环语句",
+          "summary": "学习 for、while、for...of 循环和循环控制",
+          "learning_content_markdown": "# 循环语句\n\n## for 循环\n\n适合已知循环次数的场景：\n\n```javascript\n// 基本语法\nfor (初始化; 条件; 增量) {\n  // 循环体\n}\n\n// 示例：打印 1 到 5\nfor (let i = 1; i <= 5; i++) {\n  console.log(i);\n}\n\n// 倒序\nfor (let i = 5; i >= 1; i--) {\n  console.log(i);\n}\n\n// 步长为 2\nfor (let i = 0; i < 10; i += 2) {\n  console.log(i);  // 0, 2, 4, 6, 8\n}\n```\n\n## while 循环\n\n条件为真时持续执行：\n\n```javascript\nlet count = 0;\nwhile (count < 5) {\n  console.log(count);\n  count++;\n}\n\n// do...while 至少执行一次\nlet num = 0;\ndo {\n  console.log(num);\n  num++;\n} while (num < 0);  // 条件为假，但已执行了一次\n```\n\n## for...of 循环\n\n遍历可迭代对象（数组、字符串等）：\n\n```javascript\nlet fruits = [\"apple\", \"banana\", \"cherry\"];\n\nfor (let fruit of fruits) {\n  console.log(fruit);\n}\n// 输出: apple, banana, cherry\n\nlet message = \"Hello\";\nfor (let char of message) {\n  console.log(char);\n}\n// 输出: H, e, l, l, o\n```\n\n## for...in 循环\n\n遍历对象的属性键（不推荐用于数组）：\n\n```javascript\nlet person = { name: \"Alice\", age: 25, city: \"Beijing\" };\n\nfor (let key in person) {\n  console.log(`${key}: ${person[key]}`);\n}\n// 输出: name: Alice, age: 25, city: Beijing\n```\n\n## 循环控制\n\n```javascript\n// break - 终止整个循环\nfor (let i = 0; i < 10; i++) {\n  if (i === 5) break;  // 当 i 为 5 时退出循环\n  console.log(i);       // 输出: 0, 1, 2, 3, 4\n}\n\n// continue - 跳过当前迭代\nfor (let i = 0; i < 5; i++) {\n  if (i === 2) continue;  // 跳过 i=2\n  console.log(i);          // 输出: 0, 1, 3, 4\n}\n```\n\n## 嵌套循环\n\n```javascript\n// 打印乘法表\nfor (let i = 1; i <= 3; i++) {\n  for (let j = 1; j <= 3; j++) {\n    console.log(`${i} × ${j} = ${i * j}`);\n  }\n}\n```\n\n## 循环选择指南\n\n| 场景 | 推荐循环 |\n|------|----------|\n| 已知次数 | `for` |\n| 条件控制 | `while` / `do...while` |\n| 遍历数组 | `for...of` |\n| 遍历对象属性 | `for...in` |\n| 需要索引 | `for` 或 `forEach` |\n| 需要中途退出 | `for` / `while` + `break` |",
+          "estimated_minutes": 20,
+          "exercises": [
+            {
+              "exercise_code": "js-ex4-sum-even",
+              "title": "偶数求和",
+              "prompt": "在 script 标签中编写偶数求和程序：\n1. 声明变量 sum，初始值为 0\n2. 使用 for 循环，从 1 遍历到 20（包含 20）\n3. 在循环中，如果当前数字是偶数（i % 2 === 0），则加到 sum\n4. 循环结束后，使用 console.log 输出：'1到20的偶数之和: 110'（使用模板字符串和 sum 变量）",
+              "exercise_type": "coding",
+              "starter_code": "<!DOCTYPE html>\n<html>\n<head>\n  <meta charset=\"UTF-8\">\n  <title>偶数求和</title>\n</head>\n<body>\n  <script>\n    // 在这里编写求和程序\n  </script>\n</body>\n</html>",
+              "language": "html_css",
+              "difficulty": "beginner",
+              "test_cases": [
+                {
+                  "case_name": "sum_initialized",
+                  "case_type": "text_match",
+                  "expected_payload_json": {
+                    "pattern": "let sum\\s*=\\s*0",
+                    "match_type": "regex_contains"
+                  }
+                },
+                {
+                  "case_name": "for_loop_1_to_20",
+                  "case_type": "text_match",
+                  "expected_payload_json": {
+                    "pattern": "for.*let.*i.*=.*1.*i\\s*<=\\s*20.*i\\+\\+",
+                    "match_type": "regex_contains"
+                  }
+                },
+                {
+                  "case_name": "even_check",
+                  "case_type": "text_match",
+                  "expected_payload_json": {
+                    "pattern": "i\\s*%\\s*2\\s*===?\\s*0",
+                    "match_type": "regex_contains"
+                  }
+                },
+                {
+                  "case_name": "add_to_sum",
+                  "case_type": "text_match",
+                  "expected_payload_json": {
+                    "pattern": "sum\\s*\\+?=\\s*i",
+                    "match_type": "regex_contains"
+                  }
+                }
+              ]
+            },
+            {
+              "exercise_code": "js-ex4-quiz-loops",
+              "title": "循环测验",
+              "prompt": "回答以下关于 JavaScript 循环的问题：",
+              "exercise_type": "single_choice",
+              "language": "html_css",
+              "difficulty": "beginner",
+              "exercise_options": [
+                {
+                  "option_text": "以下哪种循环适合遍历数组的元素值？",
+                  "option_code": null,
+                  "choices": [
+                    "for...in",
+                    "for...of",
+                    "while",
+                    "do...while"
+                  ],
+                  "correct_index": 1,
+                  "explanation": "for...of 遍历可迭代对象的值，是遍历数组元素的最佳选择。for...in 遍历的是属性键，不推荐用于数组。"
+                },
+                {
+                  "option_text": "以下代码的输出是什么？\nfor (let i = 0; i < 5; i++) {\n  if (i === 2) continue;\n  if (i === 4) break;\n  console.log(i);\n}",
+                  "option_code": null,
+                  "choices": [
+                    "0, 1, 2, 3",
+                    "0, 1, 3",
+                    "0, 1, 3, 4",
+                    "0, 1"
+                  ],
+                  "correct_index": 1,
+                  "explanation": "i=2 时 continue 跳过；i=4 时 break 终止。所以输出 0, 1, 3。"
+                },
+                {
+                  "option_text": "let arr = ['a', 'b']; for (let i in arr) { console.log(i); } 的输出是？",
+                  "option_code": null,
+                  "choices": [
+                    "'a', 'b'",
+                    "'0', '1'",
+                    "0, 1",
+                    "undefined"
+                  ],
+                  "correct_index": 2,
+                  "explanation": "for...in 遍历数组时，i 是索引字符串 '0', '1'。但 console.log 输出时不带引号显示为 0, 1。注意：遍历数组应使用 for...of。"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "chapter_code": "js-ch5-functions",
+          "title": "函数定义与调用",
+          "summary": "学习函数声明、表达式、箭头函数和作用域",
+          "learning_content_markdown": "# 函数定义与调用\n\n## 函数声明\n\n使用 `function` 关键字声明，会**提升**（hoisting）：\n\n```javascript\nfunction greet(name) {\n  return `Hello, ${name}!`;\n}\n\nconsole.log(greet(\"Alice\"));  // \"Hello, Alice!\"\n```\n\n## 函数表达式\n\n将函数赋值给变量，**不会提升**：\n\n```javascript\nconst greet = function(name) {\n  return `Hello, ${name}!`;\n};\n```\n\n## 箭头函数（推荐）\n\n更简洁的语法：\n\n```javascript\n// 完整写法\nconst greet = (name) => {\n  return `Hello, ${name}!`;\n};\n\n// 简化写法：单参数可省略括号\nconst greet = name => {\n  return `Hello, ${name}!`;\n};\n\n// 极简写法：单表达式可省略 {} 和 return\nconst greet = name => `Hello, ${name}!`;\n\n// 多参数\nconst add = (a, b) => a + b;\n\n// 无参数\nconst sayHi = () => console.log(\"Hi!\");\n\n// 返回对象需要用括号包裹\nconst getUser = name => ({ name: name, role: \"user\" });\n```\n\n## 默认参数\n\n```javascript\nfunction greet(name = \"访客\") {\n  return `你好，${name}！`;\n}\n\ngreet();         // \"你好，访客！\"\ngreet(\"Alice\");  // \"你好，Alice！\"\n```\n\n## 剩余参数\n\n```javascript\nfunction sum(...numbers) {\n  let total = 0;\n  for (let num of numbers) {\n    total += num;\n  }\n  return total;\n}\n\nsum(1, 2, 3, 4, 5);  // 15\n```\n\n## 作用域\n\n### 全局作用域\n\n在函数外部声明的变量，可在整个脚本中访问：\n\n```javascript\nlet globalVar = \"我是全局变量\";\n\nfunction test() {\n  console.log(globalVar);  // 可以访问\n}\n```\n\n### 局部（函数）作用域\n\n在函数内部声明的变量，只能在函数内访问：\n\n```javascript\nfunction test() {\n  let localVar = \"我是局部变量\";\n  console.log(localVar);   // ✓ 可以\n}\n// console.log(localVar);  // ✗ 报错！\n```\n\n### 块级作用域\n\n`let` 和 `const` 在 `{}` 块内有效：\n\n```javascript\nif (true) {\n  let blockVar = \"块级变量\";\n  const PI = 3.14;\n}\n// console.log(blockVar);  // ✗ 报错！\n```\n\n## 箭头函数的 this\n\n箭头函数没有自己的 `this`，继承外层的 `this`：\n\n```javascript\nconst person = {\n  name: \"Alice\",\n  regularFunc: function() {\n    console.log(this.name);  // \"Alice\"（this 指向 person）\n  },\n  arrowFunc: () => {\n    console.log(this.name);  // undefined（this 继承外层，不是 person）\n  }\n};\n```\n\n**规则**：需要 `this` 时用普通函数，不需要时用箭头函数。",
+          "estimated_minutes": 30,
+          "exercises": [
+            {
+              "exercise_code": "js-ex5-calculator",
+              "title": "简易计算器函数",
+              "prompt": "在 script 标签中实现一个计算器：\n1. 用箭头函数定义 add，接收 a 和 b，返回 a + b\n2. 用箭头函数定义 subtract，接收 a 和 b，返回 a - b\n3. 用箭头函数定义 multiply，接收 a 和 b，返回 a * b\n4. 用箭头函数定义 divide，接收 a 和 b，如果 b === 0 返回 '不能除以零'，否则返回 a / b\n5. 使用 console.log 输出 add(10, 5)、subtract(10, 5)、multiply(10, 5)、divide(10, 0) 的结果（分4行输出，每行使用模板字符串）",
+              "exercise_type": "coding",
+              "starter_code": "<!DOCTYPE html>\n<html>\n<head>\n  <meta charset=\"UTF-8\">\n  <title>计算器</title>\n</head>\n<body>\n  <script>\n    // 在这里定义计算函数\n\n    // 在这里输出结果\n  </script>\n</body>\n</html>",
+              "language": "html_css",
+              "difficulty": "beginner",
+              "test_cases": [
+                {
+                  "case_name": "add_arrow",
+                  "case_type": "text_match",
+                  "expected_payload_json": {
+                    "pattern": "const add\\s*=\\s*\\(.*a,.*b.*\\)\\s*=>",
+                    "match_type": "regex_contains"
+                  }
+                },
+                {
+                  "case_name": "add_return",
+                  "case_type": "text_match",
+                  "expected_payload_json": {
+                    "pattern": "return a \\+ b",
+                    "match_type": "contains"
+                  }
+                },
+                {
+                  "case_name": "divide_check",
+                  "case_type": "text_match",
+                  "expected_payload_json": {
+                    "pattern": "if.*b\\s*===?\\s*0",
+                    "match_type": "regex_contains"
+                  }
+                },
+                {
+                  "case_name": "console_outputs",
+                  "case_type": "text_match",
+                  "expected_payload_json": {
+                    "pattern": "console\\.log.*add\\(10,\\s*5\\)",
+                    "match_type": "regex_contains"
+                  }
+                }
+              ]
+            },
+            {
+              "exercise_code": "js-ex5-quiz-functions",
+              "title": "函数知识测验",
+              "prompt": "回答以下关于 JavaScript 函数的问题：",
+              "exercise_type": "single_choice",
+              "language": "html_css",
+              "difficulty": "beginner",
+              "exercise_options": [
+                {
+                  "option_text": "以下关于箭头函数的说法，哪个是正确的？",
+                  "option_code": null,
+                  "choices": [
+                    "箭头函数有自己的 this",
+                    "箭头函数不能作为构造函数使用 new",
+                    "箭头函数必须有 return 语句",
+                    "箭头函数不能接收参数"
+                  ],
+                  "correct_index": 1,
+                  "explanation": "箭头函数没有自己的 this（继承外层），也不能用作构造函数（不能 new）。它可以接收参数，也可以省略 return（单表达式时隐式返回）。"
+                },
+                {
+                  "option_text": "function greet() {} 和 const greet = function() {} 的主要区别是？",
+                  "option_code": null,
+                  "choices": [
+                    "没有区别",
+                    "函数声明会提升，函数表达式不会",
+                    "函数表达式会提升，函数声明不会",
+                    "函数表达式执行更快"
+                  ],
+                  "correct_index": 1,
+                  "explanation": "函数声明会被提升到作用域顶部，所以在声明前可以调用。函数表达式不会提升，必须在赋值后才能调用。"
+                },
+                {
+                  "option_text": "const fn = (a, b = 10) => a + b; fn(5) 的返回值是？",
+                  "option_code": null,
+                  "choices": [
+                    "5",
+                    "10",
+                    "15",
+                    "NaN"
+                  ],
+                  "correct_index": 2,
+                  "explanation": "b 有默认值 10，调用 fn(5) 时只传了 a=5，b 使用默认值 10，所以返回 5 + 10 = 15。"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "chapter_code": "js-ch6-arrays",
+          "title": "数组操作",
+          "summary": "掌握数组的创建、遍历和常用方法",
+          "learning_content_markdown": "# 数组操作\n\n## 数组创建\n\n```javascript\n// 字面量创建（推荐）\nlet fruits = [\"apple\", \"banana\", \"cherry\"];\n\n// 空数组\nlet empty = [];\n\n// Array 构造函数\nlet numbers = new Array(1, 2, 3);\n\n// 不同数据类型混合\nlet mixed = [\"text\", 42, true, null, { key: \"value\" }];\n```\n\n## 访问和修改元素\n\n```javascript\nlet colors = [\"red\", \"green\", \"blue\"];\n\n// 访问（索引从 0 开始）\ncolors[0];    // \"red\"\ncolors[2];    // \"blue\"\ncolors[10];   // undefined（越界）\n\n// 修改\ncolors[1] = \"yellow\";  // [\"red\", \"yellow\", \"blue\"]\n\n// 获取长度\ncolors.length;  // 3\n\n// 访问最后一个元素\ncolors[colors.length - 1];  // \"blue\"\n```\n\n## 常用数组方法\n\n### 添加/删除元素\n\n```javascript\nlet arr = [1, 2, 3];\n\narr.push(4);        // [1,2,3,4] - 尾部添加\narr.pop();          // [1,2,3]   - 尾部删除\narr.unshift(0);     // [0,1,2,3] - 头部添加\narr.shift();        // [1,2,3]   - 头部删除\narr.splice(1, 1);   // [1,3]     - 从索引1删除1个元素\narr.splice(1, 0, \"a\"); // [1,\"a\",3] - 在索引1插入\"a\"\n```\n\n### 查找元素\n\n```javascript\nlet nums = [10, 20, 30, 40, 50];\n\nnums.indexOf(30);      // 2 - 返回索引，找不到返回 -1\nnums.includes(30);     // true - 是否包含\nnums.find(n => n > 25);     // 30 - 返回第一个满足条件的元素\nnums.findIndex(n => n > 25); // 2 - 返回第一个满足条件的索引\n```\n\n### 遍历数组\n\n```javascript\nlet items = [\"a\", \"b\", \"c\"];\n\n// forEach - 遍历每个元素\nitems.forEach((item, index) => {\n  console.log(`${index}: ${item}`);\n});\n\n// map - 映射每个元素，返回新数组\nlet upper = items.map(item => item.toUpperCase());\n// [\"A\", \"B\", \"C\"]\n\n// filter - 筛选满足条件的元素\nlet nums = [1, 2, 3, 4, 5, 6];\nlet evens = nums.filter(n => n % 2 === 0);\n// [2, 4, 6]\n\n// reduce - 累计计算\nlet sum = nums.reduce((total, n) => total + n, 0);\n// 21\n```\n\n### 数组转换\n\n```javascript\nlet words = [\"Hello\", \"World\"];\n\nwords.join(\" \");       // \"Hello World\" - 合并为字符串\nwords.slice(0, 2);     // [\"Hello\", \"World\"] - 提取子数组\nwords.reverse();       // [\"World\", \"Hello\"] - 反转（修改原数组）\nwords.concat([\"!\"]);   // [\"World\", \"Hello\", \"!\"] - 合并数组\n```\n\n## 数组解构\n\n```javascript\nlet [first, second] = [\"apple\", \"banana\"];\nconsole.log(first);   // \"apple\"\n\n// 跳过元素\nlet [, , third] = [1, 2, 3, 4];\nconsole.log(third);   // 3\n\n// 剩余元素\nlet [head, ...tail] = [1, 2, 3, 4];\nconsole.log(head);    // 1\nconsole.log(tail);    // [2, 3, 4]\n```",
+          "estimated_minutes": 30,
+          "exercises": [
+            {
+              "exercise_code": "js-ex6-array-methods",
+              "title": "数组方法实战",
+              "prompt": "在 script 标签中完成数组操作：\n1. 声明数组 scores，值为 [78, 92, 85, 64, 88, 91]\n2. 使用 filter 方法筛选出所有 >= 80 的分数，存入 passed 变量\n3. 使用 map 方法将 passed 数组中每个分数乘以 1.1（加分10%），存入 bonus 变量\n4. 使用 reduce 方法计算 bonus 数组的总和，存入 total 变量\n5. 使用 console.log 输出 passed、bonus 和 total（分3行）\n   预期输出：[92, 85, 88, 91]、[101.2, 93.5, 96.8, 100.1]、391.6",
+              "exercise_type": "coding",
+              "starter_code": "<!DOCTYPE html>\n<html>\n<head>\n  <meta charset=\"UTF-8\">\n  <title>数组操作</title>\n</head>\n<body>\n  <script>\n    // 在这里编写数组操作\n  </script>\n</body>\n</html>",
+              "language": "html_css",
+              "difficulty": "intermediate",
+              "test_cases": [
+                {
+                  "case_name": "scores_array",
+                  "case_type": "text_match",
+                  "expected_payload_json": {
+                    "pattern": "\\[78,\\s*92,\\s*85,\\s*64,\\s*88,\\s*91\\]",
+                    "match_type": "regex_contains"
+                  }
+                },
+                {
+                  "case_name": "filter_usage",
+                  "case_type": "text_match",
+                  "expected_payload_json": {
+                    "pattern": "scores\\.filter",
+                    "match_type": "contains"
+                  }
+                },
+                {
+                  "case_name": "map_usage",
+                  "case_type": "text_match",
+                  "expected_payload_json": {
+                    "pattern": "passed\\.map",
+                    "match_type": "contains"
+                  }
+                },
+                {
+                  "case_name": "reduce_usage",
+                  "case_type": "text_match",
+                  "expected_payload_json": {
+                    "pattern": "bonus\\.reduce",
+                    "match_type": "contains"
+                  }
+                }
+              ]
+            },
+            {
+              "exercise_code": "js-ex6-quiz-arrays",
+              "title": "数组知识测验",
+              "prompt": "回答以下关于 JavaScript 数组的问题：",
+              "exercise_type": "single_choice",
+              "language": "html_css",
+              "difficulty": "intermediate",
+              "exercise_options": [
+                {
+                  "option_text": "arr.map(fn) 和 arr.forEach(fn) 的主要区别是？",
+                  "option_code": null,
+                  "choices": [
+                    "没有区别",
+                    "map 返回新数组，forEach 不返回",
+                    "forEach 返回新数组，map 不返回",
+                    "map 只执行一次"
+                  ],
+                  "correct_index": 1,
+                  "explanation": "map 会对每个元素执行回调函数并收集返回值，生成一个新数组。forEach 只是遍历数组执行副作用操作，不返回有意义的结果。"
+                },
+                {
+                  "option_text": "let arr = [1, 2, 3]; arr.splice(1, 1, 'a', 'b'); 之后 arr 的值是？",
+                  "option_code": null,
+                  "choices": [
+                    "[1, 'a', 'b', 3]",
+                    "[1, 2, 'a', 'b']",
+                    "[1, 'a', 2, 3]",
+                    "[1, 2, 3, 'a', 'b']"
+                  ],
+                  "correct_index": 0,
+                  "explanation": "splice(1, 1, 'a', 'b') 从索引1开始删除1个元素，然后插入 'a' 和 'b'。结果是 [1, 'a', 'b', 3]。"
+                },
+                {
+                  "option_text": "let arr = [1, 2, 3]; let copy = arr; copy.push(4); console.log(arr.length); 输出是？",
+                  "option_code": null,
+                  "choices": [
+                    "3",
+                    "4",
+                    "undefined",
+                    "报错"
+                  ],
+                  "correct_index": 1,
+                  "explanation": "数组是引用类型，copy = arr 只是复制了引用，不是深拷贝。修改 copy 会影响 arr，所以 arr 也变成了 [1,2,3,4]，长度为 4。"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "chapter_code": "js-ch7-objects",
+          "title": "对象与类",
+          "summary": "学习对象创建、属性操作和 ES6 Class",
+          "learning_content_markdown": "# 对象与类\n\n## 对象基础\n\n对象用于存储键值对数据：\n\n```javascript\n// 字面量创建（推荐）\nlet person = {\n  name: \"Alice\",\n  age: 25,\n  city: \"Beijing\"\n};\n\n// 构造函数创建\nlet user = new Object();\nuser.name = \"Bob\";\nuser.age = 30;\n```\n\n## 属性访问和修改\n\n```javascript\nlet person = { name: \"Alice\", age: 25 };\n\n// 点表示法\nperson.name;        // \"Alice\"\nperson.age = 26;    // 修改\n\n// 方括号表示法（适用于变量或特殊字符键）\nperson[\"name\"];     // \"Alice\"\nlet key = \"age\";\nperson[key];        // 26\n\n// 添加属性\nperson.email = \"alice@example.com\";\n\n// 删除属性\ndelete person.age;\n```\n\n## 对象方法\n\n```javascript\nlet person = {\n  name: \"Alice\",\n  greet() {\n    return `你好，我是 ${this.name}`;\n  }\n};\n\nperson.greet();  // \"你好，我是 Alice\"\n```\n\n## ES6 Class\n\n```javascript\nclass Animal {\n  // 构造函数\n  constructor(name) {\n    this.name = name;\n  }\n\n  // 方法\n  speak() {\n    console.log(`${this.name} 发出声音`);\n  }\n\n  // 静态方法\n  static isAnimal(obj) {\n    return obj instanceof Animal;\n  }\n}\n\n// 继承\nclass Dog extends Animal {\n  constructor(name, breed) {\n    super(name);  // 调用父类构造函数\n    this.breed = breed;\n  }\n\n  speak() {\n    console.log(`${this.name} 汪汪叫`);\n  }\n}\n\nlet dog = new Dog(\"旺财\", \"金毛\");\ndog.speak();  // \"旺财 汪汪叫\"\n```\n\n## 对象常用方法\n\n```javascript\nlet person = { name: \"Alice\", age: 25, city: \"Beijing\" };\n\nObject.keys(person);    // [\"name\", \"age\", \"city\"]\nObject.values(person);  // [\"Alice\", 25, \"Beijing\"]\nObject.entries(person); // [[\"name\",\"Alice\"],[\"age\",25],[\"city\",\"Beijing\"]]\n\n// 检查属性\n\"name\" in person;              // true\nperson.hasOwnProperty(\"name\"); // true\n\n// 合并对象\nlet defaults = { theme: \"light\", lang: \"zh\" };\nlet settings = { lang: \"en\" };\nlet merged = Object.assign({}, defaults, settings);\n// { theme: \"light\", lang: \"en\" }\n\n// 展开运算符合并\nlet merged2 = { ...defaults, ...settings };\n```\n\n## 对象解构\n\n```javascript\nlet person = { name: \"Alice\", age: 25, city: \"Beijing\" };\n\n// 解构\nlet { name, age } = person;\nconsole.log(name);  // \"Alice\"\n\n// 重命名\nlet { name: userName } = person;\nconsole.log(userName);  // \"Alice\"\n\n// 设置默认值\nlet { name, role = \"user\" } = person;\n\n// 解构函数参数\nfunction greet({ name, age }) {\n  return `${name} 今年 ${age} 岁`;\n}\n```\n\n## JSON\n\n```javascript\n// 对象转 JSON 字符串\nlet jsonStr = JSON.stringify({ name: \"Alice\", age: 25 });\n// '{\"name\":\"Alice\",\"age\":25}'\n\n// JSON 字符串转对象\nlet obj = JSON.parse('{\"name\":\"Alice\",\"age\":25}');\n// { name: \"Alice\", age: 25 }\n```",
+          "estimated_minutes": 25,
+          "exercises": [
+            {
+              "exercise_code": "js-ex7-book-class",
+              "title": "图书类设计",
+              "prompt": "在 script 标签中完成以下任务：\n1. 定义 Book 类，构造函数接收 title 和 author 两个参数，保存到 this.title 和 this.author\n2. Book 类添加 getInfo 方法，返回模板字符串：'《title》 by author'（使用 this.title 和 this.author）\n3. 创建 book1 实例：new Book('JavaScript 高级程序设计', 'Matt Frisbie')\n4. 创建 book2 实例：new Book('深入理解 TypeScript', 'Basarat Ali Syed')\n5. 使用 console.log 输出 book1.getInfo() 和 book2.getInfo()（分2行）",
+              "exercise_type": "coding",
+              "starter_code": "<!DOCTYPE html>\n<html>\n<head>\n  <meta charset=\"UTF-8\">\n  <title>图书类</title>\n</head>\n<body>\n  <script>\n    // 在这里定义 Book 类\n\n    // 在这里创建实例并输出\n  </script>\n</body>\n</html>",
+              "language": "html_css",
+              "difficulty": "intermediate",
+              "test_cases": [
+                {
+                  "case_name": "class_book",
+                  "case_type": "text_match",
+                  "expected_payload_json": {
+                    "pattern": "class Book",
+                    "match_type": "contains"
+                  }
+                },
+                {
+                  "case_name": "constructor_params",
+                  "case_type": "text_match",
+                  "expected_payload_json": {
+                    "pattern": "constructor\\(title,\\s*author\\)",
+                    "match_type": "regex_contains"
+                  }
+                },
+                {
+                  "case_name": "this_assignment",
+                  "case_type": "text_match",
+                  "expected_payload_json": {
+                    "pattern": "this\\.title\\s*=\\s*title",
+                    "match_type": "regex_contains"
+                  }
+                },
+                {
+                  "case_name": "getInfo_method",
+                  "case_type": "text_match",
+                  "expected_payload_json": {
+                    "pattern": "getInfo\\(\\)",
+                    "match_type": "regex_contains"
+                  }
+                }
+              ]
+            },
+            {
+              "exercise_code": "js-ex7-quiz-objects",
+              "title": "对象与类测验",
+              "prompt": "回答以下关于 JavaScript 对象和类的问题：",
+              "exercise_type": "single_choice",
+              "language": "html_css",
+              "difficulty": "intermediate",
+              "exercise_options": [
+                {
+                  "option_text": "let obj = { a: 1, b: 2 }; let copy = { ...obj }; copy.a = 3; obj.a 的值是？",
+                  "option_code": null,
+                  "choices": [
+                    "1",
+                    "3",
+                    "undefined",
+                    "报错"
+                  ],
+                  "correct_index": 0,
+                  "explanation": "展开运算符 { ...obj } 是浅拷贝。obj 的第一层属性 a 和 b 被复制到新对象，修改 copy.a 不会影响 obj.a，所以 obj.a 仍然是 1。但如果属性是嵌套对象，则仍然共享引用。"
+                },
+                {
+                  "option_text": "class Dog extends Animal { ... } 中 super() 的作用是？",
+                  "option_code": null,
+                  "choices": [
+                    "调用父类的构造函数",
+                    "创建静态方法",
+                    "定义私有属性",
+                    "没有作用"
+                  ],
+                  "correct_index": 0,
+                  "explanation": "super() 在子类构造函数中调用父类的构造函数，确保父类的初始化逻辑被执行。在子类方法中 super.method() 可以调用父类的方法。"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "chapter_code": "js-ch8-dom-events",
+          "title": "DOM 操作与事件处理",
+          "summary": "学习选择元素、修改内容和响应用户交互",
+          "learning_content_markdown": "# DOM 操作与事件处理\n\n## 什么是 DOM\n\nDOM（Document Object Model，文档对象模型）将 HTML 文档表示为树形结构，JavaScript 可以通过 DOM API 访问和修改页面内容。\n\n```\nDocument\n └── html\n      ├── head\n      │    └── title\n      └── body\n           ├── h1\n           ├── p\n           └── button\n```\n\n## 选择元素\n\n```javascript\n// 通过 ID 选择（单个元素）\nlet heading = document.getElementById(\"title\");\n\n// 通过 CSS 选择器选择第一个匹配\nlet btn = document.querySelector(\".submit-btn\");\n\n// 通过 CSS 选择器选择所有匹配\nlet items = document.querySelectorAll(\".item\");  // 返回 NodeList\n\n// 通过类名选择\nlet boxes = document.getElementsByClassName(\"box\");  // 返回 HTMLCollection\n\n// 通过标签名选择\nlet paragraphs = document.getElementsByTagName(\"p\");\n```\n\n## 修改元素\n\n```javascript\nlet heading = document.querySelector(\"h1\");\n\n// 修改文本内容（安全，不会解析 HTML）\nheading.textContent = \"新标题\";\n\n// 修改 HTML 内容（注意 XSS 风险）\nheading.innerHTML = \"<span>新标题</span>\";\n\n// 修改属性\nheading.setAttribute(\"class\", \"main-title\");\nheading.getAttribute(\"class\");  // \"main-title\"\n\n// 修改样式（行内样式）\nheading.style.color = \"red\";\nheading.style.fontSize = \"24px\";  // CSS 属性名改为驼峰式\n\n// 修改类名\nheading.classList.add(\"highlight\");      // 添加类\nheading.classList.remove(\"highlight\");   // 删除类\nheading.classList.toggle(\"hidden\");      // 切换类\nheading.classList.contains(\"hidden\");    // 是否包含类 → true/false\n```\n\n## 创建和添加元素\n\n```javascript\n// 创建新元素\nlet newDiv = document.createElement(\"div\");\nnewDiv.textContent = \"我是新元素\";\nnewDiv.className = \"box\";\n\n// 添加到父元素末尾\nparentElement.appendChild(newDiv);\n\n// 在参考元素前插入\nparentElement.insertBefore(newDiv, referenceElement);\n\n// 现代方法（更灵活）\nparentElement.append(newDiv);           // 末尾添加\nparentElement.prepend(newDiv);          // 开头添加\nelement.before(newDiv);                  // 在 element 前添加\nelement.after(newDiv);                   // 在 element 后添加\nelement.replaceWith(newDiv);             // 替换 element\n\n// 删除元素\nelement.remove();\n```\n\n## 事件处理\n\n### addEventListener\n\n```javascript\nlet btn = document.querySelector(\"#myBtn\");\n\n// 添加点击事件监听\nbtn.addEventListener(\"click\", function() {\n  console.log(\"按钮被点击了！\");\n});\n\n// 使用箭头函数\nbtn.addEventListener(\"click\", () => {\n  console.log(\"按钮被点击了！\");\n});\n\n// 事件对象\nbtn.addEventListener(\"click\", (event) => {\n  console.log(event.target);  // 被点击的元素\n  event.preventDefault();      // 阻止默认行为\n});\n```\n\n### 常见事件类型\n\n| 事件 | 说明 |\n|------|------|\n| `click` | 点击 |\n| `dblclick` | 双击 |\n| `mouseenter` / `mouseleave` | 鼠标进入/离开 |\n| `keydown` / `keyup` | 按键按下/释放 |\n| `submit` | 表单提交 |\n| `input` | 输入值变化 |\n| `change` | 值改变（失焦后） |\n| `focus` / `blur` | 获得/失去焦点 |\n| `DOMContentLoaded` | DOM 加载完成 |\n\n### 事件委托\n\n利用事件冒泡机制，父元素统一处理子元素事件：\n\n```javascript\n// 不要这样做：为每个按钮添加监听器（性能差）\ndocument.querySelectorAll(\"button\").forEach(btn => {\n  btn.addEventListener(\"click\", handleClick);\n});\n\n// 推荐：事件委托（性能好，动态元素也有效）\ndocument.querySelector(\"#list\").addEventListener(\"click\", (event) => {\n  if (event.target.tagName === \"BUTTON\") {\n    handleClick(event.target);\n  }\n});\n```",
+          "estimated_minutes": 35,
+          "exercises": [
+            {
+              "exercise_code": "js-ex8-todo-dom",
+              "title": "动态待办列表",
+              "prompt": "实现一个动态待办事项列表。HTML 结构已给定，请在 script 标签中完成：\n1. 获取 addBtn 元素（querySelector('#addBtn')），为其添加 click 事件监听器\n2. 获取 input 元素（querySelector('#todoInput')）和 list 元素（querySelector('#todoList')）\n3. 在点击事件处理函数中：\n   a. 获取 input.value，如果为空字符串则直接 return\n   b. 使用 document.createElement('li') 创建新 li\n   c. 设置 li.textContent 为 input.value\n   d. 使用 list.appendChild(li) 添加到列表末尾\n   e. 将 input.value 设为空字符串（清空输入框）\n4. 同时给 input 添加 keydown 事件监听，如果 event.key === 'Enter'，执行相同的添加逻辑",
+              "exercise_type": "coding",
+              "starter_code": "<!DOCTYPE html>\n<html>\n<head>\n  <meta charset=\"UTF-8\">\n  <title>待办列表</title>\n  <style>\n    body { font-family: system-ui; max-width: 400px; margin: 50px auto; }\n    .input-group { display: flex; gap: 8px; margin-bottom: 16px; }\n    input { flex: 1; padding: 8px; border: 1px solid #ddd; border-radius: 4px; }\n    button { padding: 8px 16px; background: #3498db; color: white; border: none; border-radius: 4px; cursor: pointer; }\n    li { padding: 8px; border-bottom: 1px solid #eee; }\n  </style>\n</head>\n<body>\n  <h2>我的待办</h2>\n  <div class=\"input-group\">\n    <input type=\"text\" id=\"todoInput\" placeholder=\"输入待办事项...\">\n    <button id=\"addBtn\">添加</button>\n  </div>\n  <ul id=\"todoList\"></ul>\n  <script>\n    // 在这里编写 DOM 操作代码\n  </script>\n</body>\n</html>",
+              "language": "html_css",
+              "difficulty": "intermediate",
+              "test_cases": [
+                {
+                  "case_name": "query_addBtn",
+                  "case_type": "text_match",
+                  "expected_payload_json": {
+                    "pattern": "querySelector\\(['\"]#addBtn['\"]\\)",
+                    "match_type": "regex_contains"
+                  }
+                },
+                {
+                  "case_name": "addEventListener_click",
+                  "case_type": "text_match",
+                  "expected_payload_json": {
+                    "pattern": "addEventListener\\(['\"]click['\"]",
+                    "match_type": "regex_contains"
+                  }
+                },
+                {
+                  "case_name": "createElement_li",
+                  "case_type": "text_match",
+                  "expected_payload_json": {
+                    "pattern": "createElement\\(['\"]li['\"]\\)",
+                    "match_type": "regex_contains"
+                  }
+                },
+                {
+                  "case_name": "appendChild",
+                  "case_type": "text_match",
+                  "expected_payload_json": {
+                    "pattern": "appendChild\\(li\\)",
+                    "match_type": "regex_contains"
+                  }
+                },
+                {
+                  "case_name": "clear_input",
+                  "case_type": "text_match",
+                  "expected_payload_json": {
+                    "pattern": "input\\.value\\s*=\\s*['\"]['\"]",
+                    "match_type": "regex_contains"
+                  }
+                },
+                {
+                  "case_name": "enter_key",
+                  "case_type": "text_match",
+                  "expected_payload_json": {
+                    "pattern": "['\"]Enter['\"]",
+                    "match_type": "contains"
+                  }
+                }
+              ]
+            },
+            {
+              "exercise_code": "js-ex8-quiz-dom",
+              "title": "DOM 与事件测验",
+              "prompt": "回答以下关于 JavaScript DOM 操作和事件处理的问题：",
+              "exercise_type": "single_choice",
+              "language": "html_css",
+              "difficulty": "intermediate",
+              "exercise_options": [
+                {
+                  "option_text": "document.querySelector('.item') 和 document.querySelectorAll('.item') 的区别是？",
+                  "option_code": null,
+                  "choices": [
+                    "没有区别",
+                    "前者返回单个元素，后者返回所有匹配的元素集合",
+                    "前者返回数组，后者返回对象",
+                    "前者只能用于 ID 选择器"
+                  ],
+                  "correct_index": 1,
+                  "explanation": "querySelector 返回第一个匹配的元素（单个 Element），querySelectorAll 返回所有匹配的 NodeList（类数组对象）。"
+                },
+                {
+                  "option_text": "以下哪种方式可以安全地修改元素的文本内容，不会解析 HTML 标签？",
+                  "option_code": null,
+                  "choices": [
+                    "element.innerHTML",
+                    "element.textContent",
+                    "element.value",
+                    "element.innerText"
+                  ],
+                  "correct_index": 1,
+                  "explanation": "textContent 只处理纯文本，不会解析 HTML 标签，可以防止 XSS 攻击。innerHTML 会解析 HTML，有安全风险。"
+                },
+                {
+                  "option_text": "事件委托（Event Delegation）的主要优势是什么？",
+                  "option_code": null,
+                  "choices": [
+                    "代码更简洁",
+                    "减少事件监听器数量，对动态元素也有效",
+                    "不需要使用 addEventListener",
+                    "只能用于 click 事件"
+                  ],
+                  "correct_index": 1,
+                  "explanation": "事件委托利用事件冒泡，在父元素上统一处理子元素事件，减少了监听器数量，且对新添加的动态元素也有效。"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "challenges": [
+    {
+      "challenge_code": "ch-html-master",
+      "title": "HTML 标签大师",
+      "summary": "测试你对 HTML 基础标签和语义化元素的综合掌握程度",
+      "difficulty": "beginner",
+      "reward_xp": 150,
+      "status": "published",
+      "stages": [
+        {
+          "exercise_code": "html-ex1-hello-world"
+        },
+        {
+          "exercise_code": "html-ex2-article-structure"
+        },
+        {
+          "exercise_code": "html-ex3-blog-layout"
+        },
+        {
+          "exercise_code": "html-ex4-personal-site"
+        },
+        {
+          "exercise_code": "html-ex5-student-table"
+        },
+        {
+          "exercise_code": "html-ex6-register-form"
+        }
+      ]
+    },
+    {
+      "challenge_code": "ch-css-stylist",
+      "title": "CSS 样式专家",
+      "summary": "挑战你的 CSS 选择器、盒模型和排版技能",
+      "difficulty": "beginner",
+      "reward_xp": 150,
+      "status": "published",
+      "stages": [
+        {
+          "exercise_code": "css-ex1-selector-practice"
+        },
+        {
+          "exercise_code": "css-ex2-card-component"
+        },
+        {
+          "exercise_code": "css-ex3-article-typography"
+        },
+        {
+          "exercise_code": "css-ex4-gradient-btn"
+        },
+        {
+          "exercise_code": "css-ex5-modal"
+        }
+      ]
+    },
+    {
+      "challenge_code": "ch-layout-guru",
+      "title": "布局达人",
+      "summary": "综合运用 Flexbox 和 Grid 完成复杂布局挑战",
+      "difficulty": "intermediate",
+      "reward_xp": 250,
+      "status": "published",
+      "stages": [
+        {
+          "exercise_code": "layout-ex1-flex-center"
+        },
+        {
+          "exercise_code": "layout-ex2-navbar"
+        },
+        {
+          "exercise_code": "layout-ex3-grid-gallery"
+        },
+        {
+          "exercise_code": "layout-ex4-responsive-cards"
+        },
+        {
+          "exercise_code": "layout-ex5-holy-grail"
+        }
+      ]
+    },
+    {
+      "challenge_code": "ch-beginner-sprint",
+      "title": "新手冲刺",
+      "summary": "专为初学者设计的快速入门挑战，覆盖 HTML 和 CSS 基础",
+      "difficulty": "beginner",
+      "reward_xp": 100,
+      "status": "published",
+      "stages": [
+        {
+          "exercise_code": "html-ex1-hello-world"
+        },
+        {
+          "exercise_code": "html-ex2-article-structure"
+        },
+        {
+          "exercise_code": "css-ex2-card-component"
+        },
+        {
+          "exercise_code": "layout-ex1-flex-center"
+        }
+      ]
+    },
+    {
+      "challenge_code": "ch-semantic-pro",
+      "title": "语义化大师",
+      "summary": "深入测试 HTML5 语义化标签的理解和应用能力",
+      "difficulty": "beginner",
+      "reward_xp": 120,
+      "status": "published",
+      "stages": [
+        {
+          "exercise_code": "html-ex3-blog-layout"
+        },
+        {
+          "exercise_code": "html-ex4-personal-site"
+        },
+        {
+          "exercise_code": "layout-ex5-holy-grail"
+        }
+      ]
+    },
+    {
+      "challenge_code": "ch-js-coder",
+      "title": "JS 编码先锋",
+      "summary": "全面测试 JavaScript 基础语法掌握程度，从变量到 DOM 操作",
+      "difficulty": "beginner",
+      "reward_xp": 200,
+      "status": "published",
+      "stages": [
+        {
+          "exercise_code": "js-ex1-variable-types"
+        },
+        {
+          "exercise_code": "js-ex2-temperature-converter"
+        },
+        {
+          "exercise_code": "js-ex3-grade-calculator"
+        },
+        {
+          "exercise_code": "js-ex4-sum-even"
+        },
+        {
+          "exercise_code": "js-ex5-calculator"
+        },
+        {
+          "exercise_code": "js-ex6-array-methods"
+        },
+        {
+          "exercise_code": "js-ex7-book-class"
+        },
+        {
+          "exercise_code": "js-ex8-todo-dom"
+        }
+      ]
+    },
+    {
+      "challenge_code": "ch-js-logic",
+      "title": "逻辑与函数挑战",
+      "summary": "专注测试条件判断、循环和函数定义的编程能力",
+      "difficulty": "beginner",
+      "reward_xp": 120,
+      "status": "published",
+      "stages": [
+        {
+          "exercise_code": "js-ex3-grade-calculator"
+        },
+        {
+          "exercise_code": "js-ex4-sum-even"
+        },
+        {
+          "exercise_code": "js-ex5-calculator"
+        },
+        {
+          "exercise_code": "js-ex6-array-methods"
+        }
+      ]
+    }
+  ],
+  "daily_challenges": [
+    {
+      "challenge_date": "2026-05-10",
+      "title": "HTML 结构大挑战",
+      "exercise_code": "html-ex1-hello-world",
+      "difficulty": "beginner",
+      "time_limit_seconds": 300,
+      "reward_xp": 50,
+      "status": "active"
+    },
+    {
+      "challenge_date": "2026-05-11",
+      "title": "文章排版挑战",
+      "exercise_code": "html-ex2-article-structure",
+      "difficulty": "beginner",
+      "time_limit_seconds": 400,
+      "reward_xp": 60,
+      "status": "active"
+    },
+    {
+      "challenge_date": "2026-05-12",
+      "title": "卡片样式设计",
+      "exercise_code": "css-ex2-card-component",
+      "difficulty": "beginner",
+      "time_limit_seconds": 600,
+      "reward_xp": 70,
+      "status": "active"
+    },
+    {
+      "challenge_date": "2026-05-13",
+      "title": "Flexbox 居中挑战",
+      "exercise_code": "layout-ex1-flex-center",
+      "difficulty": "beginner",
+      "time_limit_seconds": 500,
+      "reward_xp": 65,
+      "status": "active"
+    },
+    {
+      "challenge_date": "2026-05-14",
+      "title": "照片墙网格布局",
+      "exercise_code": "layout-ex3-grid-gallery",
+      "difficulty": "intermediate",
+      "time_limit_seconds": 900,
+      "reward_xp": 100,
+      "status": "active"
+    },
+    {
+      "challenge_date": "2026-05-15",
+      "title": "响应式卡片布局",
+      "exercise_code": "layout-ex4-responsive-cards",
+      "difficulty": "intermediate",
+      "time_limit_seconds": 800,
+      "reward_xp": 90,
+      "status": "active"
+    },
+    {
+      "challenge_date": "2026-05-16",
+      "title": "注册表单实战",
+      "exercise_code": "html-ex6-register-form",
+      "difficulty": "intermediate",
+      "time_limit_seconds": 700,
+      "reward_xp": 80,
+      "status": "active"
+    },
+    {
+      "challenge_date": "2026-05-17",
+      "title": "JS 变量与类型",
+      "exercise_code": "js-ex1-variable-types",
+      "difficulty": "beginner",
+      "time_limit_seconds": 400,
+      "reward_xp": 55,
+      "status": "active"
+    },
+    {
+      "challenge_date": "2026-05-18",
+      "title": "JS 函数编写",
+      "exercise_code": "js-ex5-calculator",
+      "difficulty": "beginner",
+      "time_limit_seconds": 600,
+      "reward_xp": 70,
+      "status": "active"
+    },
+    {
+      "challenge_date": "2026-05-19",
+      "title": "数组方法实战",
+      "exercise_code": "js-ex6-array-methods",
+      "difficulty": "intermediate",
+      "time_limit_seconds": 800,
+      "reward_xp": 85,
+      "status": "active"
+    },
+    {
+      "challenge_date": "2026-05-20",
+      "title": "DOM 操作挑战",
+      "exercise_code": "js-ex8-todo-dom",
+      "difficulty": "intermediate",
+      "time_limit_seconds": 900,
+      "reward_xp": 100,
+      "status": "active"
+    }
+  ],
+  "badges": [
+    {
+      "badge_code": "first-step",
+      "name": "第一步",
+      "description": "完成第一个编程练习",
+      "rule_type": "manual",
+      "status": "published"
+    },
+    {
+      "badge_code": "html-rookie",
+      "name": "HTML 新秀",
+      "description": "完成 HTML 基础入门课程中的所有练习",
+      "rule_type": "course",
+      "status": "published"
+    },
+    {
+      "badge_code": "css-rookie",
+      "name": "CSS 新秀",
+      "description": "完成 CSS 样式基础课程中的所有练习",
+      "rule_type": "course",
+      "status": "published"
+    },
+    {
+      "badge_code": "layout-master",
+      "name": "布局大师",
+      "description": "完成 CSS 布局精通课程中的所有练习",
+      "rule_type": "course",
+      "status": "published"
+    },
+    {
+      "badge_code": "challenge-champion",
+      "name": "挑战冠军",
+      "description": "完成任意一个挑战的全部关卡",
+      "rule_type": "challenge",
+      "status": "published"
+    },
+    {
+      "badge_code": "streak-week",
+      "name": "坚持不懈",
+      "description": "连续 7 天完成每日挑战",
+      "rule_type": "streak",
+      "status": "published"
+    },
+    {
+      "badge_code": "perfect-score",
+      "name": "满分达人",
+      "description": "在一次测验中获得满分",
+      "rule_type": "manual",
+      "status": "published"
+    },
+    {
+      "badge_code": "early-bird",
+      "name": "早鸟先锋",
+      "description": "在每日挑战发布后的前 1 小时内完成",
+      "rule_type": "manual",
+      "status": "published"
+    },
+    {
+      "badge_code": "html-semantic-pro",
+      "name": "语义化专家",
+      "description": "在语义化相关的所有练习中正确回答每一道选择题",
+      "rule_type": "manual",
+      "status": "published"
+    },
+    {
+      "badge_code": "responsive-designer",
+      "name": "响应式设计者",
+      "description": "完成所有响应式布局相关的练习",
+      "rule_type": "course",
+      "status": "published"
+    },
+    {
+      "badge_code": "js-rookie",
+      "name": "JS 新秀",
+      "description": "完成 JavaScript 基础入门课程中的所有练习",
+      "rule_type": "course",
+      "status": "published"
+    },
+    {
+      "badge_code": "dom-wizard",
+      "name": "DOM 魔法师",
+      "description": "完成所有 DOM 操作和事件处理相关的编码练习",
+      "rule_type": "manual",
+      "status": "published"
+    },
+    {
+      "badge_code": "function-master",
+      "name": "函数大师",
+      "description": "所有函数相关练习一次性通过，无错误提交",
+      "rule_type": "manual",
+      "status": "published"
+    }
+  ],
+  "announcements": [
+    {
+      "title": "欢迎使用 CodeQuest 前端学习平台！",
+      "body_markdown": "# 欢迎来到 CodeQuest\n\nCodeQuest 是一个专为前端初学者设计的交互式学习平台。在这里，你将通过动手实践掌握 HTML、CSS 和 JavaScript 的核心技能。\n\n## 平台特色\n\n- **即时反馈**：编写代码后立即看到效果和测试结果\n- **渐进式学习**：从基础概念到实战项目，循序渐进\n- **游戏化体验**：通过挑战、徽章和积分保持学习动力\n- **每日挑战**：每天都有新的练习等你来完成\n\n## 开始学习\n\n1. 从 **HTML 基础入门** 课程开始\n2. 完成每个章节的编码练习和选择题\n3. 挑战 **HTML 标签大师** 挑战测试你的知识\n4. 保持每日学习习惯，解锁成就徽章\n\n祝你学习愉快！",
+      "audience": "all_learners",
+      "status": "published"
+    },
+    {
+      "title": "新增 CSS 布局精通课程！",
+      "body_markdown": "# 新课程上线\n\n我们很高兴地宣布 **CSS 布局精通** 课程正式上线！\n\n## 课程内容\n\n本课程涵盖现代 CSS 布局的核心技术：\n\n### 第1章：Flexbox 弹性盒子基础\n- Flex 容器和项目属性\n- 水平垂直居中\n- 常见布局模式\n\n### 第2章：Flexbox 实战布局模式\n- 导航栏、卡片列表\n- 底部固定布局\n- 自适应表单\n\n### 第3章：CSS Grid 网格布局\n- Grid 模板定义\n- 项目放置和对齐\n- 命名区域布局\n\n### 第4章：响应式设计\n- 媒体查询和断点\n- 移动优先策略\n- 响应式图片\n\n### 第5章：圣杯布局实战\n- 综合运用 Flexbox + Grid\n- 经典布局模式实现\n\n## 配套挑战\n\n同时上线的还有 **布局达人** 挑战，完成全部 5 个关卡可获得 250 XP 和「布局大师」徽章！\n\n立即开始学习吧！",
+      "audience": "all_learners",
+      "status": "published"
+    },
+    {
+      "title": "系统维护通知",
+      "body_markdown": "# 系统维护通知\n\n为了提供更稳定的服务，我们将进行计划维护：\n\n**维护时间**：2026年5月20日 02:00 - 04:00 (UTC+8)\n\n**影响范围**：\n- 课程学习功能将暂停\n- 用户登录可能受影响\n- 排行榜和积分更新将延迟\n\n**维护内容**：\n- 数据库性能优化\n- 新增练习自动评测功能\n- 升级代码编辑器组件\n\n请提前安排你的学习计划，避免在维护时段进行练习。感谢你的理解与支持！",
+      "audience": "all",
+      "status": "published"
+    },
+    {
+      "title": "管理员操作手册更新",
+      "body_markdown": "# 管理员操作手册 V1.1\n\n本次更新包含以下内容：\n\n## 新增功能\n- 课程数据统计面板\n- 用户学习进度导出\n- 批量导入练习题目\n\n## 操作流程\n\n### 发布新课程\n1. 进入「课程管理」页面\n2. 点击「新建课程」按钮\n3. 填写课程基本信息（标题、描述、难度等）\n4. 逐章添加章节内容\n5. 为每个章节配置练习题目\n6. 预览确认后发布\n\n### 审核用户反馈\n1. 在「反馈管理」查看待审核条目\n2. 查看用户提交的详细信息和截图\n3. 选择处理方式：采纳/拒绝/标记\n4. 填写处理备注\n\n如有疑问请联系技术团队。",
+      "audience": "all_admins",
+      "status": "published"
+    },
+    {
+      "title": "五一学习马拉松活动预告",
+      "body_markdown": "# 五一学习马拉松活动\n\n为庆祝五一劳动节，CodeQuest 将举办为期 5 天的学习马拉松活动！\n\n## 活动时间\n2026年5月1日 - 5月5日\n\n## 活动内容\n\n### 每日挑战加倍\n活动期间，每日挑战的 XP 奖励 **翻倍**！\n\n### 限时挑战\n活动期间将推出 3 个限时挑战：\n- HTML 极速通关（5月1日-2日）\n- CSS 样式冲刺（5月3日-4日）\n- 布局终极挑战（5月5日）\n\n### 排行榜竞赛\n活动期间累计 XP 排名前 10 的用户将获得：\n- 第1名：年度 VIP 会员 + 限量版徽章\n- 第2-3名：季度 VIP 会员\n- 第4-10名：月度 VIP 会员\n\n## 参与方式\n活动期间正常登录平台，完成每日挑战和课程练习即可自动参与活动。\n\n准备好了吗？让我们一起在五一假期精进前端技能！",
+      "audience": "all_learners",
+      "status": "published"
+    },
+    {
+      "title": "JavaScript 基础入门课程正式上线！",
+      "body_markdown": "# JavaScript 基础入门课程发布\n\n我们非常兴奋地宣布：**JavaScript 基础入门** 课程正式上线！\n\n## 课程内容\n\n本课程基于 MDN Web Docs 官方 JavaScript 学习路径，涵盖 8 大核心章节：\n\n### 第1章：变量与数据类型\n- let / const / var 的区别\n- String、Number、Boolean、Null、Undefined\n- typeof 检测与类型转换\n\n### 第2章：运算符与表达式\n- 算术、比较、逻辑运算符\n- 严格相等 === vs 松散相等 ==\n- 运算符优先级\n\n### 第3章：条件语句\n- if / else if / else\n- switch 多分支\n- 三元运算符\n\n### 第4章：循环语句\n- for / while / do...while\n- for...of 遍历数组\n- break / continue 控制\n\n### 第5章：函数定义与调用\n- 函数声明 vs 表达式 vs 箭头函数\n- 默认参数与剩余参数\n- 作用域与闭包\n\n### 第6章：数组操作\n- push / pop / shift / unshift\n- map / filter / reduce\n- 数组解构\n\n### 第7章：对象与类\n- 对象创建与属性操作\n- ES6 Class 与继承\n- 对象解构与展开运算符\n\n### 第8章：DOM 操作与事件处理\n- 选择元素、修改内容和样式\n- 创建和添加元素\n- addEventListener 与事件委托\n\n## 配套内容\n\n- **JS 编码先锋** 挑战（200 XP）\n- **逻辑与函数** 专项挑战（120 XP）\n- 4 个 JS 主题每日挑战\n\n立即开始你的 JavaScript 学习之旅吧！",
+      "audience": "all_learners",
+      "status": "published"
+    }
+  ]
+}
