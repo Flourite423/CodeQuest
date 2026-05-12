@@ -1,0 +1,20 @@
+%%
+% BIThesis 本科毕业设计论文模板 —— 使用 XeLaTeX 编译 The BIThesis Template for Undergraduate Thesis
+% This file has no copyright assigned and is placed in the Public Domain.
+%%
+
+\begin{abstract}
+本文围绕一款面向前端初学者的游戏化学习移动应用的设计与实现展开研究。针对传统前端入门学习中学习动机不足、练习反馈不及时以及移动场景适配不足等问题，论文结合游戏化学习与移动学习的相关理论，设计并实现了一个以移动客户端为核心、服务端与管理后台端为支撑的学习系统。该系统围绕课程学习、章节阅读、编码练习、闯关挑战、每日挑战、社交互动与个人成长反馈等功能构建学习闭环，并通过奖励机制、排行榜和任务节奏增强学习过程的参与感与持续性。
+
+在系统实现上，移动客户端采用 Flutter 进行跨平台开发，结合 GetX 实现路由管理、状态管理与依赖注入，使用 Dio 与 GetStorage 分别完成接口访问与本地持久化；服务端采用 Rust、Salvo 与 PostgreSQL 提供统一业务支撑；同时以 OpenAPI 文档作为三端共享的接口约束基础，用于保证接口结构与联调过程的一致性。论文进一步从需求分析、总体设计、关键功能实现与功能验证四个层面对系统进行说明。
+
+相关实现与验证情况说明，该系统在当前实现范围内能够完成注册登录、课程学习、练习提交、挑战参与、奖励反馈、排行榜展示与基础联调验证等核心流程，能够支撑移动学习闭环的基本运行。本文的工作可为面向前端基础教育场景的移动学习应用设计与实现提供一定参考。
+\end{abstract}
+
+\begin{abstractEn}
+This thesis studies the design and implementation of a gamified mobile learning application for front-end beginners. To address the problems of weak learning motivation, delayed practice feedback, and insufficient support for mobile learning scenarios in traditional introductory front-end learning, the work combines theories of gamified learning and mobile learning to design and implement a learning system with the mobile application as the core and the server side together with the admin dashboard as supporting components. The system forms a learning loop through course learning, chapter reading, coding practice, level-based challenges, daily challenges, social interaction, and growth feedback, while using rewards, rankings, and task rhythm to strengthen engagement and persistence.
+
+On the implementation side, the learner client is developed with Flutter for cross-platform delivery, uses GetX for routing, state management, and dependency injection, and adopts Dio and GetStorage for API access and local persistence. The server side is implemented with Rust, Salvo, and PostgreSQL to provide unified business support. Meanwhile, an OpenAPI document is used as the shared contract among the mobile client, server side, and admin dashboard to ensure interface consistency during development and integration. The thesis further explains the system from four aspects: requirements analysis, overall design, key function implementation, and functional verification.
+
+The results show that, within the current implementation scope, the system can complete core workflows such as registration and login, course learning, exercise submission, challenge participation, reward feedback, leaderboard display, and basic cross-end integration verification. It therefore demonstrates a relatively complete mobile learning loop and multi-end collaboration capability. The work can provide a useful reference for the design and implementation of mobile learning applications oriented to introductory front-end education.
+\end{abstractEn}
