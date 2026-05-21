@@ -91,6 +91,16 @@ build/
 # Sisyphus (internal)
 .sisyphus/
 
+# Pi / OpenCode / Playwright tool configs
+.pi/
+.opencode/
+.playwright-cli/
+.playwright-mcp/
+
+# Draw.io backups
+*.bkp
+*.dtmp
+
 # Admin specific
 admin/node_modules/
 admin/dist/
@@ -109,6 +119,7 @@ mobile/android/app/release/
 
 # Backend specific
 backend/target/
+backend/Cargo.lock
 
 # Python cache
 __pycache__/
