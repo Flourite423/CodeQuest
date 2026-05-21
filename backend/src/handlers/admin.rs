@@ -348,12 +348,66 @@ pub async fn get_dashboard_stats(depot: &mut Depot) -> Result<Json<ApiResponse<s
     .await
     .map_err(|_| StatusError::internal_server_error())?;
 
+    // 近7天趋势数据
+    let new_users_trend: Vec<(chrono::NaiveDate, i64)> = sqlx::query_as(
+        "SELECT DATE(created_at) as date, COUNT(*) as count
+         FROM accounts
+         WHERE created_at >= CURRENT_DATE - INTERVAL '6 days'
+         GROUP BY DATE(created_at)
+         ORDER BY date"
+    )
+    .fetch_all(pool)
+    .await
+    .map_err(|_| StatusError::internal_server_error())?;
+
+    let submissions_trend: Vec<(chrono::NaiveDate, i64)> = sqlx::query_as(
+        "SELECT DATE(submitted_at) as date, COUNT(*) as count
+         FROM submissions
+         WHERE submitted_at >= CURRENT_DATE - INTERVAL '6 days'
+         GROUP BY DATE(submitted_at)
+         ORDER BY date"
+    )
+    .fetch_all(pool)
+    .await
+    .map_err(|_| StatusError::internal_server_error())?;
+
+    let active_trend: Vec<(chrono::NaiveDate, i64)> = sqlx::query_as(
+        "SELECT DATE(last_seen_at) as date, COUNT(DISTINCT account_id) as count
+         FROM sessions
+         WHERE last_seen_at >= CURRENT_DATE - INTERVAL '6 days'
+         GROUP BY DATE(last_seen_at)
+         ORDER BY date"
+    )
+    .fetch_all(pool)
+    .await
+    .map_err(|_| StatusError::internal_server_error())?;
+
+    // 构建近7天完整日期数组
+    let mut dates = Vec::new();
+    let mut new_users_daily = Vec::new();
+    let mut submissions_daily = Vec::new();
+    let mut active_daily = Vec::new();
+
+    for i in 0..7 {
+        let date = chrono::Local::now().date_naive() - chrono::Duration::days(6 - i);
+        dates.push(date.format("%m-%d").to_string());
+        new_users_daily.push(new_users_trend.iter().find(|(d, _)| *d == date).map(|(_, c)| *c).unwrap_or(0));
+        submissions_daily.push(submissions_trend.iter().find(|(d, _)| *d == date).map(|(_, c)| *c).unwrap_or(0));
+        active_daily.push(active_trend.iter().find(|(d, _)| *d == date).map(|(_, c)| *c).unwrap_or(0));
+    }
+
     Ok(Json(ApiResponse::new(serde_json::json!({
         "total_users": users.0,
         "total_courses": courses.0,
         "total_submissions": submissions.0,
         "active_today": active_today.0,
-        "pending_moderation": pending_moderation.0
+        "pending_moderation": pending_moderation.0,
+        "trend": {
+            "dates": dates,
+            "new_users": new_users_daily,
+            "submissions": submissions_daily,
+            "active_users": active_daily
+        }
     }))))
 }
 

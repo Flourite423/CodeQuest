@@ -302,8 +302,15 @@ export interface AdminSystemConfigUpdateInput {
 export interface DashboardStats {
   total_users: number
   total_courses: number
+  total_submissions: number
   active_today: number
   pending_moderation: number
+  trend: {
+    dates: string[]
+    new_users: number[]
+    submissions: number[]
+    active_users: number[]
+  }
 }
 
 export interface Activity {
