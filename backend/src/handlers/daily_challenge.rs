@@ -2,6 +2,7 @@ use salvo::prelude::*;
 use sqlx::PgPool;
 use crate::handlers::auth;
 use crate::models::{ApiResponse, DailyChallenge, DailyChallengeRecord};
+use crate::services::xp_service::XpService;
 use uuid::Uuid;
 use serde::Deserialize;
 use chrono::Utc;
@@ -249,6 +250,27 @@ pub async fn submit_daily_challenge(req: &mut Request, depot: &mut Depot) -> Res
     .fetch_one(pool)
     .await
     .map_err(|_| StatusError::internal_server_error())?;
-    
+
+    // 每日挑战完成后奖励 XP
+    let pool_for_xp = pool.clone();
+    let challenge_uuid_for_xp = challenge_uuid;
+    tokio::spawn(async move {
+        if let Ok((reward_xp,)) = sqlx::query_as::<_, (i32,)>(
+            "SELECT reward_xp FROM daily_challenges WHERE id = $1"
+        )
+        .bind(challenge_uuid_for_xp)
+        .fetch_one(&pool_for_xp)
+        .await
+        {
+            let _ = XpService::reward_daily_challenge_xp(
+                &pool_for_xp,
+                learner_id,
+                challenge_uuid_for_xp,
+                reward_xp,
+            )
+            .await;
+        }
+    });
+
     Ok(Json(ApiResponse::new(record)))
 }

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { Plus, Search, Warning, Document } from '@element-plus/icons-vue'
 import { courseApi } from '@/api'
@@ -15,12 +15,10 @@ const sessionExpired = ref(false)
 const courses = ref<AdminCourseListItem[]>([])
 const searchQuery = ref('')
 
-const filteredCourses = computed(() => {
-  if (!searchQuery.value) return courses.value
-  return courses.value.filter(c =>
-    c.title.includes(searchQuery.value) ||
-    (c.summary && c.summary.includes(searchQuery.value))
-  )
+const pagination = ref({
+  page: 1,
+  pageSize: 10,
+  total: 0,
 })
 
 interface CourseForm {
@@ -145,8 +143,16 @@ const fetchData = async () => {
   forbidden.value = false
   sessionExpired.value = false
   try {
-    const res = await courseApi.list()
+    const params: Record<string, unknown> = {
+      page: pagination.value.page,
+      page_size: pagination.value.pageSize,
+    }
+    if (searchQuery.value) {
+      params.search = searchQuery.value
+    }
+    const res = await courseApi.list(params)
     courses.value = res.data.items
+    pagination.value.total = res.data.meta.total
   } catch (e: unknown) {
     if (e instanceof Error && e.message.includes('403')) {
       forbidden.value = true
@@ -163,6 +169,11 @@ const fetchData = async () => {
   }
 }
 
+const handleSearch = () => {
+  pagination.value.page = 1
+  fetchData()
+}
+
 fetchData()
 </script>
 
@@ -176,6 +187,7 @@ fetchData()
           placeholder="搜索课程名称..."
           :prefix-icon="Search"
           style="width: 250px; margin-right: 12px;"
+          @keyup.enter="handleSearch"
         />
         <el-button
           type="primary"
@@ -257,7 +269,7 @@ fetchData()
 
     <!-- Empty State -->
     <div
-      v-else-if="filteredCourses.length === 0"
+      v-else-if="courses.length === 0"
       class="state-container"
     >
       <el-icon
@@ -282,7 +294,7 @@ fetchData()
     <template v-else>
       <el-table
         v-loading="loading"
-        :data="filteredCourses"
+        :data="courses"
         style="width: 100%"
       >
         <el-table-column
@@ -359,6 +371,18 @@ fetchData()
           </template>
         </el-table-column>
       </el-table>
+
+      <div class="pagination">
+        <el-pagination
+          v-model:current-page="pagination.page"
+          v-model:page-size="pagination.pageSize"
+          :total="pagination.total"
+          :page-sizes="[10, 20, 50]"
+          layout="total, sizes, prev, pager, next"
+          @current-change="fetchData"
+          @size-change="fetchData"
+        />
+      </div>
     </template>
 
     <el-dialog
@@ -452,6 +476,12 @@ fetchData()
   .header-actions {
     display: flex;
     align-items: center;
+  }
+
+  .pagination {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 16px;
   }
 }
 </style>

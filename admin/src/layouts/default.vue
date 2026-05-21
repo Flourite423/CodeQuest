@@ -17,6 +17,7 @@ const menuItems = [
   { path: '/challenges', title: '挑战管理', icon: 'Trophy' },
   { path: '/users', title: '用户管理', icon: 'User' },
   { path: '/moderation', title: '内容审核', icon: 'Warning' },
+  { path: '/feedback', title: '反馈管理', icon: 'ChatDotRound' },
   { path: '/announcements', title: '公告与配置', icon: 'Bell' },
 ]
 
@@ -29,6 +30,7 @@ const breadcrumbs = computed(() => {
     '/challenges': '挑战管理',
     '/users': '用户管理',
     '/moderation': '内容审核',
+    '/feedback': '反馈管理',
     '/announcements': '公告与配置',
   }
 

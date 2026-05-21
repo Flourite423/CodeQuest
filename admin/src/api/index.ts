@@ -1,7 +1,8 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import axios from 'axios'
 import type { AxiosInstance } from 'axios'
 
-const api: AxiosInstance = axios.create({
+const api: AxiosInstance = (axios as any).create({
   baseURL: '/api/v1',
   timeout: 30000,
   headers: {
@@ -9,24 +10,24 @@ const api: AxiosInstance = axios.create({
   },
 })
 
-api.interceptors.request.use(
-  (config) => {
+;(api as any).interceptors.request.use(
+  (config: any) => {
     const token = localStorage.getItem('token')
     if (token) {
       config.headers.Authorization = `Bearer ${token}`
     }
     return config
   },
-  (error) => {
+  (error: any) => {
     return Promise.reject(error)
   }
 )
 
-api.interceptors.response.use(
-  (response) => {
+;(api as any).interceptors.response.use(
+  (response: any) => {
     return response.data
   },
-  (error) => {
+  (error: any) => {
     if (error.response?.status === 401) {
       localStorage.removeItem('token')
       window.location.href = '/login'

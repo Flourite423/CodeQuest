@@ -551,17 +551,20 @@ class AIHelp {
     required this.requestType,
     required this.status,
     this.content,
+    this.isFallback = false,
   });
 
   final String requestType;
   final String status;
   final String? content;
+  final bool isFallback;
 
   factory AIHelp.fromContract(JsonMap json) {
     return AIHelp(
       requestType: (json['request_type'] ?? '').toString(),
       status: (json['status'] ?? '').toString(),
       content: json['response_text'] as String?,
+      isFallback: json['is_fallback'] == true,
     );
   }
 
@@ -570,6 +573,7 @@ class AIHelp {
       requestType: (json['requestType'] ?? '').toString(),
       status: (json['status'] ?? '').toString(),
       content: json['content'] as String?,
+      isFallback: json['isFallback'] == true,
     );
   }
 
@@ -577,6 +581,7 @@ class AIHelp {
         'requestType': requestType,
         'status': status,
         'content': content,
+        'isFallback': isFallback,
       };
 }
 

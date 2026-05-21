@@ -16,6 +16,12 @@ const users = ref<AdminUserListItem[]>([])
 const searchQuery = ref('')
 const statusFilter = ref('')
 
+const pagination = ref({
+  page: 1,
+  pageSize: 10,
+  total: 0,
+})
+
 const drawerVisible = ref(false)
 const selectedUser = ref<AdminUserListItem | null>(null)
 
@@ -74,12 +80,16 @@ const fetchData = async () => {
   forbidden.value = false
   sessionExpired.value = false
   try {
-    const params: { search?: string; status?: string } = {}
+    const params: Record<string, unknown> = {
+      page: pagination.value.page,
+      page_size: pagination.value.pageSize,
+    }
     if (searchQuery.value) params.search = searchQuery.value
     if (statusFilter.value) params.status = statusFilter.value
     
     const res = await userApi.list(params)
     users.value = res.data.items
+    pagination.value.total = res.data.meta.total
   } catch (e: unknown) {
     if (e instanceof Error && e.message.includes('403')) {
       forbidden.value = true
@@ -96,6 +106,11 @@ const fetchData = async () => {
   }
 }
 
+const handleSearch = () => {
+  pagination.value.page = 1
+  fetchData()
+}
+
 fetchData()
 </script>
 
@@ -109,13 +124,13 @@ fetchData()
           placeholder="搜索用户..."
           :prefix-icon="Search"
           style="width: 200px; margin-right: 12px;"
-          @keyup.enter="fetchData"
+          @keyup.enter="handleSearch"
         />
         <el-select
           v-model="statusFilter"
           placeholder="状态筛选"
           style="width: 120px; margin-right: 12px;"
-          @change="fetchData"
+          @change="handleSearch"
         >
           <el-option
             label="全部"
@@ -136,7 +151,7 @@ fetchData()
         </el-select>
         <el-button
           type="primary"
-          @click="fetchData"
+          @click="handleSearch"
         >
           搜索
         </el-button>
@@ -306,6 +321,18 @@ fetchData()
           </template>
         </el-table-column>
       </el-table>
+
+      <div class="pagination">
+        <el-pagination
+          v-model:current-page="pagination.page"
+          v-model:page-size="pagination.pageSize"
+          :total="pagination.total"
+          :page-sizes="[10, 20, 50]"
+          layout="total, sizes, prev, pager, next"
+          @current-change="fetchData"
+          @size-change="fetchData"
+        />
+      </div>
     </template>
 
     <el-drawer
@@ -370,6 +397,12 @@ fetchData()
     display: flex;
     align-items: center;
     gap: 8px;
+  }
+
+  .pagination {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 16px;
   }
 }
 

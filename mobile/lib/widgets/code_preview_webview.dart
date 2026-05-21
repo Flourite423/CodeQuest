@@ -6,9 +6,11 @@ class CodePreviewWebView extends StatefulWidget {
   const CodePreviewWebView({
     super.key,
     required this.htmlCode,
+    this.cssCode = '',
   });
 
   final String htmlCode;
+  final String cssCode;
 
   @override
   State<CodePreviewWebView> createState() => _CodePreviewWebViewState();
@@ -17,6 +19,7 @@ class CodePreviewWebView extends StatefulWidget {
 class _CodePreviewWebViewState extends State<CodePreviewWebView> {
   late final WebViewController _controller;
   bool _isLoading = true;
+  String? _lastError;
 
   @override
   void initState() {
@@ -28,11 +31,18 @@ class _CodePreviewWebViewState extends State<CodePreviewWebView> {
           onPageStarted: (String url) {
             setState(() {
               _isLoading = true;
+              _lastError = null;
             });
           },
           onPageFinished: (String url) {
             setState(() {
               _isLoading = false;
+            });
+          },
+          onWebResourceError: (WebResourceError error) {
+            setState(() {
+              _isLoading = false;
+              _lastError = error.description;
             });
           },
         ),
@@ -43,7 +53,8 @@ class _CodePreviewWebViewState extends State<CodePreviewWebView> {
   @override
   void didUpdateWidget(CodePreviewWebView oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.htmlCode != widget.htmlCode) {
+    if (oldWidget.htmlCode != widget.htmlCode ||
+        oldWidget.cssCode != widget.cssCode) {
       _loadHtmlContent();
     }
   }
@@ -54,13 +65,16 @@ class _CodePreviewWebViewState extends State<CodePreviewWebView> {
 <html>
 <head>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'none'; object-src 'none'; style-src 'unsafe-inline';">
   <style>
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       margin: 0;
       padding: 16px;
       background-color: #ffffff;
+      color: #333333;
     }
+    ${widget.cssCode}
   </style>
 </head>
 <body>
@@ -95,6 +109,40 @@ class _CodePreviewWebViewState extends State<CodePreviewWebView> {
               Center(
                 child: CircularProgressIndicator(
                   color: colorScheme.primary,
+                ),
+              ),
+            if (_lastError != null)
+              Center(
+                child: Padding(
+                  padding: EdgeInsets.all(16.w),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.error_outline,
+                        color: colorScheme.error,
+                        size: 32.sp,
+                      ),
+                      SizedBox(height: 8.h),
+                      Text(
+                        '预览加载失败',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: colorScheme.error,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      SizedBox(height: 4.h),
+                      Text(
+                        _lastError!,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                        textAlign: TextAlign.center,
+                        maxLines: 3,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
                 ),
               ),
           ],

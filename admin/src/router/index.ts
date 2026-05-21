@@ -52,6 +52,12 @@ const router = createRouter({
           meta: { title: '内容审核', icon: 'Warning' },
         },
         {
+          path: 'feedback',
+          name: '反馈管理',
+          component: () => import('@/views/feedback/index.vue'),
+          meta: { title: '反馈管理', icon: 'ChatDotRound' },
+        },
+        {
           path: 'announcements',
           name: '公告与配置',
           component: () => import('@/views/announcements/index.vue'),

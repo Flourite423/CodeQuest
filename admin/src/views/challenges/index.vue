@@ -14,6 +14,12 @@ const sessionExpired = ref(false)
 
 const challenges = ref<AdminChallengeListItem[]>([])
 
+const pagination = ref({
+  page: 1,
+  pageSize: 10,
+  total: 0,
+})
+
 interface ChallengeForm {
   id?: string
   title: string
@@ -129,8 +135,12 @@ const fetchData = async () => {
   forbidden.value = false
   sessionExpired.value = false
   try {
-    const res = await challengeApi.list()
+    const res = await challengeApi.list({
+      page: pagination.value.page,
+      page_size: pagination.value.pageSize,
+    })
     challenges.value = res.data.items
+    pagination.value.total = res.data.meta.total
   } catch (e: unknown) {
     if (e instanceof Error && e.message.includes('403')) {
       forbidden.value = true
@@ -311,6 +321,18 @@ fetchData()
           </template>
         </el-table-column>
       </el-table>
+
+      <div class="pagination">
+        <el-pagination
+          v-model:current-page="pagination.page"
+          v-model:page-size="pagination.pageSize"
+          :total="pagination.total"
+          :page-sizes="[10, 20, 50]"
+          layout="total, sizes, prev, pager, next"
+          @current-change="fetchData"
+          @size-change="fetchData"
+        />
+      </div>
     </template>
 
     <el-dialog
@@ -383,6 +405,12 @@ fetchData()
     h1 {
       margin: 0;
     }
+  }
+
+  .pagination {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 16px;
   }
 }
 </style>

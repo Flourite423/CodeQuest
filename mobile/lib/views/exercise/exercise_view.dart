@@ -1085,6 +1085,122 @@ class ExerciseController extends BaseController {
     );
   }
 
+  /// Generate context-aware fallback hints when AI service is unavailable.
+  /// Produces safe, directional hints that never reveal answers.
+  AIHelp _generateFallbackHint(String hintLevel) {
+    final submission = latestSubmission.value;
+    final passed = submission != null &&
+        submission.passedCases == submission.totalCases;
+    final failedCount = submission != null
+        ? submission.totalCases - submission.passedCases
+        : 0;
+    final testCases = exercise.value?.testCases ?? const <ExerciseTestCase>[];
+
+    String content;
+
+    switch (hintLevel) {
+      case 'error_location':
+        content = _buildErrorLocationHint(
+          passed: passed,
+          failedCount: failedCount,
+          testCases: testCases,
+        );
+        break;
+      case 'correction_hint':
+        content = _buildCorrectionHint(
+          passed: passed,
+          isSingleChoice: isSingleChoice,
+        );
+        break;
+      case 'operation_suggestion':
+      default:
+        content = _buildOperationSuggestion(
+          passed: passed,
+          isSingleChoice: isSingleChoice,
+          failedCount: failedCount,
+        );
+        break;
+    }
+
+    return AIHelp(
+      requestType: hintLevel,
+      status: 'succeeded',
+      content: content,
+      isFallback: true,
+    );
+  }
+
+  String _buildErrorLocationHint({
+    required bool passed,
+    required int failedCount,
+    required List<ExerciseTestCase> testCases,
+  }) {
+    if (passed) {
+      return '所有公开用例已通过。如果仍有隐藏用例失败，可能是边界条件或命名规范问题。';
+    }
+
+    if (isSingleChoice) {
+      return '请重新审题，关注题干中的关键词和约束条件。选项中的干扰项通常会在某个细节上不符合要求。';
+    }
+
+    final buffer = StringBuffer('检测到 $failedCount 个测试用例未通过。');
+    if (testCases.isNotEmpty) {
+      buffer.write('请仔细对照以下测试用例的要求：');
+      for (final tc in testCases.take(3)) {
+        buffer.write('\n• ${tc.name}');
+      }
+      if (testCases.length > 3) {
+        buffer.write('\n• ...等');
+      }
+    }
+    return buffer.toString();
+  }
+
+  String _buildCorrectionHint({
+    required bool passed,
+    required bool isSingleChoice,
+  }) {
+    if (passed) {
+      return '已通过公开用例。可以检查：CSS 命名是否语义化、标签嵌套是否合理、属性值是否完整。';
+    }
+
+    if (isSingleChoice) {
+      return '建议分步排除：先排除明显错误的选项，再对比剩余选项的差异点。关注题干中提到的具体要求。';
+    }
+
+    return '建议按以下顺序排查：\n'
+        '1. 检查 HTML 标签是否完整闭合\n'
+        '2. 确认选择器与目标元素是否匹配\n'
+        '3. 验证 CSS 属性名和值是否正确\n'
+        '4. 检查元素的层级关系是否正确';
+  }
+
+  String _buildOperationSuggestion({
+    required bool passed,
+    required bool isSingleChoice,
+    required int failedCount,
+  }) {
+    if (passed) {
+      return '可以尝试的优化步骤：\n'
+          '1. 检查代码可读性，变量和类名是否有意义\n'
+          '2. 确认没有冗余代码或重复样式\n'
+          '3. 提交后观察是否有隐藏用例通过';
+    }
+
+    if (isSingleChoice) {
+      return '操作建议：\n'
+          '1. 重新阅读题目要求，画出关键词\n'
+          '2. 逐一排除每个选项，记录排除理由\n'
+          '3. 如果仍有疑问，先选择最确定的答案并提交查看反馈';
+    }
+
+    return '操作建议：\n'
+        '1. 对照未通过的 $failedCount 个用例，逐个检查对应代码\n'
+        '2. 从最外层结构开始，逐层深入检查\n'
+        '3. 修改后重新提交，观察哪些用例状态变化\n'
+        '4. 如果卡住，尝试在浏览器中实时预览页面效果';
+  }
+
   Future<void> openAiHelpSheet() async {
     isRequestingAiHelp.value = true;
 
@@ -1119,7 +1235,10 @@ class ExerciseController extends BaseController {
         body['exercise_id'] = exerciseId.value;
       }
 
-      final response = await _apiService.post('/learner/ai/help', data: body);
+      final response = await _apiService
+          .post('/learner/ai/help', data: body)
+          .timeout(const Duration(seconds: 10));
+
       final payload = response.data is Map<String, dynamic>
           ? response.data as Map<String, dynamic>
           : <String, dynamic>{};
@@ -1128,8 +1247,19 @@ class ExerciseController extends BaseController {
           : <String, dynamic>{};
 
       return AIHelp.fromContract(data);
+    } on TimeoutException {
+      return _generateFallbackHint('hint');
     } catch (e) {
-      return _buildLearnerSafeAiHelp(passed: latestSubmission.value?.passedCases == latestSubmission.value?.totalCases);
+      if (e is dio.DioException) {
+        final statusCode = e.response?.statusCode;
+        if (statusCode != null && statusCode >= 500) {
+          return _generateFallbackHint('hint');
+        }
+      }
+      return _buildLearnerSafeAiHelp(
+        passed: latestSubmission.value?.passedCases ==
+            latestSubmission.value?.totalCases,
+      );
     }
   }
 

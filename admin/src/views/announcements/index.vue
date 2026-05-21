@@ -3,7 +3,7 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { Plus, Warning } from '@element-plus/icons-vue'
 import type { Announcement, AnnouncementStatus, AnnouncementAudience } from '@/types'
-import { announcementApi } from '@/api'
+import { announcementApi, configApi } from '@/api'
 import { ElMessage, ElMessageBox } from 'element-plus'
 
 const router = useRouter()
@@ -15,6 +15,12 @@ const sessionExpired = ref(false)
 const activeTab = ref('announcements')
 
 const announcements = ref<Announcement[]>([])
+
+const pagination = ref({
+  page: 1,
+  pageSize: 10,
+  total: 0,
+})
 
 interface AnnouncementForm {
   id?: string
@@ -125,6 +131,56 @@ const configForm = ref({
   contact_email: 'admin@example.com',
   max_courses_per_user: 10,
 })
+const configLoading = ref(false)
+
+const fetchConfig = async () => {
+  configLoading.value = true
+  try {
+    const res = await configApi.list()
+    const items = res.data.items || []
+    const map: Record<string, unknown> = {}
+    items.forEach((item: { config_key: string; value_json: unknown }) => {
+      const val = item.value_json
+      if (val && typeof val === 'object' && 'value' in val) {
+        map[item.config_key] = (val as Record<string, unknown>).value
+      } else {
+        map[item.config_key] = val
+      }
+    })
+    configForm.value = {
+      site_name: (map['site_name'] as string) || '学习平台',
+      contact_email: (map['contact_email'] as string) || 'admin@example.com',
+      max_courses_per_user: Number(map['max_courses_per_user'] || 10),
+    }
+  } catch {
+    ElMessage.warning('加载配置失败，使用默认值')
+  } finally {
+    configLoading.value = false
+  }
+}
+
+const saveConfig = async () => {
+  configLoading.value = true
+  try {
+    const updates = [
+      { key: 'site_name', value: configForm.value.site_name },
+      { key: 'contact_email', value: configForm.value.contact_email },
+      { key: 'max_courses_per_user', value: String(configForm.value.max_courses_per_user) },
+    ]
+    for (const item of updates) {
+      await configApi.update(item.key, {
+        config_scope: 'system',
+        value_json: { value: item.value },
+        status: 'active',
+      })
+    }
+    ElMessage.success('配置保存成功')
+  } catch {
+    ElMessage.error('保存失败')
+  } finally {
+    configLoading.value = false
+  }
+}
 
 const fetchData = async () => {
   loading.value = true
@@ -132,8 +188,12 @@ const fetchData = async () => {
   forbidden.value = false
   sessionExpired.value = false
   try {
-    const res = await announcementApi.list()
+    const res = await announcementApi.list({
+      page: pagination.value.page,
+      page_size: pagination.value.pageSize,
+    })
     announcements.value = res.data.items
+    pagination.value.total = res.data.meta.total
   } catch (e: unknown) {
     if (e instanceof Error && e.message.includes('403')) {
       forbidden.value = true
@@ -151,6 +211,7 @@ const fetchData = async () => {
 }
 
 fetchData()
+fetchConfig()
 </script>
 
 <template>
@@ -303,6 +364,18 @@ fetchData()
               </template>
             </el-table-column>
           </el-table>
+
+          <div class="pagination">
+            <el-pagination
+              v-model:current-page="pagination.page"
+              v-model:page-size="pagination.pageSize"
+              :total="pagination.total"
+              :page-sizes="[10, 20, 50]"
+              layout="total, sizes, prev, pager, next"
+              @current-change="fetchData"
+              @size-change="fetchData"
+            />
+          </div>
         </el-tab-pane>
 
         <el-tab-pane
@@ -326,7 +399,11 @@ fetchData()
               />
             </el-form-item>
             <el-form-item>
-              <el-button type="primary">
+              <el-button
+                type="primary"
+                :loading="configLoading"
+                @click="saveConfig"
+              >
                 保存配置
               </el-button>
             </el-form-item>
@@ -421,6 +498,12 @@ fetchData()
 
   .tab-header {
     margin-bottom: 16px;
+  }
+
+  .pagination {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 16px;
   }
 }
 </style>

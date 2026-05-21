@@ -32,6 +32,9 @@ pub enum DifficultyLevel {
 pub enum AiRequestType {
     ErrorExplanation,
     Hint,
+    ErrorLocation,
+    CorrectionHint,
+    OperationSuggestion,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type)]
@@ -408,6 +411,7 @@ pub struct SocialActivity {
 }
 
 #[derive(Debug, Serialize, Deserialize, sqlx::FromRow)]
+#[allow(dead_code)]
 pub struct LeaderboardSnapshot {
     pub id: Uuid,
     pub board_type: String,

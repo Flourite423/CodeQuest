@@ -2,6 +2,7 @@ use salvo::prelude::*;
 use sqlx::PgPool;
 use crate::handlers::auth;
 use crate::models::{ApiResponse, Challenge};
+use crate::services::xp_service::XpService;
 use uuid::Uuid;
 use serde::Deserialize;
 
@@ -220,6 +221,20 @@ pub async fn attempt_challenge(req: &mut Request, depot: &mut Depot) -> Result<J
     .fetch_one(pool)
     .await
     .map_err(|_| StatusError::internal_server_error())?;
-    
+
+    // 挑战完成后奖励 XP（异步，不阻塞响应）
+    if best_star > 0 {
+        let pool_for_xp = pool.clone();
+        tokio::spawn(async move {
+            let _ = XpService::reward_challenge_xp(
+                &pool_for_xp,
+                learner_id,
+                challenge_uuid,
+                best_star,
+            )
+            .await;
+        });
+    }
+
     Ok(Json(ApiResponse::new(attempt)))
 }

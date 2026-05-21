@@ -2,6 +2,8 @@ use salvo::prelude::*;
 use sqlx::PgPool;
 use crate::handlers::auth;
 use crate::models::{ApiResponse, Submission};
+use crate::services::judge_service::JudgeService;
+use crate::services::xp_service::XpService;
 use uuid::Uuid;
 use serde::Deserialize;
 
@@ -72,6 +74,54 @@ pub async fn create_submission(req: &mut Request, depot: &mut Depot) -> Result<J
     .fetch_one(pool)
     .await
     .map_err(|_| StatusError::internal_server_error())?;
+
+    // 异步触发判题，不阻塞 HTTP 响应
+    let submission_id_str = submission.id.to_string();
+    let pool_clone = pool.clone();
+    let exercise_id_for_xp = Uuid::parse_str(&body.exercise_id).unwrap_or_default();
+    tokio::spawn(async move {
+        match JudgeService::judge_submission(&pool_clone, &submission_id_str).await {
+            Ok(result) => {
+                let _ = sqlx::query(
+                    "UPDATE submissions \
+                     SET judge_status = $2::judge_status, score = $3, \
+                         passed_case_count = $4, total_case_count = $5, \
+                         error_summary = $6, runtime_ms = $7, completed_at = NOW() \
+                     WHERE id = $1",
+                )
+                .bind(&submission_id_str)
+                .bind(result.status.as_str())
+                .bind(result.score)
+                .bind(result.passed_case_count)
+                .bind(result.total_case_count)
+                .bind(result.error_summary)
+                .bind(result.runtime_ms)
+                .execute(&pool_clone)
+                .await;
+
+                // 判题通过后奖励 XP
+                if result.status.as_str() == "passed" {
+                    let _ = XpService::reward_submission_xp(
+                        &pool_clone,
+                        learner_id,
+                        exercise_id_for_xp,
+                        result.score,
+                    )
+                    .await;
+                }
+            }
+            Err(e) => {
+                eprintln!("Judge error: {}", e);
+                let _ = sqlx::query(
+                    "UPDATE submissions SET judge_status = 'error'::judge_status, error_summary = $2 WHERE id = $1",
+                )
+                .bind(&submission_id_str)
+                .bind(Some(e))
+                .execute(&pool_clone)
+                .await;
+            }
+        }
+    });
     
     Ok(Json(ApiResponse::new(submission)))
 }

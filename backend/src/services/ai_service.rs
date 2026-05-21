@@ -16,8 +16,14 @@ struct DeepSeekRequest {
 }
 
 #[derive(Debug, Deserialize)]
+struct DeepSeekUsage {
+    total_tokens: Option<i64>,
+}
+
+#[derive(Debug, Deserialize)]
 struct DeepSeekResponse {
     choices: Vec<DeepSeekChoice>,
+    usage: Option<DeepSeekUsage>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -130,7 +136,7 @@ impl AiService {
         request_type: &str,
         attempt_no: u32,
         previous_hints: Option<Vec<String>>,
-    ) -> Result<(String, serde_json::Value, String), String> {
+    ) -> Result<(String, serde_json::Value, String, Option<i32>), String> {
         let hint_level = HintLevel::from_str(request_type);
         
         if self.config.provider == "mock" {
@@ -138,6 +144,7 @@ impl AiService {
                 self.config.mock_response.clone(),
                 serde_json::json!({"message": self.config.mock_response}),
                 "mock".to_string(),
+                None,
             ));
         }
 
@@ -197,9 +204,11 @@ impl AiService {
             .content
             .clone();
 
+        let token_usage = response_body.usage.as_ref().map(|u| u.total_tokens.unwrap_or(0) as i32);
+
         let response_json = serde_json::from_str(&content)
             .unwrap_or_else(|_| serde_json::json!({"raw_response": content}));
 
-        Ok((content, response_json, self.config.model.clone()))
+        Ok((content, response_json, self.config.model.clone(), token_usage))
     }
 }

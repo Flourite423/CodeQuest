@@ -16,6 +16,12 @@ const activeTab = ref('pending')
 
 const reports = ref<AdminModerationListItem[]>([])
 
+const pagination = ref({
+  page: 1,
+  pageSize: 10,
+  total: 0,
+})
+
 const caseTypeMap: Record<string, string> = {
   nickname: '昵称违规',
   avatar: '头像违规',
@@ -78,8 +84,16 @@ const fetchData = async () => {
   forbidden.value = false
   sessionExpired.value = false
   try {
-    const res = await moderationApi.list()
+    const params: Record<string, unknown> = {
+      page: pagination.value.page,
+      page_size: pagination.value.pageSize,
+    }
+    if (activeTab.value === 'pending') {
+      params.status = 'pending'
+    }
+    const res = await moderationApi.list(params)
     reports.value = res.data.items
+    pagination.value.total = res.data.meta.total
   } catch (e: unknown) {
     if (e instanceof Error && e.message.includes('403')) {
       forbidden.value = true
@@ -94,6 +108,11 @@ const fetchData = async () => {
   } finally {
     loading.value = false
   }
+}
+
+const handleTabChange = () => {
+  pagination.value.page = 1
+  fetchData()
 }
 
 fetchData()
@@ -189,7 +208,7 @@ fetchData()
 
     <!-- Content -->
     <template v-else>
-      <el-tabs v-model="activeTab">
+      <el-tabs v-model="activeTab" @tab-change="handleTabChange">
         <el-tab-pane
           label="待处理"
           name="pending"
@@ -280,6 +299,18 @@ fetchData()
           </el-table>
         </el-tab-pane>
       </el-tabs>
+
+      <div class="pagination">
+        <el-pagination
+          v-model:current-page="pagination.page"
+          v-model:page-size="pagination.pageSize"
+          :total="pagination.total"
+          :page-sizes="[10, 20, 50]"
+          layout="total, sizes, prev, pager, next"
+          @current-change="fetchData"
+          @size-change="fetchData"
+        />
+      </div>
     </template>
 
     <el-dialog
@@ -324,6 +355,12 @@ fetchData()
 .moderation {
   h1 {
     margin-bottom: 24px;
+  }
+
+  .pagination {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 16px;
   }
 }
 </style>

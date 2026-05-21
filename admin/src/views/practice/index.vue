@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { Plus, Warning, Document } from '@element-plus/icons-vue'
 import type { AdminExerciseListItem, ExerciseType, ExerciseStatus } from '@/types'
@@ -17,12 +17,10 @@ const exercises = ref<AdminExerciseListItem[]>([])
 const filterType = ref('')
 const filterDifficulty = ref('')
 
-const filteredExercises = computed(() => {
-  return exercises.value.filter(e => {
-    const matchType = !filterType.value || e.type === filterType.value
-    const matchDifficulty = !filterDifficulty.value || e.difficulty === filterDifficulty.value
-    return matchType && matchDifficulty
-  })
+const pagination = ref({
+  page: 1,
+  pageSize: 10,
+  total: 0,
 })
 
 interface ExerciseForm {
@@ -146,8 +144,15 @@ const fetchData = async () => {
   forbidden.value = false
   sessionExpired.value = false
   try {
-    const res = await exerciseApi.list()
+    const params: Record<string, unknown> = {
+      page: pagination.value.page,
+      page_size: pagination.value.pageSize,
+    }
+    if (filterType.value) params.type = filterType.value
+    if (filterDifficulty.value) params.difficulty = filterDifficulty.value
+    const res = await exerciseApi.list(params)
     exercises.value = res.data.items
+    pagination.value.total = res.data.meta.total
   } catch (e: unknown) {
     if (e instanceof Error && e.message.includes('403')) {
       forbidden.value = true
@@ -164,6 +169,11 @@ const fetchData = async () => {
   }
 }
 
+const handleFilter = () => {
+  pagination.value.page = 1
+  fetchData()
+}
+
 fetchData()
 </script>
 
@@ -177,6 +187,7 @@ fetchData()
           placeholder="类型"
           clearable
           style="width: 120px; margin-right: 12px;"
+          @change="handleFilter"
         >
           <el-option
             label="编程题"
@@ -192,6 +203,7 @@ fetchData()
           placeholder="难度"
           clearable
           style="width: 120px; margin-right: 12px;"
+          @change="handleFilter"
         >
           <el-option
             label="初级"
@@ -282,7 +294,7 @@ fetchData()
 
     <!-- Empty State -->
     <div
-      v-else-if="filteredExercises.length === 0"
+      v-else-if="exercises.length === 0"
       class="state-container"
     >
       <el-icon
@@ -307,7 +319,7 @@ fetchData()
     <template v-else>
       <el-table
         v-loading="loading"
-        :data="filteredExercises"
+        :data="exercises"
         style="width: 100%"
       >
         <el-table-column
@@ -367,6 +379,18 @@ fetchData()
           </template>
         </el-table-column>
       </el-table>
+
+      <div class="pagination">
+        <el-pagination
+          v-model:current-page="pagination.page"
+          v-model:page-size="pagination.pageSize"
+          :total="pagination.total"
+          :page-sizes="[10, 20, 50]"
+          layout="total, sizes, prev, pager, next"
+          @current-change="fetchData"
+          @size-change="fetchData"
+        />
+      </div>
     </template>
 
     <el-dialog
@@ -450,6 +474,12 @@ fetchData()
   .header-actions {
     display: flex;
     align-items: center;
+  }
+
+  .pagination {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 16px;
   }
 }
 </style>
