@@ -1,5 +1,3 @@
-import type { AxiosResponse } from 'axios'
-
 // Override axios response type to account for our interceptor
 // that returns response.data directly
 declare module 'axios' {

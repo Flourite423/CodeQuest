@@ -6,6 +6,7 @@ use uuid::Uuid;
 use crate::config::AppConfig;
 use crate::handlers::auth;
 use crate::models::{AiHelpRequest, ApiResponse};
+use crate::services::ai_service::AiService;
 
 #[derive(Debug, Deserialize)]
 pub struct CreateAiHelpRequest {
@@ -31,13 +32,31 @@ pub async fn create_ai_help(req: &mut Request, depot: &mut Depot) -> Result<Json
 
     let cfg = depot.obtain::<AppConfig>()
         .map_err(|_| StatusError::internal_server_error().brief("Config not available"))?;
-    
-    let (response_text, response_json, provider) = if cfg.ai.provider == "mock" {
-        (cfg.ai.mock_response.clone(), serde_json::json!({"message": cfg.ai.mock_response}), "mock")
-    } else {
-        (cfg.ai.mock_response.clone(), serde_json::json!({"message": cfg.ai.mock_response}), cfg.ai.provider.as_str())
-    };
-    
+
+    let ai_service = AiService::new(cfg.ai.clone());
+
+    let source_code = body.source_code.as_deref().unwrap_or("");
+    let exercise_prompt = "Exercise prompt placeholder";
+
+    let (response_text, response_json, provider) = ai_service
+        .request_help(
+            exercise_prompt,
+            source_code,
+            body.error_context_json.as_ref(),
+            &body.request_type,
+            1,
+            None,
+        )
+        .await
+        .unwrap_or_else(|e| {
+            eprintln!("AI service error: {}", e);
+            (
+                cfg.ai.mock_response.clone(),
+                serde_json::json!({"message": cfg.ai.mock_response}),
+                "fallback".to_string(),
+            )
+        });
+
     let request_type = match body.request_type.as_str() {
         "error_explanation" => crate::models::AiRequestType::ErrorExplanation,
         "hint" => crate::models::AiRequestType::Hint,

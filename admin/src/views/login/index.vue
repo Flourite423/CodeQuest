@@ -55,8 +55,10 @@ const handleLogin = async () => {
     authStore.setToken(res.data.access_token)
     authStore.setUser({ username: form.email, role: res.data.active_role ?? 'admin' })
     router.push('/')
-  } catch (err: any) {
-    const status = err.response?.status
+  } catch (err: unknown) {
+    const status = err instanceof Error && 'response' in err 
+      ? (err as { response?: { status?: number } }).response?.status 
+      : undefined
     if (status === 401) {
       loginError.value = '邮箱或密码错误'
     } else if (status === 403) {

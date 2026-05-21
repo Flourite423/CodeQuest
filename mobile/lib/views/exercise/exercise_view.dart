@@ -11,6 +11,8 @@ import '../../services/api_service.dart';
 import '../../services/storage_service.dart';
 import '../../widgets/page_state_host.dart';
 import '../../widgets/shared/cta_bar.dart';
+import '../../widgets/syntax_highlighter.dart';
+import '../../widgets/code_preview_webview.dart';
 import 'widgets/ai_help_sheet.dart';
 import 'widgets/submission_result_sheet.dart';
 
@@ -342,6 +344,8 @@ class _CodingWorkspaceSection extends StatelessWidget {
                       return _PreviewPanel(code: controller.currentCode);
                     case ExerciseWorkspaceTab.run:
                       return _RunPanel(controller: controller);
+                    case ExerciseWorkspaceTab.highlight:
+                      return SyntaxHighlighter(code: controller.currentCode);
                   }
                 }),
               ],
@@ -415,48 +419,43 @@ class _PreviewPanel extends StatelessWidget {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    return Container(
-      width: double.infinity,
-      padding: EdgeInsets.all(16.w),
-      decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(12.r),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            '预览',
-            style: theme.textTheme.titleSmall?.copyWith(
-              fontWeight: FontWeight.w700,
-            ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          '实时预览',
+          style: theme.textTheme.titleSmall?.copyWith(
+            fontWeight: FontWeight.w700,
           ),
-          SizedBox(height: 8.h),
-          Text(
-            '这里显示 learner 预览占位内容，提交前可先检查结构是否完整。',
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: colorScheme.onSurfaceVariant,
-            ),
+        ),
+        SizedBox(height: 8.h),
+        Text(
+          '以下是你代码的实时渲染效果：',
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: colorScheme.onSurfaceVariant,
           ),
-          SizedBox(height: 12.h),
+        ),
+        SizedBox(height: 12.h),
+        if (code.trim().isEmpty)
           Container(
             width: double.infinity,
-            constraints: BoxConstraints(minHeight: 160.h),
-            padding: EdgeInsets.all(16.w),
+            height: 200.h,
             decoration: BoxDecoration(
-              color: colorScheme.surface,
+              color: colorScheme.surfaceContainerHighest,
               borderRadius: BorderRadius.circular(12.r),
             ),
-            child: SelectableText(
-              code.trim().isEmpty ? '暂无预览。' : code.trim(),
-              style: theme.textTheme.bodyMedium?.copyWith(
-                fontFamily: 'monospace',
-                height: 1.5,
+            child: Center(
+              child: Text(
+                '请输入代码以查看预览',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                ),
               ),
             ),
-          ),
-        ],
-      ),
+          )
+        else
+          CodePreviewWebView(htmlCode: code),
+      ],
     );
   }
 }
@@ -786,7 +785,7 @@ class _SimpleMarkdownBody extends StatelessWidget {
   }
 }
 
-enum ExerciseWorkspaceTab { code, preview, run }
+enum ExerciseWorkspaceTab { code, preview, run, highlight }
 
 extension ExerciseWorkspaceTabLabel on ExerciseWorkspaceTab {
   String get label {
@@ -797,15 +796,10 @@ extension ExerciseWorkspaceTabLabel on ExerciseWorkspaceTab {
         return '预览';
       case ExerciseWorkspaceTab.run:
         return '运行';
+      case ExerciseWorkspaceTab.highlight:
+        return '高亮';
     }
   }
-}
-
-class ExerciseChoiceOption {
-  const ExerciseChoiceOption({required this.key, required this.text});
-
-  final String key;
-  final String text;
 }
 
 class ExerciseController extends BaseController {
@@ -929,12 +923,7 @@ class ExerciseController extends BaseController {
       return const <ExerciseChoiceOption>[];
     }
 
-    return const <ExerciseChoiceOption>[
-      ExerciseChoiceOption(key: 'A', text: '使用语义化结构，使学习者布局保持可读性。'),
-      ExerciseChoiceOption(key: 'B', text: '仅依赖视觉间距，跳过结构性标签。'),
-      ExerciseChoiceOption(key: 'C', text: '将提示隐藏在注释中，使 UI 保持整洁。'),
-      ExerciseChoiceOption(key: 'D', text: '暴露隐藏断言，帮助学习者更快调试。'),
-    ];
+    return item.options;
   }
 
   Future<void> _restoreDraft(Exercise item) async {
@@ -1100,8 +1089,7 @@ class ExerciseController extends BaseController {
     isRequestingAiHelp.value = true;
 
     try {
-      await Future<void>.delayed(const Duration(milliseconds: 200));
-      final help = latestSubmission.value?.aiHelp ?? _buildLearnerSafeAiHelp(passed: false);
+      final help = await _requestAiHelp();
       if (Get.context == null) {
         return;
       }
@@ -1117,6 +1105,31 @@ class ExerciseController extends BaseController {
       );
     } finally {
       isRequestingAiHelp.value = false;
+    }
+  }
+
+  Future<AIHelp> _requestAiHelp() async {
+    try {
+      final body = <String, dynamic>{
+        'request_type': 'hint',
+        'source_code': currentCode,
+      };
+
+      if (exerciseId.value.isNotEmpty) {
+        body['exercise_id'] = exerciseId.value;
+      }
+
+      final response = await _apiService.post('/learner/ai/help', data: body);
+      final payload = response.data is Map<String, dynamic>
+          ? response.data as Map<String, dynamic>
+          : <String, dynamic>{};
+      final data = payload['data'] is Map<String, dynamic>
+          ? payload['data'] as Map<String, dynamic>
+          : <String, dynamic>{};
+
+      return AIHelp.fromContract(data);
+    } catch (e) {
+      return _buildLearnerSafeAiHelp(passed: latestSubmission.value?.passedCases == latestSubmission.value?.totalCases);
     }
   }
 

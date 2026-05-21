@@ -7,6 +7,7 @@ use serde::Deserialize;
 
 #[derive(Debug, Deserialize)]
 pub struct CreateSubmissionRequest {
+    pub exercise_id: String,
     pub source_code: String,
 }
 
@@ -45,10 +46,6 @@ pub async fn create_submission(req: &mut Request, depot: &mut Depot) -> Result<J
     let pool = depot.obtain::<PgPool>()
         .map_err(|_| StatusError::internal_server_error())?;
     
-    let exercise_id = req.param::<String>("exercise_id")
-        .or_else(|| req.query::<String>("exercise_id"))
-        .ok_or_else(StatusError::bad_request)?;
-    
     let body: CreateSubmissionRequest = req.parse_json().await
         .map_err(|_| StatusError::bad_request().brief("Invalid request body"))?;
     
@@ -56,7 +53,7 @@ pub async fn create_submission(req: &mut Request, depot: &mut Depot) -> Result<J
     let learner_id = auth::get_current_account_id(depot)?;
     
     let chapter_id: (Uuid,) = sqlx::query_as("SELECT chapter_id FROM exercises WHERE id = $1")
-        .bind(&exercise_id)
+        .bind(&body.exercise_id)
         .fetch_one(pool)
         .await
         .map_err(|_| StatusError::bad_request().brief("Exercise not found"))?;
@@ -68,7 +65,7 @@ pub async fn create_submission(req: &mut Request, depot: &mut Depot) -> Result<J
          RETURNING id, exercise_id, learner_id, chapter_id, attempt_no, source_code, judge_status::text AS judge_status, score, passed_case_count, total_case_count, error_summary, runtime_ms, content_version, rule_version, submitted_at, completed_at"
     )
     .bind(id)
-    .bind(&exercise_id)
+    .bind(&body.exercise_id)
     .bind(learner_id)
     .bind(chapter_id.0)
     .bind(&body.source_code)

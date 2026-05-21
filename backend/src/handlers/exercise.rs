@@ -1,6 +1,6 @@
 use salvo::prelude::*;
 use sqlx::PgPool;
-use crate::models::{ApiResponse, Exercise};
+use crate::models::{ApiResponse, Exercise, ExerciseOption, ExerciseTestCase, LearnerExerciseDetail, LearnerExerciseOption, LearnerVisibleTestCase};
 use uuid::Uuid;
 use serde::Deserialize;
 
@@ -53,7 +53,7 @@ pub async fn list_exercises(req: &mut Request, depot: &mut Depot) -> Result<Json
 }
 
 #[handler]
-pub async fn get_exercise(req: &mut Request, depot: &mut Depot) -> Result<Json<ApiResponse<Exercise>>, StatusError> {
+pub async fn get_exercise(req: &mut Request, depot: &mut Depot) -> Result<Json<ApiResponse<LearnerExerciseDetail>>, StatusError> {
     let pool = depot.obtain::<PgPool>()
         .map_err(|_| StatusError::internal_server_error())?;
     
@@ -68,7 +68,32 @@ pub async fn get_exercise(req: &mut Request, depot: &mut Depot) -> Result<Json<A
         .map_err(|_| StatusError::internal_server_error())?
         .ok_or_else(StatusError::not_found)?;
     
-    Ok(Json(ApiResponse::new(exercise)))
+    let options = sqlx::query_as::<_, ExerciseOption>(
+        "SELECT id, exercise_id, option_key, option_text, is_correct, order_index FROM exercise_options WHERE exercise_id = $1 ORDER BY order_index"
+    )
+    .bind(&id)
+    .fetch_all(pool)
+    .await
+    .map_err(|_| StatusError::internal_server_error())?;
+    
+    let test_cases = sqlx::query_as::<_, ExerciseTestCase>(
+        "SELECT id, exercise_id, case_name, case_type, input_payload_json, expected_payload_json, weight, is_hidden, order_index, rule_version, created_at, updated_at FROM exercise_test_cases WHERE exercise_id = $1 AND is_hidden = false ORDER BY order_index"
+    )
+    .bind(&id)
+    .fetch_all(pool)
+    .await
+    .map_err(|_| StatusError::internal_server_error())?;
+    
+    let learner_options: Vec<LearnerExerciseOption> = options.into_iter().map(LearnerExerciseOption::from).collect();
+    let learner_test_cases: Vec<LearnerVisibleTestCase> = test_cases.into_iter().map(LearnerVisibleTestCase::from).collect();
+    
+    let detail = LearnerExerciseDetail {
+        exercise,
+        options: learner_options,
+        visible_test_cases: learner_test_cases,
+    };
+    
+    Ok(Json(ApiResponse::new(detail)))
 }
 
 #[handler]

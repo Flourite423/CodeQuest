@@ -96,6 +96,10 @@ pub fn create_test_service(pool: PgPool) -> Service {
         seed_dev_accounts: false,
         ai: learning_app_backend::config::AiConfig {
             provider: "mock".to_string(),
+            api_key: Some("test-api-key".to_string()),
+            model: "deepseek-chat".to_string(),
+            temperature: 0.3,
+            max_tokens: 500,
             mock_response: "Test response".to_string(),
         },
     };

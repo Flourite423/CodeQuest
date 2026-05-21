@@ -11,7 +11,7 @@
 
 % 开启盲审格式 blindPeerReview=true (如：[type=bachelor,blindPeerReview=true])
 
-\documentclass[type=bachelor]{bithesis}
+\documentclass[type=bachelor,blindPeerReview=true]{bithesis}
 
 % 此处仅列出常用的配置。全部配置用法请见「bithesis.pdf」手册。
 \BITSetup{
@@ -29,14 +29,14 @@
     % 如需要换行，则用 “\\” 符号分割。
     title = 游戏化前端学习移动APP的设计与实现,
     titleEn = {Design and Implementation of a Gamified Front-End Learning Mobile App},
-    school = {~},
-    major = {~},
-    class = {~},
-    author = {~},
-    studentId = {~},
-    supervisor = {~},
-    keywords = {游戏化学习；移动学习；前端教育；Flutter；学习应用},
-    keywordsEn = {gamified learning; mobile learning; front-end education; Flutter; learning application},
+    school = 计算机学院,
+    major = 计算机科学与技术（徐特立英才班）,
+    class = 07022202,
+    author = 雷天慈,
+    studentId = 1120223387,
+    supervisor = 赵丰年,
+    keywords = {游戏化学习；移动学习；前端教育；人工智能辅助；Flutter；学习应用},
+    keywordsEn = {gamified learning; mobile learning; front-end education; AI assistance; Flutter; learning application},
     % 如果你的毕设为校外毕设，请将下面这一行语句解除注释（删除第一个百分号字符）并填写你的校外毕设导师名字
     % externalSupervisor = 左偏树,
   },
@@ -54,12 +54,64 @@
     % 微调表格行间距
     tabularRowSeparation = 1.25,
   },
+  appendices = {
+    chapterLevel = true,
+  },
 }
 
 % 这份模板提供了代码块示例，采用 listings 宏包及其预定义样式。
 % 使用代码块时，也可选用自己的喜欢的其他宏包，如 minted：https://bithesis.bitnp.net/faq/minted.html
 % 如果不需要，直接删除即可。
 \usepackage{listings}
+\usepackage{xcolor}
+\lstset{
+  basicstyle=\small\ttfamily,
+  commentstyle=\color{gray},
+  stringstyle=\color{green!50!black},
+  numbers=none,
+  breaklines=true,
+  showstringspaces=false,
+  tabsize=2,
+  aboveskip=8pt,
+  belowskip=8pt,
+  backgroundcolor=\color{white},
+  frame=none,
+}
+
+% Rust language definition for listings
+\lstdefinelanguage{Rust}{
+  keywords={as, async, await, break, const, continue, crate, dyn, else, enum, extern, false, fn, for, if, impl, in, let, loop, match, mod, move, mut, pub, ref, return, self, Self, static, struct, super, trait, true, type, unsafe, use, where, while, Ok, Err, Some, None, Result, Option},
+  keywordstyle=\color{blue}\bfseries,
+  ndkeywords={bool, i32, i64, u32, u64, f32, f64, usize, String, Vec, HashMap, PgPool, Request, Depot, StatusError, Json, ApiResponse, Uuid, DateTime, Utc, Value},
+  ndkeywordstyle=\color{purple},
+  sensitive=true,
+  morecomment=[l]{//},
+  morecomment=[s]{/*}{*/},
+  morestring=[b]",
+  morestring=[b]',
+  otherkeywords={!,@,#,\$,\%,\&,*,-,+,=,|,<,>,\#,[,],\{,\}},
+}
+
+% Dart language definition for listings
+\lstdefinelanguage{Dart}{
+  keywords={abstract, as, async, await, break, case, catch, class, const, continue, covariant, default, do, dynamic, else, enum, export, extends, extension, external, factory, false, final, finally, for, Function, get, if, implements, import, in, is, late, mixin, new, null, on, operator, part, required, rethrow, return, set, static, super, switch, this, throw, true, try, typedef, var, void, while, with},
+  keywordstyle=\color{blue}\bfseries,
+  ndkeywords={String, int, double, bool, List, Map, Set, Future, Stream, Widget, BuildContext, GetxController, GetxService, Bindings, Rxn, RxList, RxBool, RxString, RxInt, obs, Obx, GetView, Get},
+  ndkeywordstyle=\color{purple},
+  sensitive=true,
+  morecomment=[l]{//},
+  morecomment=[s]{/*}{*/},
+  morestring=[b]",
+  morestring=[b]',
+  otherkeywords={@override,=>,?.},
+}
+
+\lstset{language=Rust}
+
+% Custom column type for tables with ragged-right text
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
+
+% SVG diagrams are pre-converted to PDF via Inkscape, included with \includegraphics
 
 \newcommand{\placeholderfigure}[3]{%
   \begin{figure}[htbp]
@@ -92,8 +144,25 @@
   isbn=false,
 ]{biblatex}
 
-% 参考文献引用文件位于 misc/ref.bib
+\makeatletter
+\renewbibmacro*{cite:comp:comp}{%
+  \cbx@iflabelprefixequalslast
+    {\ifnumequal{\thefield{labelnumber}}{\value{cbx@tempcntb}}
+       {\savefield{entrykey}{\cbx@lastkey}%
+        \savefield{labelnumber}{\cbx@lastnumber}%
+        \stepcounter{cbx@tempcnta}}
+       {\ifnumequal{\thefield{labelnumber}}{\value{cbx@tempcntb}-1}
+          {}
+          {\usebibmacro{cite:comp:end}}}}
+    {\usebibmacro{cite:comp:end}}%
+  % 注释掉下行以禁止编号区间压缩，使引用仅用逗号分隔
+  %\setcounter{cbx@tempcntb}{\thefield{labelnumber}}%
+  \savefield{labelprefix}{\cbx@lastprefix}}
+\makeatother
 \addbibresource{misc/ref.bib}
+
+% 减少页面底部过度拉伸，控制每页空白不超过 3 行
+\raggedbottom
 
 % 若要按计算机学院要求，添加“北京理工大学”水印，请参考
 % https://bithesis.bitnp.net/faq/watermark.html
@@ -135,8 +204,6 @@
 % 结论：在相应 TeX 文件撰写
 \input{misc/2_conclusion.tex}
 % 参考文献：
-% 添加文献时，请按 BibTeX 格式添加至 misc/ref.bib，并在正文所需位置使用 \cite{…} 引用。
-% 如无特殊需要，无需改动相应 TeX 文件。
 \input{misc/3_reference.tex}
 % 附录：在相应 TeX 文件撰写；不需要时可删除
 \input{misc/4_appendix.tex}

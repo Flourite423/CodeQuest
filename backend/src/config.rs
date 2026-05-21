@@ -4,6 +4,10 @@ use serde::Deserialize;
 #[derive(Debug, Deserialize, Clone)]
 pub struct AiConfig {
     pub provider: String,
+    pub api_key: Option<String>,
+    pub model: String,
+    pub temperature: f64,
+    pub max_tokens: u32,
     pub mock_response: String,
 }
 

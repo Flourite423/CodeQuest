@@ -58,7 +58,6 @@ class ChallengeController extends BaseController {
       if (cachedItem != null) {
         final processed = _progress.applyChallengeProgress(cachedItem);
         challenge.value = processed;
-        // Generate placeholder tasks for offline cached challenge
         tasks.assignAll(_buildPlaceholderTasks(processed));
         earnedStars.value = processed.stars;
         completionTimestamp.value = _progress.getChallengeCompletedAt(challengeId.value);
@@ -77,31 +76,23 @@ class ChallengeController extends BaseController {
     registerRetry(loadChallenge);
 
     try {
-      final response = await _apiService.get('/learner/challenges');
+      final response = await _apiService.get('/learner/challenges/${challengeId.value}');
       final payload = response.data is Map<String, dynamic>
           ? response.data as Map<String, dynamic>
           : <String, dynamic>{};
       final data = payload['data'] is Map<String, dynamic>
           ? payload['data'] as Map<String, dynamic>
           : <String, dynamic>{};
-      final items = (data['items'] as List<dynamic>? ?? <dynamic>[])
-          .whereType<Map>()
-          .map((item) => Challenge.fromMapItemJson(Map<String, dynamic>.from(item)))
-          .toList();
 
-      final found = items.firstWhereOrNull(
-        (c) => c.id == challengeId.value,
-      );
-
-      if (found == null) {
+      if (data.isEmpty) {
         setEmpty(message: '未找到挑战。');
         return;
       }
 
-      await _progress.cacheChallenges(items);
+      final found = Challenge.fromMapItemJson(data);
+      await _progress.cacheChallenges([found]);
       final processedChallenge = _progress.applyChallengeProgress(found);
       challenge.value = processedChallenge;
-      // Generate placeholder tasks since challenge map items don't include task details
       tasks.assignAll(_buildPlaceholderTasks(processedChallenge));
       earnedStars.value = processedChallenge.stars;
       completionTimestamp.value = _progress.getChallengeCompletedAt(challengeId.value);
@@ -118,6 +109,8 @@ class ChallengeController extends BaseController {
         await setAuthExpired(message: '登录状态已失效，请重新登录后查看挑战。');
       } else if (e.response?.statusCode == 403) {
         setError(message: '当前账号暂无挑战访问权限。');
+      } else if (e.response?.statusCode == 404) {
+        setEmpty(message: '未找到挑战。');
       } else if (e.response?.statusCode == 500) {
         setError(message: '挑战服务暂时不可用，请稍后重试。');
       } else if (e.type == dio.DioExceptionType.connectionTimeout ||

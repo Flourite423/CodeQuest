@@ -82,7 +82,8 @@ const handleSave = async () => {
   
   try {
     if (isCreating.value) {
-      const { id: _id, ...createData } = editingExercise.value
+      const { ...createData } = editingExercise.value
+      delete createData.id
       await exerciseApi.create(createData as Omit<AdminExerciseListItem, 'id' | 'created_at' | 'updated_at'>)
       ElMessage.success('创建成功')
     } else {

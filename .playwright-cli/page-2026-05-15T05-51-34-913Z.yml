@@ -1,0 +1,1 @@
+- generic [ref=e2]: "{\"data\":{\"database\":\"connected\",\"pool\":{\"idle\":4,\"max_size\":20,\"size\":5},\"service\":\"learning-app-backend\",\"status\":\"healthy\",\"version\":\"0.1.0\"},\"meta\":{\"request_id\":\"e88acfac-2003-4237-9d43-2059100d9cb0\",\"server_time\":\"2026-05-15T05:51:34.871077064Z\"}}"

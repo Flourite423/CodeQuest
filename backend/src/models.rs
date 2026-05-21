@@ -182,6 +182,61 @@ pub struct ExerciseOption {
     pub order_index: i32,
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+pub struct LearnerExerciseOption {
+    pub id: Uuid,
+    pub exercise_id: Uuid,
+    pub option_key: String,
+    pub option_text: String,
+    pub order_index: i32,
+}
+
+impl From<ExerciseOption> for LearnerExerciseOption {
+    fn from(option: ExerciseOption) -> Self {
+        Self {
+            id: option.id,
+            exercise_id: option.exercise_id,
+            option_key: option.option_key,
+            option_text: option.option_text,
+            order_index: option.order_index,
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct LearnerVisibleTestCase {
+    pub id: Uuid,
+    pub exercise_id: Uuid,
+    pub case_name: String,
+    pub case_type: String,
+    pub input_payload_json: Option<serde_json::Value>,
+    pub weight: i32,
+    pub order_index: i32,
+    pub rule_version: i32,
+}
+
+impl From<ExerciseTestCase> for LearnerVisibleTestCase {
+    fn from(tc: ExerciseTestCase) -> Self {
+        Self {
+            id: tc.id,
+            exercise_id: tc.exercise_id,
+            case_name: tc.case_name,
+            case_type: tc.case_type,
+            input_payload_json: tc.input_payload_json,
+            weight: tc.weight,
+            order_index: tc.order_index,
+            rule_version: tc.rule_version,
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct LearnerExerciseDetail {
+    pub exercise: Exercise,
+    pub options: Vec<LearnerExerciseOption>,
+    pub visible_test_cases: Vec<LearnerVisibleTestCase>,
+}
+
 #[derive(Debug, Serialize, Deserialize, sqlx::FromRow)]
 #[allow(dead_code)]
 pub struct ExerciseTestCase {

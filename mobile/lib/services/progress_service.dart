@@ -78,9 +78,18 @@ class ProgressService extends GetxService {
       isOnline.value = true;
     }
 
-    _connectivitySubscription = _connectivity.onConnectivityChanged.listen(
-      _handleConnectivityChanged,
-    );
+    try {
+      _connectivitySubscription = _connectivity.onConnectivityChanged.listen(
+        _handleConnectivityChanged,
+        onError: (Object error) {
+          debugPrint('Connectivity stream error (expected on Linux desktop): $error');
+          isOnline.value = true;
+        },
+      );
+    } catch (_) {
+      // Fallback for platforms where onConnectivityChanged is unsupported
+      isOnline.value = true;
+    }
   }
 
   Future<void> _handleConnectivityChanged(List<ConnectivityResult> results) async {

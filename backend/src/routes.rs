@@ -140,8 +140,12 @@ pub fn create_router() -> Router {
                             Router::with_path("challenges")
                                 .get(handlers::challenge::list_challenges)
                                 .push(
-                                    Router::with_path("{challenge_id}/attempts")
-                                        .post(handlers::challenge::attempt_challenge),
+                                    Router::with_path("{challenge_id}")
+                                        .get(handlers::challenge::get_challenge)
+                                        .push(
+                                            Router::with_path("attempts")
+                                                .post(handlers::challenge::attempt_challenge),
+                                        ),
                                 ),
                         )
                         .push(

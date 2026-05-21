@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
+import '../../services/storage_service.dart';
+
 class SplashView extends StatefulWidget {
   const SplashView({super.key});
 
@@ -27,9 +29,22 @@ class _SplashViewState extends State<SplashView> {
 
     debugPrint('SplashView: Splash animation completed');
 
-    // DEV MODE: Skip login and onboarding, go directly to home
+    // DEV MODE: Auto-login with test account, then go to home
     // TODO: Remove this before production release
-    debugPrint('SplashView: [DEV MODE] Bypassing login, navigating to home');
+    debugPrint('SplashView: [DEV MODE] Auto-login with test account');
+    
+    // Ensure StorageService is initialized
+    if (!Get.isRegistered<StorageService>()) {
+      Get.put<StorageService>(StorageService(), permanent: true);
+    }
+    
+    final storage = Get.find<StorageService>();
+    // Store a valid JWT token for the test account
+    await storage.write(StorageService.authTokenKey, 
+      'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI1ZDAzNmVmZi1lMjZiLTQ3ODItYThmMC1lZWZhNTMwMzhjNTgiLCJhY2NvdW50X2lkIjoiNWQwMzZlZmYtZTI2Yi00NzgyLWE4ZjAtZWVmYTUzMDM4YzU4Iiwicm9sZSI6ImxlYXJuZXIiLCJleHAiOjE3Nzg3Nzg1OTMsImlhdCI6MTc3ODY5MjE5M30.0JKmaaIAwgD2fOn8Oa7Thcxg21mELqpf2REqzjCjhy4'
+    );
+    
+    debugPrint('SplashView: [DEV MODE] Test token saved, navigating to home');
     Get.offAllNamed('/home');
     return;
 

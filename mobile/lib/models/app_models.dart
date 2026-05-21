@@ -328,12 +328,27 @@ class ExerciseTestCase {
       };
 }
 
+class ExerciseChoiceOption {
+  const ExerciseChoiceOption({required this.key, required this.text});
+
+  final String key;
+  final String text;
+
+  factory ExerciseChoiceOption.fromJson(JsonMap json) {
+    return ExerciseChoiceOption(
+      key: (json['option_key'] ?? '').toString(),
+      text: (json['option_text'] ?? '').toString(),
+    );
+  }
+}
+
 class Exercise {
   const Exercise({
     required this.id,
     required this.type,
     required this.title,
     required this.description,
+    this.options = const [],
     this.testCases = const [],
     this.codeTemplate,
   });
@@ -342,6 +357,7 @@ class Exercise {
   final String type;
   final String title;
   final String description;
+  final List<ExerciseChoiceOption> options;
   final List<ExerciseTestCase> testCases;
   final String? codeTemplate;
 
@@ -352,6 +368,10 @@ class Exercise {
       type: (exercise['exercise_type'] ?? '').toString(),
       title: (exercise['title'] ?? '').toString(),
       description: (exercise['prompt'] ?? '').toString(),
+      options: (json['options'] as List<dynamic>? ?? <dynamic>[])
+          .cast<JsonMap>()
+          .map(ExerciseChoiceOption.fromJson)
+          .toList(),
       testCases: (json['visible_test_cases'] as List<dynamic>? ?? <dynamic>[])
           .cast<JsonMap>()
           .map(ExerciseTestCase.fromVisibleCaseJson)
@@ -366,6 +386,10 @@ class Exercise {
       type: (json['type'] ?? '').toString(),
       title: (json['title'] ?? '').toString(),
       description: (json['description'] ?? '').toString(),
+      options: (json['options'] as List<dynamic>? ?? <dynamic>[])
+          .cast<JsonMap>()
+          .map(ExerciseChoiceOption.fromJson)
+          .toList(),
       testCases: (json['testCases'] as List<dynamic>? ?? <dynamic>[])
           .cast<JsonMap>()
           .map(ExerciseTestCase.fromJson)
@@ -379,6 +403,7 @@ class Exercise {
         'type': type,
         'title': title,
         'description': description,
+        'options': options.map((option) => {'key': option.key, 'text': option.text}).toList(),
         'testCases': testCases.map((testCase) => testCase.toJson()).toList(),
         'codeTemplate': codeTemplate,
       };

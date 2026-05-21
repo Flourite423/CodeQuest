@@ -7,4 +7,8 @@ seed_dev_accounts = false
 
 [ai]
 provider = "mock"
-mock_response = "This is a mock AI response for development. Configure a real provider in production."
+api_key = ""
+model = "deepseek-chat"
+temperature = 0.3
+max_tokens = 500
+mock_response = "这是一条模拟的 AI 帮助响应。请配置真实的 API 密钥以使用完整功能。"
