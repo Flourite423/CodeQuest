@@ -6,8 +6,8 @@ auto_run_migrations = false
 seed_dev_accounts = false
 
 [ai]
-provider = "mock"
-api_key = ""
+provider = "deepseek"
+api_key = "sk-a53a22847793446ba719b5b8c474a933"
 model = "deepseek-chat"
 temperature = 0.3
 max_tokens = 500
