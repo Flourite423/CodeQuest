@@ -1,5 +1,6 @@
 use serde_json::Value;
 use sqlx::PgPool;
+use uuid::Uuid;
 
 #[derive(Debug, Clone)]
 pub struct JudgeResult {
@@ -48,10 +49,12 @@ impl JudgeService {
         let start = std::time::Instant::now();
 
         // 1. 获取提交详情
-        let submission = sqlx::query_as::<_, (String, String)>(
-            "SELECT source_code, exercise_id::text FROM submissions WHERE id = $1",
+        let submission_uuid = Uuid::parse_str(submission_id)
+            .map_err(|_| "Invalid submission ID".to_string())?;
+        let submission = sqlx::query_as::<_, (String, Uuid)>(
+            "SELECT source_code, exercise_id FROM submissions WHERE id = $1",
         )
-        .bind(submission_id)
+        .bind(submission_uuid)
         .fetch_optional(pool)
         .await
         .map_err(|e| format!("DB error fetching submission: {}", e))?;
@@ -65,7 +68,7 @@ impl JudgeService {
         let exercise = sqlx::query_as::<_, (String,)>(
             "SELECT exercise_type::text FROM exercises WHERE id = $1",
         )
-        .bind(&exercise_id)
+        .bind(exercise_id)
         .fetch_optional(pool)
         .await
         .map_err(|e| format!("DB error fetching exercise: {}", e))?;
@@ -77,12 +80,12 @@ impl JudgeService {
 
         // 3. 获取测试用例
         let test_cases = sqlx::query_as::<_, TestCaseRow>(
-            "SELECT case_name, case_type, expected_payload_json \
+            "SELECT case_name, case_type::text AS case_type, expected_payload_json \
              FROM exercise_test_cases \
              WHERE exercise_id = $1 \
              ORDER BY order_index ASC",
         )
-        .bind(&exercise_id)
+        .bind(exercise_id)
         .fetch_all(pool)
         .await
         .map_err(|e| format!("DB error fetching test cases: {}", e))?;

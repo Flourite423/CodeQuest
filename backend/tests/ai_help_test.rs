@@ -23,7 +23,7 @@ async fn test_create_ai_help() {
     assert_eq!(res.status_code, Some(StatusCode::OK));
     let body = res.take_json::<serde_json::Value>().await.unwrap();
     assert!(body["data"]["id"].as_str().is_some());
-    assert_eq!(body["data"]["request_type"], "Hint");
+    assert_eq!(body["data"]["request_type"], "CorrectionHint");
 }
 
 #[tokio::test]

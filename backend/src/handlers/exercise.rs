@@ -57,12 +57,14 @@ pub async fn get_exercise(req: &mut Request, depot: &mut Depot) -> Result<Json<A
     let pool = depot.obtain::<PgPool>()
         .map_err(|_| StatusError::internal_server_error())?;
     
-    let id = req.param::<String>("exercise_id")
+    let id_str = req.param::<String>("exercise_id")
         .or_else(|| req.param::<String>("id"))
         .ok_or_else(StatusError::bad_request)?;
+    let id = Uuid::parse_str(&id_str)
+        .map_err(|_| StatusError::bad_request().brief("Invalid exercise ID"))?;
     
     let exercise = sqlx::query_as::<_, Exercise>("SELECT id, chapter_id, exercise_code, title, prompt, exercise_type::text AS exercise_type, starter_code, language::text AS language, difficulty::text AS difficulty, pass_score, max_attempts_per_day, status::text AS status, content_version, created_at, updated_at FROM exercises WHERE id = $1")
-        .bind(&id)
+        .bind(id)
         .fetch_optional(pool)
         .await
         .map_err(|_| StatusError::internal_server_error())?
@@ -71,15 +73,15 @@ pub async fn get_exercise(req: &mut Request, depot: &mut Depot) -> Result<Json<A
     let options = sqlx::query_as::<_, ExerciseOption>(
         "SELECT id, exercise_id, option_key, option_text, is_correct, order_index FROM exercise_options WHERE exercise_id = $1 ORDER BY order_index"
     )
-    .bind(&id)
+    .bind(id)
     .fetch_all(pool)
     .await
     .map_err(|_| StatusError::internal_server_error())?;
     
     let test_cases = sqlx::query_as::<_, ExerciseTestCase>(
-        "SELECT id, exercise_id, case_name, case_type, input_payload_json, expected_payload_json, weight, is_hidden, order_index, rule_version, created_at, updated_at FROM exercise_test_cases WHERE exercise_id = $1 AND is_hidden = false ORDER BY order_index"
+        "SELECT id, exercise_id, case_name, case_type::text AS case_type, input_payload_json, expected_payload_json, weight, is_hidden, order_index, rule_version, created_at, updated_at FROM exercise_test_cases WHERE exercise_id = $1 AND is_hidden = false ORDER BY order_index"
     )
-    .bind(&id)
+    .bind(id)
     .fetch_all(pool)
     .await
     .map_err(|_| StatusError::internal_server_error())?;

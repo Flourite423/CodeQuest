@@ -29,12 +29,14 @@ pub async fn get_submission(req: &mut Request, depot: &mut Depot) -> Result<Json
     let pool = depot.obtain::<PgPool>()
         .map_err(|_| StatusError::internal_server_error())?;
     
-    let id = req.param::<String>("submission_id")
+    let id_str = req.param::<String>("submission_id")
         .or_else(|| req.param::<String>("id"))
         .ok_or_else(StatusError::bad_request)?;
+    let id = Uuid::parse_str(&id_str)
+        .map_err(|_| StatusError::bad_request().brief("Invalid submission ID"))?;
     
     let submission = sqlx::query_as::<_, Submission>("SELECT id, exercise_id, learner_id, chapter_id, attempt_no, source_code, judge_status::text AS judge_status, score, passed_case_count, total_case_count, error_summary, runtime_ms, content_version, rule_version, submitted_at, completed_at FROM submissions WHERE id = $1")
-        .bind(&id)
+        .bind(id)
         .fetch_optional(pool)
         .await
         .map_err(|_| StatusError::internal_server_error())?
@@ -54,8 +56,11 @@ pub async fn create_submission(req: &mut Request, depot: &mut Depot) -> Result<J
     let id = Uuid::new_v4();
     let learner_id = auth::get_current_account_id(depot)?;
     
+    let exercise_uuid = Uuid::parse_str(&body.exercise_id)
+        .map_err(|_| StatusError::bad_request().brief("Invalid exercise ID"))?;
+    
     let chapter_id: (Uuid,) = sqlx::query_as("SELECT chapter_id FROM exercises WHERE id = $1")
-        .bind(&body.exercise_id)
+        .bind(exercise_uuid)
         .fetch_one(pool)
         .await
         .map_err(|_| StatusError::bad_request().brief("Exercise not found"))?;
@@ -67,7 +72,7 @@ pub async fn create_submission(req: &mut Request, depot: &mut Depot) -> Result<J
          RETURNING id, exercise_id, learner_id, chapter_id, attempt_no, source_code, judge_status::text AS judge_status, score, passed_case_count, total_case_count, error_summary, runtime_ms, content_version, rule_version, submitted_at, completed_at"
     )
     .bind(id)
-    .bind(&body.exercise_id)
+    .bind(exercise_uuid)
     .bind(learner_id)
     .bind(chapter_id.0)
     .bind(&body.source_code)
@@ -76,20 +81,26 @@ pub async fn create_submission(req: &mut Request, depot: &mut Depot) -> Result<J
     .map_err(|_| StatusError::internal_server_error())?;
 
     // 异步触发判题，不阻塞 HTTP 响应
-    let submission_id_str = submission.id.to_string();
+    let submission_uuid = submission.id;
     let pool_clone = pool.clone();
     let exercise_id_for_xp = Uuid::parse_str(&body.exercise_id).unwrap_or_default();
+    let learner_id_for_xp = learner_id;
+    // 异步触发判题，不阻塞 HTTP 响应
+    let submission_uuid = submission.id;
+    let pool_clone = pool.clone();
+    let exercise_id_for_xp = Uuid::parse_str(&body.exercise_id).unwrap_or_default();
+    let learner_id_for_xp = learner_id;
     tokio::spawn(async move {
-        match JudgeService::judge_submission(&pool_clone, &submission_id_str).await {
+        match JudgeService::judge_submission(&pool_clone, &submission_uuid.to_string()).await {
             Ok(result) => {
                 let _ = sqlx::query(
                     "UPDATE submissions \
-                     SET judge_status = $2::judge_status, score = $3, \
+                     SET judge_status = $2::text::judge_status, score = $3, \
                          passed_case_count = $4, total_case_count = $5, \
                          error_summary = $6, runtime_ms = $7, completed_at = NOW() \
                      WHERE id = $1",
                 )
-                .bind(&submission_id_str)
+                .bind(submission_uuid)
                 .bind(result.status.as_str())
                 .bind(result.score)
                 .bind(result.passed_case_count)
@@ -103,7 +114,7 @@ pub async fn create_submission(req: &mut Request, depot: &mut Depot) -> Result<J
                 if result.status.as_str() == "passed" {
                     let _ = XpService::reward_submission_xp(
                         &pool_clone,
-                        learner_id,
+                        learner_id_for_xp,
                         exercise_id_for_xp,
                         result.score,
                     )
@@ -113,9 +124,9 @@ pub async fn create_submission(req: &mut Request, depot: &mut Depot) -> Result<J
             Err(e) => {
                 eprintln!("Judge error: {}", e);
                 let _ = sqlx::query(
-                    "UPDATE submissions SET judge_status = 'error'::judge_status, error_summary = $2 WHERE id = $1",
+                    "UPDATE submissions SET judge_status = 'error', error_summary = $2 WHERE id = $1",
                 )
-                .bind(&submission_id_str)
+                .bind(submission_uuid)
                 .bind(Some(e))
                 .execute(&pool_clone)
                 .await;
@@ -131,8 +142,10 @@ pub async fn update_submission(req: &mut Request, depot: &mut Depot) -> Result<S
     let pool = depot.obtain::<PgPool>()
         .map_err(|_| StatusError::internal_server_error())?;
     
-    let id = req.param::<String>("id")
+    let id_str = req.param::<String>("id")
         .ok_or_else(StatusError::bad_request)?;
+    let id = Uuid::parse_str(&id_str)
+        .map_err(|_| StatusError::bad_request().brief("Invalid submission ID"))?;
     
     let body: UpdateSubmissionRequest = req.parse_json().await
         .map_err(|_| StatusError::bad_request().brief("Invalid request body"))?;
@@ -149,7 +162,7 @@ pub async fn update_submission(req: &mut Request, depot: &mut Depot) -> Result<S
          updated_at = NOW()
          WHERE id = $1"
     )
-    .bind(&id)
+    .bind(id)
     .bind(&body.judge_status)
     .bind(body.score)
     .bind(body.passed_case_count)
