@@ -269,14 +269,14 @@
 
 \chapter{OpenAPI 接口完整列表}
 
-本附录列出系统全部 95 个 API 端点，按访问权限分为公开接口、通用接口、学习者接口和管理端接口四个类别。所有路径均以 \path{/api/v1} 为前缀。
+本附录列出系统全部 95 个 API 端点，按访问权限分为公开接口、通用接口、学习者接口和管理后台端接口四个类别。所有路径均以 \path{/api/v1} 为前缀。
 
 \subsection*{一、公开接口（无需认证）}
 
 \begin{itemize}
   \item \textbf{POST} \path{/auth/register} \hfill 注册学习账号
   \item \textbf{POST} \path{/auth/learner/login} \hfill 学习者密码登录
-  \item \textbf{POST} \path{/auth/admin/login} \hfill 管理端密码登录
+  \item \textbf{POST} \path{/auth/admin/login} \hfill 管理后台端密码登录
   \item \textbf{POST} \path{/auth/refresh} \hfill 刷新 JWT 令牌
   \item \textbf{POST} \path{/auth/logout} \hfill 登出撤销会话
   \item \textbf{GET} \path{/health} \hfill 服务健康检查
@@ -373,7 +373,7 @@
   \item \textbf{POST} \url{/learner/progress/courses/<course_id>/chapters/<chapter_id>/complete} \hfill 标记章节完成
 \end{itemize}
 
-\subsection*{四、管理端接口（需 JWT + 管理员角色）}
+\subsection*{四、管理后台端接口（需 JWT + 管理员角色）}
 
 \subsubsection*{数据看板}
 
@@ -482,6 +482,6 @@
   \item \textbf{DELETE} \path{/admin/daily-challenges/<daily_challenge_id>} \hfill 删除每日挑战
 \end{itemize}
 
-\noindent 以上 95 个接口按照前端调用模式可归纳如下：公开接口 6 个，不含访问控制，用于注册登录与系统健康检查；通用接口 1 个，仅需登录态，供任何角色获取当前账户信息；学习者接口 38 个，覆盖课程学习、编码练习、挑战参与、社交互动、奖励反馈与学习进度管理等全部移动客户端功能；管理端接口 50 个，支撑课程管理、挑战管理、练习管理、章节管理、用户管理、内容审核、反馈处理、公告发布与系统配置等各项后台运维操作。所有接口通过统一的 ApiResponse 包络返回，确保三端对接时数据格式一致。
+\noindent 以上 95 个接口按照前端调用模式可归纳如下：公开接口 6 个，不含访问控制，用于注册登录与系统健康检查；通用接口 1 个，仅需登录态，供任何角色获取当前账户信息；学习者接口 38 个，覆盖课程学习、编码练习、挑战参与、社交互动、奖励反馈与学习进度管理等全部移动客户端功能；管理后台端接口 50 个，支撑课程管理、挑战管理、练习管理、章节管理、用户管理、内容审核、反馈处理、公告发布与系统配置等各项后台运维操作。所有接口通过统一的 ApiResponse 包络返回，确保三端对接时数据格式一致。
 
 \end{appendices}
