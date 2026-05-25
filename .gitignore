@@ -97,6 +97,11 @@ build/
 .playwright-cli/
 .playwright-mcp/
 
+# AI planning artifacts
+.plan/
+*-review-*.md
+# Note: AGENTS.md is kept as project documentation, not AI artifact
+
 # Draw.io backups
 *.bkp
 *.dtmp
