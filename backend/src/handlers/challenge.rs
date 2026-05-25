@@ -1,5 +1,5 @@
 use salvo::prelude::*;
-use sqlx::PgPool;
+use sqlx::{PgPool, Row};
 use crate::handlers::auth;
 use crate::models::{ApiResponse, Challenge};
 use crate::services::xp_service::XpService;
@@ -32,28 +32,68 @@ pub async fn list_challenges(req: &mut Request, depot: &mut Depot) -> Result<Jso
     let pool = depot.obtain::<PgPool>()
         .map_err(|_| StatusError::internal_server_error())?;
     
+    let learner_id = auth::get_current_account_id(depot)?;
+    
     let page = req.query::<i64>("page").unwrap_or(1).max(1);
     let per_page = req.query::<i64>("page_size").unwrap_or(20).clamp(1, 100);
     let offset = (page - 1) * per_page;
     
-    let challenges = sqlx::query_as::<_, Challenge>(
-        "SELECT id, challenge_code, title, summary, related_course_id, difficulty::text, reward_xp, status::text, sort_order, content_version, published_at, created_at, updated_at FROM challenges WHERE status = 'published' ORDER BY sort_order LIMIT $1 OFFSET $2"
+    let rows = sqlx::query(
+        "SELECT 
+            c.id, c.challenge_code, c.title, c.summary, c.related_course_id, 
+            c.difficulty::text AS difficulty, c.reward_xp, c.status::text AS status, 
+            c.sort_order, c.content_version, c.published_at, c.created_at, c.updated_at,
+            COALESCE(ca.best_star, 0) AS best_star,
+            COALESCE(ca.status::text, 'locked') AS learner_status
+         FROM challenges c
+         LEFT JOIN challenge_attempts ca ON ca.challenge_id = c.id AND ca.learner_id = $3
+         WHERE c.status = 'published'
+         ORDER BY c.sort_order
+         LIMIT $1 OFFSET $2"
     )
     .bind(per_page)
     .bind(offset)
+    .bind(learner_id)
     .fetch_all(pool)
     .await
-    .map_err(|_| StatusError::internal_server_error())?;
+    .map_err(|e| {
+        tracing::error!("list_challenges SQL error: {}", e);
+        StatusError::internal_server_error().brief("Database query failed")
+    })?;
     
     let total: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM challenges WHERE status = 'published'")
         .fetch_one(pool)
         .await
-        .map_err(|_| StatusError::internal_server_error())?;
+        .map_err(|e| {
+            tracing::error!("list_challenges count SQL error: {}", e);
+            StatusError::internal_server_error().brief("Database query failed")
+        })?;
     
     let meta = crate::models::ListMeta::new(page, per_page, total.0);
     
+    let items: Vec<serde_json::Value> = rows.iter().map(|r| {
+        serde_json::json!({
+            "challenge_id": r.try_get::<Uuid, _>("id").ok(),
+            "id": r.try_get::<Uuid, _>("id").ok(),
+            "challenge_code": r.try_get::<String, _>("challenge_code").ok(),
+            "title": r.try_get::<String, _>("title").ok(),
+            "summary": r.try_get::<String, _>("summary").ok(),
+            "related_course_id": r.try_get::<Option<Uuid>, _>("related_course_id").ok().flatten(),
+            "difficulty": r.try_get::<String, _>("difficulty").ok(),
+            "reward_xp": r.try_get::<i32, _>("reward_xp").ok(),
+            "status": r.try_get::<String, _>("status").ok(),
+            "sort_order": r.try_get::<i32, _>("sort_order").ok(),
+            "content_version": r.try_get::<i32, _>("content_version").ok(),
+            "published_at": r.try_get::<Option<chrono::DateTime<chrono::Utc>>, _>("published_at").ok().flatten(),
+            "created_at": r.try_get::<chrono::DateTime<chrono::Utc>, _>("created_at").ok(),
+            "updated_at": r.try_get::<chrono::DateTime<chrono::Utc>, _>("updated_at").ok(),
+            "best_star": r.try_get::<i32, _>("best_star").ok().unwrap_or(0),
+            "learner_status": r.try_get::<String, _>("learner_status").ok().unwrap_or_else(|| "locked".to_string()),
+        })
+    }).collect();
+    
     Ok(Json(ApiResponse::new(serde_json::json!({
-        "items": challenges,
+        "items": items,
         "meta": meta
     }))))
 }

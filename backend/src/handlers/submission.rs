@@ -80,61 +80,64 @@ pub async fn create_submission(req: &mut Request, depot: &mut Depot) -> Result<J
     .await
     .map_err(|_| StatusError::internal_server_error())?;
 
-    // 异步触发判题，不阻塞 HTTP 响应
+    // 同步判题：等待判题完成后返回最终结果给前端
     let submission_uuid = submission.id;
-    let pool_clone = pool.clone();
     let exercise_id_for_xp = Uuid::parse_str(&body.exercise_id).unwrap_or_default();
-    let learner_id_for_xp = learner_id;
-    // 异步触发判题，不阻塞 HTTP 响应
-    let submission_uuid = submission.id;
-    let pool_clone = pool.clone();
-    let exercise_id_for_xp = Uuid::parse_str(&body.exercise_id).unwrap_or_default();
-    let learner_id_for_xp = learner_id;
-    tokio::spawn(async move {
-        match JudgeService::judge_submission(&pool_clone, &submission_uuid.to_string()).await {
-            Ok(result) => {
-                let _ = sqlx::query(
-                    "UPDATE submissions \
-                     SET judge_status = $2::text::judge_status, score = $3, \
-                         passed_case_count = $4, total_case_count = $5, \
-                         error_summary = $6, runtime_ms = $7, completed_at = NOW() \
-                     WHERE id = $1",
-                )
-                .bind(submission_uuid)
-                .bind(result.status.as_str())
-                .bind(result.score)
-                .bind(result.passed_case_count)
-                .bind(result.total_case_count)
-                .bind(result.error_summary)
-                .bind(result.runtime_ms)
-                .execute(&pool_clone)
-                .await;
 
-                // 判题通过后奖励 XP
-                if result.status.as_str() == "passed" {
-                    let _ = XpService::reward_submission_xp(
-                        &pool_clone,
-                        learner_id_for_xp,
-                        exercise_id_for_xp,
-                        result.score,
-                    )
-                    .await;
-                }
-            }
-            Err(e) => {
-                eprintln!("Judge error: {}", e);
-                let _ = sqlx::query(
-                    "UPDATE submissions SET judge_status = 'error', error_summary = $2 WHERE id = $1",
+    match JudgeService::judge_submission(pool, &submission_uuid.to_string()).await {
+        Ok(result) => {
+            let updated = sqlx::query_as::<_, Submission>(
+                "UPDATE submissions \
+                 SET judge_status = $2::text::judge_status, score = $3, \
+                     passed_case_count = $4, total_case_count = $5, \
+                     error_summary = $6, runtime_ms = $7, completed_at = NOW() \
+                 WHERE id = $1
+                 RETURNING id, exercise_id, learner_id, chapter_id, attempt_no, source_code, \
+                           judge_status::text AS judge_status, score, passed_case_count, total_case_count, \
+                           error_summary, runtime_ms, content_version, rule_version, submitted_at, completed_at",
+            )
+            .bind(submission_uuid)
+            .bind(result.status.as_str())
+            .bind(result.score)
+            .bind(result.passed_case_count)
+            .bind(result.total_case_count)
+            .bind(result.error_summary)
+            .bind(result.runtime_ms)
+            .fetch_one(pool)
+            .await
+            .map_err(|_| StatusError::internal_server_error())?;
+
+            // 判题通过后奖励 XP
+            if result.status.as_str() == "passed" {
+                let _ = XpService::reward_submission_xp(
+                    pool,
+                    learner_id,
+                    exercise_id_for_xp,
+                    result.score,
                 )
-                .bind(submission_uuid)
-                .bind(Some(e))
-                .execute(&pool_clone)
                 .await;
             }
+
+            Ok(Json(ApiResponse::new(updated)))
         }
-    });
-    
-    Ok(Json(ApiResponse::new(submission)))
+        Err(e) => {
+            eprintln!("Judge error: {}", e);
+            let updated = sqlx::query_as::<_, Submission>(
+                "UPDATE submissions SET judge_status = 'error', error_summary = $2 \
+                 WHERE id = $1
+                 RETURNING id, exercise_id, learner_id, chapter_id, attempt_no, source_code, \
+                           judge_status::text AS judge_status, score, passed_case_count, total_case_count, \
+                           error_summary, runtime_ms, content_version, rule_version, submitted_at, completed_at",
+            )
+            .bind(submission_uuid)
+            .bind(Some(e))
+            .fetch_one(pool)
+            .await
+            .map_err(|_| StatusError::internal_server_error())?;
+
+            Ok(Json(ApiResponse::new(updated)))
+        }
+    }
 }
 
 #[handler]

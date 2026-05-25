@@ -100,6 +100,13 @@ pub fn create_router() -> Router {
                                 .patch(handlers::user::update_profile),
                         )
                         .push(
+                            Router::with_path("users")
+                                .push(
+                                    Router::with_path("search")
+                                        .get(handlers::social::search_learners),
+                                ),
+                        )
+                        .push(
                             Router::with_path("friends")
                                 .get(handlers::social::list_friends)
                                 .push(

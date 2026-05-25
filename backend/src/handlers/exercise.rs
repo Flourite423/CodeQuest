@@ -40,16 +40,24 @@ pub async fn list_exercises(req: &mut Request, depot: &mut Depot) -> Result<Json
     
     let status_filter = req.query::<String>("status").unwrap_or_else(|| "published".to_string());
     
+    let chapter_uuid = Uuid::parse_str(&chapter_id)
+        .map_err(|_| StatusError::bad_request().brief("Invalid chapter ID"))?;
+
     let exercises = sqlx::query_as::<_, Exercise>(
-        "SELECT id, chapter_id, exercise_code, title, prompt, exercise_type::text AS exercise_type, starter_code, language::text AS language, difficulty::text AS difficulty, pass_score, max_attempts_per_day, status::text AS status, content_version, created_at, updated_at FROM exercises WHERE chapter_id = $1 AND status = $2 ORDER BY created_at"
+        "SELECT id, chapter_id, exercise_code, title, prompt, exercise_type::text AS exercise_type, starter_code, language::text AS language, difficulty::text AS difficulty, pass_score, max_attempts_per_day, status::text AS status, content_version, created_at, updated_at FROM exercises WHERE chapter_id = $1 AND status::text = $2 ORDER BY created_at"
     )
-    .bind(&chapter_id)
+    .bind(chapter_uuid)
     .bind(&status_filter)
     .fetch_all(pool)
-    .await
-    .map_err(|_| StatusError::internal_server_error())?;
+    .await;
     
-    Ok(Json(ApiResponse::new(exercises)))
+    match exercises {
+        Ok(e) => Ok(Json(ApiResponse::new(e))),
+        Err(e) => {
+            tracing::error!("list_exercises SQL error: chapter_id={}, status={}, error={:?}", chapter_id, status_filter, e);
+            Err(StatusError::internal_server_error())
+        }
+    }
 }
 
 #[handler]

@@ -881,14 +881,15 @@ pub async fn create_exercise(req: &mut Request, depot: &mut Depot) -> Result<Jso
         .and_then(|s| Uuid::parse_str(s).ok());
     
     let exercise = sqlx::query_as::<_, crate::models::Exercise>(
-        "INSERT INTO exercises (id, chapter_id, exercise_code, title, difficulty, status) 
-         VALUES ($1, $2, $3, $4, $5, 'draft')
+        "INSERT INTO exercises (id, chapter_id, exercise_code, title, prompt, difficulty, status) 
+         VALUES ($1, $2, $3, $4, $5, $6, 'draft')
          RETURNING id, chapter_id, exercise_code, title, prompt, exercise_type::text AS exercise_type, starter_code, language::text AS language, difficulty::text AS difficulty, pass_score, max_attempts_per_day, status::text AS status, content_version, created_at, updated_at"
     )
     .bind(id)
     .bind(chapter_id)
     .bind(body.get("exercise_code").and_then(|v| v.as_str()).unwrap_or(""))
     .bind(body.get("title").and_then(|v| v.as_str()).unwrap_or(""))
+    .bind(body.get("prompt").and_then(|v| v.as_str()).unwrap_or(""))
     .bind(body.get("difficulty").and_then(|v| v.as_str()).unwrap_or(""))
     .fetch_one(pool)
     .await

@@ -36,18 +36,65 @@ pub async fn get_today_challenge(depot: &mut Depot) -> Result<Json<ApiResponse<s
     .bind(today)
     .fetch_optional(pool)
     .await
-    .map_err(|_| StatusError::internal_server_error())?
-    .ok_or_else(StatusError::not_found)?;
+    .map_err(|_| StatusError::internal_server_error())?;
+
+    // 如果今天没有挑战，自动从最近的有效挑战复制一个
+    let challenge = match challenge {
+        Some(c) => Some(c),
+        None => {
+            let recent = sqlx::query_as::<_, DailyChallenge>(
+                "SELECT id, challenge_date, title, exercise_id, difficulty::text, time_limit_seconds, reward_xp, status::text, published_at, created_at, updated_at 
+                 FROM daily_challenges 
+                 WHERE status = 'active' 
+                 ORDER BY challenge_date DESC 
+                 LIMIT 1"
+            )
+            .fetch_optional(pool)
+            .await
+            .map_err(|_| StatusError::internal_server_error())?;
+
+            if let Some(ref recent) = recent {
+                let new_id = Uuid::new_v4();
+                let _ = sqlx::query(
+                    "INSERT INTO daily_challenges (id, challenge_date, title, exercise_id, difficulty, time_limit_seconds, reward_xp, status, published_at, created_at, updated_at)
+                     VALUES ($1, $2, $3, $4, $5, $6, $7, 'active', NOW(), NOW(), NOW())"
+                )
+                .bind(new_id)
+                .bind(today)
+                .bind(&recent.title)
+                .bind(recent.exercise_id)
+                .bind(&recent.difficulty)
+                .bind(recent.time_limit_seconds)
+                .bind(recent.reward_xp)
+                .execute(pool)
+                .await;
+
+                sqlx::query_as::<_, DailyChallenge>(
+                    "SELECT id, challenge_date, title, exercise_id, difficulty::text, time_limit_seconds, reward_xp, status::text, published_at, created_at, updated_at FROM daily_challenges WHERE id = $1"
+                )
+                .bind(new_id)
+                .fetch_optional(pool)
+                .await
+                .map_err(|_| StatusError::internal_server_error())?
+            } else {
+                None
+            }
+        }
+    };
     
     let learner_id = auth::get_current_account_id(depot)?;
-    let record = sqlx::query_as::<_, DailyChallengeRecord>(
-        "SELECT * FROM daily_challenge_records WHERE daily_challenge_id = $1 AND learner_id = $2"
-    )
-    .bind(challenge.id)
-    .bind(learner_id)
-    .fetch_optional(pool)
-    .await
-    .map_err(|_| StatusError::internal_server_error())?;
+    let record = if let Some(ref ch) = challenge {
+        sqlx::query_as::<_, DailyChallengeRecord>(
+            "SELECT * FROM daily_challenge_records WHERE daily_challenge_id = $1 AND learner_id = $2"
+        )
+        .bind(ch.id)
+        .bind(learner_id)
+        .fetch_optional(pool)
+        .await
+        .map_err(|_| StatusError::internal_server_error())?
+    } else {
+        None
+    };
     
     Ok(Json(ApiResponse::new(serde_json::json!({
         "daily_challenge": challenge,

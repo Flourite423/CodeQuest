@@ -238,8 +238,30 @@ pub async fn get_personal_stats(depot: &mut Depot) -> Result<Json<ApiResponse<se
     .await
     .map_err(|_| StatusError::internal_server_error())?;
     
+    let completed_challenges: (i64,) = sqlx::query_as(
+        "SELECT COUNT(*) FROM challenge_attempts WHERE learner_id = $1 AND status = 'completed'"
+    )
+    .bind(account_id)
+    .fetch_one(pool)
+    .await
+    .map_err(|_| StatusError::internal_server_error())?;
+    
+    let profile = sqlx::query_as::<_, (i32, i32)>(
+        "SELECT streak_days, total_xp FROM learner_profiles WHERE account_id = $1"
+    )
+    .bind(account_id)
+    .fetch_optional(pool)
+    .await
+    .map_err(|_| StatusError::internal_server_error())?;
+    
+    let (streak_days, current_xp) = profile.unwrap_or((0, 0));
+    
     Ok(Json(ApiResponse::new(serde_json::json!({
-        "completed_courses": completed_courses.0,
+        "total_learning_minutes": 0,
+        "completed_course_count": completed_courses.0,
+        "completed_challenge_count": completed_challenges.0,
+        "streak_days": streak_days,
+        "current_xp_balance": current_xp,
         "total_submissions": total_submissions.0
     }))))
 }

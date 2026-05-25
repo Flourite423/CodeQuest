@@ -1,5 +1,6 @@
 use salvo::prelude::*;
-use sqlx::PgPool;
+use sqlx::{PgPool, Row};
+use uuid::Uuid;
 
 use crate::handlers::auth;
 use crate::models::{ApiResponse, LearnerBadge, XpLedger};
@@ -53,13 +54,35 @@ pub async fn get_rewards(depot: &mut Depot) -> Result<Json<ApiResponse<serde_jso
     .await
     .map_err(|_| StatusError::internal_server_error())?;
     
-    let badges = sqlx::query_as::<_, LearnerBadge>(
-        "SELECT id, learner_id, badge_id, award_source_type::text AS award_source_type, award_source_id, awarded_at FROM learner_badges WHERE learner_id = $1 ORDER BY awarded_at DESC"
+    let badge_rows = sqlx::query(
+        "SELECT lb.id, lb.learner_id, lb.badge_id, lb.award_source_type::text AS award_source_type, lb.award_source_id, lb.awarded_at,
+                b.name, b.description, b.icon_url
+         FROM learner_badges lb
+         JOIN badges b ON lb.badge_id = b.id
+         WHERE lb.learner_id = $1
+         ORDER BY lb.awarded_at DESC"
     )
     .bind(learner_id)
     .fetch_all(pool)
     .await
-    .map_err(|_| StatusError::internal_server_error())?;
+    .map_err(|e| {
+        tracing::error!("get_rewards badges SQL error: {}", e);
+        StatusError::internal_server_error()
+    })?;
+    
+    let badges: Vec<serde_json::Value> = badge_rows.iter().map(|r| {
+        serde_json::json!({
+            "id": r.try_get::<Uuid, _>("id").ok(),
+            "badge_id": r.try_get::<Uuid, _>("badge_id").ok(),
+            "learner_id": r.try_get::<Uuid, _>("learner_id").ok(),
+            "award_source_type": r.try_get::<String, _>("award_source_type").ok(),
+            "award_source_id": r.try_get::<Option<Uuid>, _>("award_source_id").ok().flatten(),
+            "awarded_at": r.try_get::<chrono::DateTime<chrono::Utc>, _>("awarded_at").ok(),
+            "name": r.try_get::<String, _>("name").ok(),
+            "description": r.try_get::<String, _>("description").ok(),
+            "icon_url": r.try_get::<Option<String>, _>("icon_url").ok().flatten(),
+        })
+    }).collect();
     
     let xp_records = sqlx::query_as::<_, XpLedger>(
         "SELECT id, learner_id, source_type::text AS source_type, source_id, delta_xp, balance_after, created_at FROM xp_ledger WHERE learner_id = $1 ORDER BY created_at DESC LIMIT 10"
