@@ -14,23 +14,17 @@ Future<void> main() async {
 
   try {
     await Firebase.initializeApp();
-  } catch (e) {
-    debugPrint('Firebase init failed, app continues in mock mode: $e');
+  } catch (_) {
+    // 无 Firebase 配置时静默降级，不影响核心功能
   }
-  
-  // Initialize GetStorage with error handling for headless environments
-  // Use a shorter timeout to avoid blocking the UI
+
+  // Initialize GetStorage
   try {
-    await GetStorage.init().timeout(
-      const Duration(seconds: 2),
-      onTimeout: () => false,
-    );
+    await GetStorage.init();
   } catch (e) {
-    // In headless/test environments, GetStorage may fail to get documents directory
-    // This is expected and the app will still function using in-memory storage
-    debugPrint('GetStorage init failed (expected in headless mode): $e');
+    debugPrint('GetStorage init failed: $e');
   }
-  
+
   // Ensure runApp is called immediately to avoid showing default Flutter loading screen
   runApp(const CodeQuestApp());
 }
@@ -90,7 +84,8 @@ class _OfflineAwareShell extends StatelessWidget {
                   bottom: false,
                   child: Container(
                     margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 10),
                     decoration: BoxDecoration(
                       color: Theme.of(context).colorScheme.errorContainer,
                       borderRadius: BorderRadius.circular(16),
@@ -106,8 +101,13 @@ class _OfflineAwareShell extends StatelessWidget {
                         Expanded(
                           child: Text(
                             '当前为离线模式，学习记录会先保存到本地。',
-                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                  color: Theme.of(context).colorScheme.onErrorContainer,
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodyMedium
+                                ?.copyWith(
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onErrorContainer,
                                   fontWeight: FontWeight.w600,
                                 ),
                           ),

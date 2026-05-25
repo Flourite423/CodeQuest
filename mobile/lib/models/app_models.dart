@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 typedef JsonMap = Map<String, dynamic>;
 
 DateTime? _parseDateTime(dynamic value) {
@@ -380,6 +382,18 @@ class Exercise {
     );
   }
 
+  factory Exercise.fromListJson(JsonMap json) {
+    return Exercise(
+      id: (json['id'] ?? '').toString(),
+      type: (json['exercise_type'] ?? '').toString(),
+      title: (json['title'] ?? '').toString(),
+      description: (json['prompt'] ?? '').toString(),
+      options: const [],
+      testCases: const [],
+      codeTemplate: json['starter_code'] as String?,
+    );
+  }
+
   factory Exercise.fromJson(JsonMap json) {
     return Exercise(
       id: (json['id'] ?? '').toString(),
@@ -403,7 +417,9 @@ class Exercise {
         'type': type,
         'title': title,
         'description': description,
-        'options': options.map((option) => {'key': option.key, 'text': option.text}).toList(),
+        'options': options
+            .map((option) => {'key': option.key, 'text': option.text})
+            .toList(),
         'testCases': testCases.map((testCase) => testCase.toJson()).toList(),
         'codeTemplate': codeTemplate,
       };
@@ -454,15 +470,16 @@ class Challenge {
   final int reward;
   final bool isCompleted;
 
-  factory Challenge.fromMapItemJson(JsonMap json, {List<ChallengeTask> tasks = const []}) {
+  factory Challenge.fromMapItemJson(JsonMap json,
+      {List<ChallengeTask> tasks = const []}) {
     return Challenge(
       id: (json['challenge_id'] ?? json['id'] ?? '').toString(),
       title: (json['title'] ?? '').toString(),
       description: (json['summary'] ?? '').toString(),
       tasks: tasks,
-      stars: _asInt(json['best_star']),
+      stars: _asInt(json['best_star'] ?? json['stars']),
       reward: _asInt(json['reward_xp']),
-      isCompleted: json['learner_status'] == 'completed',
+      isCompleted: (json['learner_status'] ?? '') == 'completed',
     );
   }
 
@@ -560,12 +577,89 @@ class AIHelp {
   final bool isFallback;
 
   factory AIHelp.fromContract(JsonMap json) {
+    String? content = json['response_text'] as String?;
+    // 如果 response_text 是 JSON 字符串，尝试解析并格式化展示
+    if (content != null && content.trim().startsWith('{')) {
+      try {
+        final structured = json['response_structured_json'] as JsonMap?;
+        if (structured != null && structured.isNotEmpty) {
+          content = _formatStructuredAiHelp(structured);
+        } else {
+          final parsed = jsonDecode(content) as JsonMap?;
+          if (parsed != null && parsed.isNotEmpty) {
+            content = _formatStructuredAiHelp(parsed);
+          }
+        }
+      } catch (_) {
+        // 解析失败，保留原始文本
+      }
+    }
     return AIHelp(
       requestType: (json['request_type'] ?? '').toString(),
       status: (json['status'] ?? '').toString(),
-      content: json['response_text'] as String?,
+      content: content,
       isFallback: json['is_fallback'] == true,
     );
+  }
+
+  static String _formatStructuredAiHelp(JsonMap json) {
+    final buffer = StringBuffer();
+    // summary
+    final summary = json['summary'] ?? json['message'];
+    if (summary != null && summary.toString().isNotEmpty) {
+      buffer.writeln('📋 摘要');
+      buffer.writeln(summary.toString());
+      buffer.writeln();
+    }
+    // error_location / root_cause
+    final rootCause = json['root_cause'] ?? json['error_location'];
+    if (rootCause is Map) {
+      buffer.writeln('🔍 问题分析');
+      rootCause.forEach((k, v) {
+        buffer.writeln('• $k: $v');
+      });
+      buffer.writeln();
+    } else if (rootCause != null && rootCause.toString().isNotEmpty) {
+      buffer.writeln('🔍 问题分析');
+      buffer.writeln(rootCause.toString());
+      buffer.writeln();
+    }
+    // direction / observable_symptom
+    final direction = json['direction'] ?? json['observable_symptom'];
+    if (direction is Map) {
+      buffer.writeln('🎯 修正方向');
+      direction.forEach((k, v) {
+        buffer.writeln('• $k: $v');
+      });
+      buffer.writeln();
+    } else if (direction != null && direction.toString().isNotEmpty) {
+      buffer.writeln('🎯 修正方向');
+      buffer.writeln(direction.toString());
+      buffer.writeln();
+    }
+    // suggestions / action_steps
+    final suggestions = json['suggestions'] ?? json['action_steps'];
+    if (suggestions is List && suggestions.isNotEmpty) {
+      buffer.writeln('💡 建议');
+      for (var i = 0; i < suggestions.length; i++) {
+        final s = suggestions[i];
+        if (s is Map) {
+          final step = s['step'] ?? s['action'] ?? '${i + 1}';
+          final text = s['action'] ?? s.toString();
+          buffer.writeln('$step. $text');
+        } else {
+          buffer.writeln('${i + 1}. $s');
+        }
+      }
+      buffer.writeln();
+    }
+    // final_reminder / next_check
+    final reminder = json['final_reminder'] ?? json['next_check'];
+    if (reminder != null && reminder.toString().isNotEmpty) {
+      buffer.writeln('⏰ 提醒');
+      buffer.writeln(reminder.toString());
+    }
+    return buffer.toString().trim();
   }
 
   factory AIHelp.fromJson(JsonMap json) {
@@ -619,7 +713,9 @@ class SubmissionResult {
       passedCases: _asInt(json['passedCases']),
       totalCases: _asInt(json['totalCases']),
       feedback: json['feedback'] as String?,
-      aiHelp: json['aiHelp'] is JsonMap ? AIHelp.fromJson(json['aiHelp'] as JsonMap) : null,
+      aiHelp: json['aiHelp'] is JsonMap
+          ? AIHelp.fromJson(json['aiHelp'] as JsonMap)
+          : null,
     );
   }
 
@@ -731,7 +827,8 @@ class Activity {
     return Activity(
       id: (json['id'] ?? '').toString(),
       type: (json['activity_type'] ?? '').toString(),
-      description: _activityDescription((json['activity_type'] ?? '').toString(), payload),
+      description: _activityDescription(
+          (json['activity_type'] ?? '').toString(), payload),
       timestamp: _parseDateTime(json['created_at']) ?? DateTime.now(),
       user: ActivityUser.fromContract(
         json['actor_profile'] as JsonMap? ?? <String, dynamic>{},
@@ -745,7 +842,8 @@ class Activity {
       type: (json['type'] ?? '').toString(),
       description: (json['description'] ?? '').toString(),
       timestamp: _parseDateTime(json['timestamp']) ?? DateTime.now(),
-      user: ActivityUser.fromJson(json['user'] as JsonMap? ?? <String, dynamic>{}),
+      user: ActivityUser.fromJson(
+          json['user'] as JsonMap? ?? <String, dynamic>{}),
     );
   }
 
@@ -774,13 +872,13 @@ class LeaderboardEntry {
   final int xp;
 
   factory LeaderboardEntry.fromContract(JsonMap json) {
-    final profile = json['learner_profile'] as JsonMap? ?? <String, dynamic>{};
+    // 后端 /learner/leaderboards 直接返回 rank/learner_id/nickname/score/level/avatar_url
     return LeaderboardEntry(
-      rank: _asInt(json['rank_position'], fallback: 1),
-      userId: (json['learner_id'] ?? '').toString(),
-      nickname: (profile['nickname'] ?? '').toString(),
-      level: profile['level'] == null ? null : _asInt(profile['level']),
-      xp: _asInt(json['current_xp_balance'] ?? json['score']),
+      rank: _asInt(json['rank'] ?? json['rank_position'], fallback: 1),
+      userId: (json['learner_id'] ?? json['user_id'] ?? '').toString(),
+      nickname: (json['nickname'] ?? '').toString(),
+      level: json['level'] == null ? null : _asInt(json['level']),
+      xp: _asInt(json['score'] ?? json['current_xp_balance']),
     );
   }
 

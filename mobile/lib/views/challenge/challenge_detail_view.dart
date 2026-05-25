@@ -21,7 +21,8 @@ class ChallengeController extends BaseController {
   final Rxn<Challenge> challenge = Rxn<Challenge>();
   final RxList<ChallengeTask> tasks = <ChallengeTask>[].obs;
   final RxInt earnedStars = 0.obs;
-  final Rx<ChallengeDetailState> detailState = ChallengeDetailState.overview.obs;
+  final Rx<ChallengeDetailState> detailState =
+      ChallengeDetailState.overview.obs;
   final RxBool isSubmitting = false.obs;
 
   final Rxn<DateTime> completionTimestamp = Rxn<DateTime>();
@@ -60,10 +61,12 @@ class ChallengeController extends BaseController {
         challenge.value = processed;
         tasks.assignAll(_buildPlaceholderTasks(processed));
         earnedStars.value = processed.stars;
-        completionTimestamp.value = _progress.getChallengeCompletedAt(challengeId.value);
+        completionTimestamp.value =
+            _progress.getChallengeCompletedAt(challengeId.value);
         rewardSettlementTimestamp.value =
             _progress.getChallengeRewardSettledAt(challengeId.value);
-        isRewardSettled.value = _progress.isChallengeRewardSettled(challengeId.value);
+        isRewardSettled.value =
+            _progress.isChallengeRewardSettled(challengeId.value);
         detailState.value = processed.isCompleted
             ? ChallengeDetailState.completed
             : ChallengeDetailState.overview;
@@ -76,7 +79,8 @@ class ChallengeController extends BaseController {
     registerRetry(loadChallenge);
 
     try {
-      final response = await _apiService.get('/learner/challenges/${challengeId.value}');
+      final response =
+          await _apiService.get('/learner/challenges/${challengeId.value}');
       final payload = response.data is Map<String, dynamic>
           ? response.data as Map<String, dynamic>
           : <String, dynamic>{};
@@ -95,10 +99,12 @@ class ChallengeController extends BaseController {
       challenge.value = processedChallenge;
       tasks.assignAll(_buildPlaceholderTasks(processedChallenge));
       earnedStars.value = processedChallenge.stars;
-      completionTimestamp.value = _progress.getChallengeCompletedAt(challengeId.value);
+      completionTimestamp.value =
+          _progress.getChallengeCompletedAt(challengeId.value);
       rewardSettlementTimestamp.value =
           _progress.getChallengeRewardSettledAt(challengeId.value);
-      isRewardSettled.value = _progress.isChallengeRewardSettled(challengeId.value);
+      isRewardSettled.value =
+          _progress.isChallengeRewardSettled(challengeId.value);
       detailState.value = processedChallenge.isCompleted
           ? ChallengeDetailState.completed
           : ChallengeDetailState.overview;
@@ -159,11 +165,13 @@ class ChallengeController extends BaseController {
     isSubmitting.value = true;
 
     try {
-      final stageResults = tasks.map((task) => <String, dynamic>{
-        'stage_id': task.id,
-        'passed': task.isCompleted,
-        'score': task.isCompleted ? 100 : 0,
-      }).toList();
+      final stageResults = tasks
+          .map((task) => <String, dynamic>{
+                'stage_id': task.id,
+                'passed': task.isCompleted,
+                'score': task.isCompleted ? 100 : 0,
+              })
+          .toList();
 
       final response = await _apiService.post(
         '/learner/challenges/${challengeId.value}/attempts',
@@ -298,7 +306,9 @@ class ChallengeDetailView extends GetView<ChallengeController> {
         );
       }),
       bottomNavigationBar: Obx(() {
-        if (controller.pageState.value != PageState.initial) return const SizedBox.shrink();
+        if (controller.pageState.value != PageState.initial) {
+          return const SizedBox.shrink();
+        }
         return _buildBottomBar(context);
       }),
     );
@@ -322,7 +332,8 @@ class ChallengeDetailView extends GetView<ChallengeController> {
           _buildStarRules(context),
           SizedBox(height: 24.h),
           _buildRewardPreview(context, challenge),
-          if (controller.detailState.value == ChallengeDetailState.completed) ...[
+          if (controller.detailState.value ==
+              ChallengeDetailState.completed) ...[
             SizedBox(height: 24.h),
             _buildCompletionResult(context),
           ],
@@ -374,16 +385,20 @@ class ChallengeDetailView extends GetView<ChallengeController> {
             children: [
               _buildDifficultyChip(context, '中级'),
               SizedBox(width: 8.w),
-              Chip(
-                label: Text(
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
+                decoration: BoxDecoration(
+                  color: colorScheme.secondaryContainer,
+                  borderRadius: BorderRadius.circular(8.r),
+                  border: Border.all(color: colorScheme.secondary),
+                ),
+                child: Text(
                   '${challenge.reward} XP',
                   style: theme.textTheme.labelMedium?.copyWith(
                     color: colorScheme.secondary,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-                backgroundColor: colorScheme.secondaryContainer,
-                side: BorderSide(color: colorScheme.secondary),
               ),
             ],
           ),
@@ -396,16 +411,23 @@ class ChallengeDetailView extends GetView<ChallengeController> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    return Chip(
-      label: Text(
+    // 使用自定义标签替代 Chip，避免被识别为可交互元素
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
+      decoration: BoxDecoration(
+        color: colorScheme.primaryContainer.withValues(alpha: 0.3),
+        borderRadius: BorderRadius.circular(8.r),
+        border: Border.all(
+          color: colorScheme.primary.withValues(alpha: 0.2),
+        ),
+      ),
+      child: Text(
         difficulty,
         style: theme.textTheme.labelMedium?.copyWith(
           color: colorScheme.primary,
           fontWeight: FontWeight.w600,
         ),
       ),
-      backgroundColor: colorScheme.primaryContainer.withValues(alpha: 0.3),
-      side: BorderSide(color: colorScheme.primary.withValues(alpha: 0.2)),
     );
   }
 
@@ -439,7 +461,8 @@ class ChallengeDetailView extends GetView<ChallengeController> {
             Container(
               padding: EdgeInsets.all(16.w),
               decoration: BoxDecoration(
-                color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                color:
+                    colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
                 borderRadius: BorderRadius.circular(12.r),
               ),
               child: Center(
@@ -526,8 +549,10 @@ class ChallengeDetailView extends GetView<ChallengeController> {
                 onChanged: (_) => controller.toggleTask(index),
               )
             : task.isCompleted
-                ? Icon(Icons.check_circle, color: colorScheme.primary, size: 24.sp)
-                : Icon(Icons.circle_outlined, color: colorScheme.outline, size: 24.sp),
+                ? Icon(Icons.check_circle,
+                    color: colorScheme.primary, size: 24.sp)
+                : Icon(Icons.circle_outlined,
+                    color: colorScheme.outline, size: 24.sp),
         onTap: isInteractive ? () => controller.toggleTask(index) : null,
       ),
     );
@@ -584,7 +609,9 @@ class ChallengeDetailView extends GetView<ChallengeController> {
               return Icon(
                 i < stars ? Icons.star : Icons.star_border,
                 size: 16.sp,
-                color: i < stars ? cs.secondary : cs.outline.withValues(alpha: 0.3),
+                color: i < stars
+                    ? cs.secondary
+                    : cs.outline.withValues(alpha: 0.3),
               );
             }),
           ),
@@ -692,7 +719,8 @@ class ChallengeDetailView extends GetView<ChallengeController> {
             decoration: BoxDecoration(
               color: theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
               borderRadius: BorderRadius.circular(12.r),
-              border: Border.all(color: theme.colorScheme.primary.withValues(alpha: 0.3)),
+              border: Border.all(
+                  color: theme.colorScheme.primary.withValues(alpha: 0.3)),
             ),
             child: Column(
               children: [
@@ -716,7 +744,9 @@ class ChallengeDetailView extends GetView<ChallengeController> {
                     return Icon(
                       i < stars ? Icons.star : Icons.star_border,
                       size: 32.sp,
-                      color: i < stars ? theme.colorScheme.secondary : theme.colorScheme.outline.withValues(alpha: 0.3),
+                      color: i < stars
+                          ? theme.colorScheme.secondary
+                          : theme.colorScheme.outline.withValues(alpha: 0.3),
                     );
                   }),
                 ),
@@ -741,7 +771,8 @@ class ChallengeDetailView extends GetView<ChallengeController> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.check_circle_outline, size: 16.sp, color: theme.colorScheme.primary),
+                      Icon(Icons.check_circle_outline,
+                          size: 16.sp, color: theme.colorScheme.primary),
                       SizedBox(width: 6.w),
                       Text(
                         '完成时间：${_formatTimestamp(completionTime)}',
@@ -757,7 +788,8 @@ class ChallengeDetailView extends GetView<ChallengeController> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.card_giftcard, size: 16.sp, color: theme.colorScheme.primary),
+                      Icon(Icons.card_giftcard,
+                          size: 16.sp, color: theme.colorScheme.primary),
                       SizedBox(width: 6.w),
                       Text(
                         '奖励已结算：${_formatTimestamp(settlementTime)}',
@@ -846,9 +878,7 @@ class ChallengeDetailView extends GetView<ChallengeController> {
           );
         case ChallengeDetailState.inProgress:
           return CTABar(
-            primaryLabel: controller.isSubmitting.value
-                ? '提交中...'
-                : '完成挑战',
+            primaryLabel: controller.isSubmitting.value ? '提交中...' : '完成挑战',
             onPrimary: controller.isSubmitting.value
                 ? () {}
                 : controller.completeChallenge,
@@ -861,9 +891,7 @@ class ChallengeDetailView extends GetView<ChallengeController> {
             );
           }
           return CTABar(
-            primaryLabel: controller.isSettlingReward.value
-                ? '领取中...'
-                : '领取奖励',
+            primaryLabel: controller.isSettlingReward.value ? '领取中...' : '领取奖励',
             onPrimary: controller.isSettlingReward.value
                 ? () {}
                 : controller.settleReward,

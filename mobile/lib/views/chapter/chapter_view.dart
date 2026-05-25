@@ -82,7 +82,8 @@ class _ChapterContent extends StatelessWidget {
                   _MarkdownContent(content: chapter.content),
                   SizedBox(height: 24.h),
                   // Sample code card
-                  if (chapter.sampleCode != null && chapter.sampleCode!.isNotEmpty) ...[
+                  if (chapter.sampleCode != null &&
+                      chapter.sampleCode!.isNotEmpty) ...[
                     _SampleCodeCard(code: chapter.sampleCode!),
                     SizedBox(height: 24.h),
                   ],
@@ -122,7 +123,9 @@ class _ProgressIndicator extends StatelessWidget {
         children: [
           Icon(
             isCompleted ? Icons.check_circle : Icons.radio_button_unchecked,
-            color: isCompleted ? colorScheme.primary : colorScheme.onSurfaceVariant,
+            color: isCompleted
+                ? colorScheme.primary
+                : colorScheme.onSurfaceVariant,
             size: 24.sp,
           ),
           SizedBox(width: 12.w),
@@ -134,14 +137,14 @@ class _ProgressIndicator extends StatelessWidget {
                   isCompleted ? '已完成' : '进行中',
                   style: theme.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.w600,
-                    color: isCompleted ? colorScheme.primary : colorScheme.onSurface,
+                    color: isCompleted
+                        ? colorScheme.primary
+                        : colorScheme.onSurface,
                   ),
                 ),
                 SizedBox(height: 4.h),
                 Text(
-                  isCompleted
-                      ? '你已完成此章节。去练习吧！'
-                      : '阅读内容并在准备好后标记为完成。',
+                  isCompleted ? '你已完成此章节。去练习吧！' : '阅读内容并在准备好后标记为完成。',
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: colorScheme.onSurfaceVariant,
                   ),
@@ -486,6 +489,7 @@ class ChapterController extends BaseController {
   }
 
   final Rx<Chapter?> chapter = Rx<Chapter?>(null);
+  final RxList<Exercise> exercises = <Exercise>[].obs;
   final RxString chapterId = ''.obs;
   final RxString courseId = ''.obs;
   final RxBool isCompleted = false.obs;
@@ -494,11 +498,25 @@ class ChapterController extends BaseController {
   void onInit() {
     super.onInit();
     chapterId.value = Get.parameters['id'] ?? '';
-    courseId.value = Get.parameters['courseId'] ?? 'course-1';
-    if (chapterId.value.isNotEmpty) {
-      loadChapter();
-    } else {
+    courseId.value = Get.parameters['courseId'] ?? '';
+
+    // 如果路由参数中没有 courseId，尝试从缓存课程中查找包含此章节的课程
+    if (courseId.value.isEmpty && chapterId.value.isNotEmpty) {
+      final cachedCourses = _progressService.getCachedCourses();
+      for (final course in cachedCourses) {
+        if (course.chapters.any((ch) => ch.id == chapterId.value)) {
+          courseId.value = course.id;
+          break;
+        }
+      }
+    }
+
+    if (chapterId.value.isEmpty) {
       setError(message: '章节ID缺失。');
+    } else if (courseId.value.isEmpty) {
+      setError(message: '课程ID缺失，无法加载章节。请从课程详情页进入。');
+    } else {
+      loadChapter();
     }
   }
 
@@ -522,11 +540,13 @@ class ChapterController extends BaseController {
     registerRetry(loadChapter);
 
     try {
-      final response = await _apiService.get('/learner/courses/${courseId.value}');
+      final response =
+          await _apiService.get('/learner/courses/${courseId.value}');
       final payload = response.data is Map<String, dynamic>
           ? response.data as Map<String, dynamic>
           : <String, dynamic>{};
-      final data = payload['data'] as Map<String, dynamic>? ?? <String, dynamic>{};
+      final data =
+          payload['data'] as Map<String, dynamic>? ?? <String, dynamic>{};
 
       final result = Course.fromDetailJson(data);
       // Find the chapter by ID from the course
@@ -559,9 +579,9 @@ class ChapterController extends BaseController {
     }
   }
 
-  void onPrimaryCTA() {
+  void onPrimaryCTA() async {
     if (isCompleted.value) {
-      _goToExercise();
+      await _goToExercise();
     } else {
       _showCompleteConfirmation();
     }
@@ -611,7 +631,8 @@ class ChapterController extends BaseController {
               .where((item) => item.isCompleted || item.id == chapterId.value)
               .length ??
           1;
-      final nextProgress = totalChapters > 0 ? completedCount / totalChapters : 1.0;
+      final nextProgress =
+          totalChapters > 0 ? completedCount / totalChapters : 1.0;
 
       await _progressService.saveChapterCompleted(
         chapterId: chapterId.value,
@@ -645,10 +666,41 @@ class ChapterController extends BaseController {
     }
   }
 
-  void _goToExercise() {
-    Get.toNamed('/exercise/${chapterId.value}', parameters: <String, String>{
-      'courseId': courseId.value,
-    });
+  Future<void> _goToExercise() async {
+    if (exercises.isEmpty) {
+      await _loadExercises();
+    }
+    final firstExercise = exercises.firstOrNull;
+    if (firstExercise != null) {
+      Get.toNamed('/exercise/${firstExercise.id}', parameters: <String, String>{
+        'courseId': courseId.value,
+      });
+    } else {
+      Get.snackbar(
+        '暂无练习',
+        '该章节暂无练习内容。',
+        snackPosition: SnackPosition.BOTTOM,
+        duration: const Duration(seconds: 3),
+        margin: EdgeInsets.all(16.w),
+      );
+    }
+  }
+
+  Future<void> _loadExercises() async {
+    try {
+      final response = await _apiService.get(
+          '/learner/courses/${courseId.value}/chapters/${chapterId.value}/exercises');
+      final payload = response.data is Map<String, dynamic>
+          ? response.data as Map<String, dynamic>
+          : <String, dynamic>{};
+      final items = (payload['data'] as List<dynamic>? ?? <dynamic>[])
+          .whereType<Map>()
+          .map((item) => Exercise.fromListJson(Map<String, dynamic>.from(item)))
+          .toList();
+      exercises.assignAll(items);
+    } catch (e) {
+      debugPrint('ChapterController: Failed to load exercises: $e');
+    }
   }
 }
 

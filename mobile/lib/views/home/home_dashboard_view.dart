@@ -253,7 +253,8 @@ class HomeDashboardView extends GetView<HomeDashboardController> {
                   borderRadius: BorderRadius.circular(4.r),
                   child: LinearProgressIndicator(
                     value: progress,
-                    backgroundColor: colorScheme.onPrimary.withValues(alpha: 0.2),
+                    backgroundColor:
+                        colorScheme.onPrimary.withValues(alpha: 0.2),
                     valueColor: AlwaysStoppedAnimation<Color>(
                       colorScheme.onPrimary,
                     ),
@@ -351,14 +352,17 @@ class HomeDashboardView extends GetView<HomeDashboardController> {
                   ),
                   SizedBox(width: 4.w),
                   Text(
-                    '${dailyChallenge.timeLimit ~/ 60} 分钟',
+                    dailyChallenge.timeLimit > 0
+                        ? '${dailyChallenge.timeLimit ~/ 60} 分钟'
+                        : '无时间限制',
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: colorScheme.onSurfaceVariant,
                     ),
                   ),
                   SizedBox(width: 16.w),
                   Container(
-                    padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 2.h),
+                    padding:
+                        EdgeInsets.symmetric(horizontal: 8.w, vertical: 2.h),
                     decoration: BoxDecoration(
                       color: isExpired
                           ? colorScheme.errorContainer
@@ -406,18 +410,23 @@ class HomeDashboardView extends GetView<HomeDashboardController> {
 
     if (nextChapter == null) return const SizedBox.shrink();
 
+    // 判断用户是否从未开始过此课程（进度为 0 且没有已完成章节）
+    final hasStarted = (continueCourse.progress ?? 0) > 0 ||
+        continueCourse.chapters.any((c) => c.isCompleted);
+    final headerLabel = hasStarted ? '继续学习' : '开始学习';
+
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12.r),
       ),
       child: InkWell(
-                        onTap: () => Get.toNamed(
-                          '/chapter/${nextChapter.id}',
-                          parameters: <String, String>{
-                            'courseId': continueCourse.id,
-                          },
-                        ),
+        onTap: () => Get.toNamed(
+          '/chapter/${nextChapter.id}',
+          parameters: <String, String>{
+            'courseId': continueCourse.id,
+          },
+        ),
         borderRadius: BorderRadius.circular(12.r),
         child: Padding(
           padding: EdgeInsets.all(16.w),
@@ -433,7 +442,9 @@ class HomeDashboardView extends GetView<HomeDashboardController> {
                       borderRadius: BorderRadius.circular(8.r),
                     ),
                     child: Icon(
-                      Icons.play_circle_outline,
+                      hasStarted
+                          ? Icons.play_circle_outline
+                          : Icons.school_outlined,
                       color: colorScheme.onTertiaryContainer,
                       size: 24.sp,
                     ),
@@ -444,7 +455,7 @@ class HomeDashboardView extends GetView<HomeDashboardController> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          '继续学习',
+                          headerLabel,
                           style: theme.textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.w600,
                           ),
@@ -495,14 +506,16 @@ class HomeDashboardView extends GetView<HomeDashboardController> {
                   ],
                 ),
               ),
-              if (continueCourse.progress != null) ...[
+              if (continueCourse.progress != null &&
+                  continueCourse.progress! > 0) ...[
                 SizedBox(height: 12.h),
                 ClipRRect(
                   borderRadius: BorderRadius.circular(4.r),
                   child: LinearProgressIndicator(
                     value: continueCourse.progress,
                     backgroundColor: colorScheme.surfaceContainerHighest,
-                    valueColor: AlwaysStoppedAnimation<Color>(colorScheme.primary),
+                    valueColor:
+                        AlwaysStoppedAnimation<Color>(colorScheme.primary),
                     minHeight: 6.h,
                   ),
                 ),
@@ -576,7 +589,8 @@ class HomeDashboardView extends GetView<HomeDashboardController> {
           mainAxisSpacing: 12.h,
           crossAxisSpacing: 12.w,
           childAspectRatio: 1.4,
-          children: statItems.map((item) => _buildStatCard(context, item)).toList(),
+          children:
+              statItems.map((item) => _buildStatCard(context, item)).toList(),
         ),
       ],
     );
@@ -649,7 +663,8 @@ class HomeDashboardView extends GetView<HomeDashboardController> {
     );
   }
 
-  Widget _buildActivityItem(BuildContext context, app_models.Activity activity) {
+  Widget _buildActivityItem(
+      BuildContext context, app_models.Activity activity) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
@@ -682,7 +697,9 @@ class HomeDashboardView extends GetView<HomeDashboardController> {
             ? NetworkImage(activity.user.avatar!)
             : null,
         child: activity.user.avatar == null
-            ? Text(activity.user.nickname.substring(0, 1))
+            ? (activity.user.nickname.isNotEmpty
+                ? Text(activity.user.nickname.substring(0, 1))
+                : const Icon(Icons.person))
             : null,
       ),
       title: activity.user.nickname,
@@ -733,9 +750,11 @@ class HomeDashboardView extends GetView<HomeDashboardController> {
         ),
         SizedBox(height: 8.h),
         Row(
-          children: badges.map((badge) => Expanded(
-            child: _buildBadgeItem(context, badge),
-          )).toList(),
+          children: badges
+              .map((badge) => Expanded(
+                    child: _buildBadgeItem(context, badge),
+                  ))
+              .toList(),
         ),
       ],
     );
@@ -857,7 +876,8 @@ class HomeDashboardController extends BaseController {
 
   final Rxn<app_models.User> user = Rxn<app_models.User>();
   final Rxn<app_models.Stats> stats = Rxn<app_models.Stats>();
-  final Rxn<app_models.DailyChallenge> dailyChallenge = Rxn<app_models.DailyChallenge>();
+  final Rxn<app_models.DailyChallenge> dailyChallenge =
+      Rxn<app_models.DailyChallenge>();
   final Rxn<app_models.Course> continueCourse = Rxn<app_models.Course>();
   final RxList<app_models.Activity> activities = <app_models.Activity>[].obs;
   final RxList<app_models.Badge> badges = <app_models.Badge>[].obs;
@@ -932,7 +952,8 @@ class HomeDashboardController extends BaseController {
       final payload = response.data is Map<String, dynamic>
           ? response.data as Map<String, dynamic>
           : <String, dynamic>{};
-      final profile = payload['data'] as Map<String, dynamic>? ?? <String, dynamic>{};
+      final profile =
+          payload['data'] as Map<String, dynamic>? ?? <String, dynamic>{};
 
       final result = app_models.User.fromContracts(
         account: {'id': profile['account_id'] ?? '', 'email': ''},
@@ -964,12 +985,15 @@ class HomeDashboardController extends BaseController {
       final payload = response.data is Map<String, dynamic>
           ? response.data as Map<String, dynamic>
           : <String, dynamic>{};
-      final data = payload['data'] as Map<String, dynamic>? ?? <String, dynamic>{};
+      final data =
+          payload['data'] as Map<String, dynamic>? ?? <String, dynamic>{};
 
       final result = app_models.Stats.fromPersonalStatsJson(data);
       final snapshot = _progress.getLearningStatsSnapshot();
       final merged = app_models.Stats(
-        studyTime: snapshot.studyMinutes > 0 ? snapshot.studyMinutes : result.studyTime,
+        studyTime: snapshot.studyMinutes > 0
+            ? snapshot.studyMinutes
+            : result.studyTime,
         coursesCompleted: snapshot.completedCourses > 0
             ? snapshot.completedCourses
             : result.coursesCompleted,
@@ -996,11 +1020,21 @@ class HomeDashboardController extends BaseController {
       final payload = response.data is Map<String, dynamic>
           ? response.data as Map<String, dynamic>
           : <String, dynamic>{};
-      final data = payload['data'] as Map<String, dynamic>? ?? <String, dynamic>{};
+      final data =
+          payload['data'] as Map<String, dynamic>? ?? <String, dynamic>{};
 
-      final challengeData = (data['challenge'] ?? data) as Map<String, dynamic>;
-      final recordData = data['record'] as Map<String, dynamic>?;
+      final challengeRaw = data['daily_challenge'] ?? data['challenge'];
+      final recordData = data['learner_record'] as Map<String, dynamic>?;
 
+      // 后端返回 daily_challenge 为 null 表示今日无挑战，这是正常情况
+      if (challengeRaw == null) {
+        dailyChallenge.value = null;
+        await _progress.cacheDailyChallenge(null);
+        dailyLoaded.value = true;
+        return;
+      }
+
+      final challengeData = challengeRaw as Map<String, dynamic>;
       final result = app_models.DailyChallenge.fromContracts(
         challenge: challengeData,
         record: recordData,
@@ -1017,39 +1051,12 @@ class HomeDashboardController extends BaseController {
 
   Future<void> _loadContinueCourse() async {
     try {
-      final cachedDetail = _progress.getCachedCourse('course-1');
-      if (cachedDetail != null) {
-        final processed = _progress.applyCourseProgress(cachedDetail);
-        continueCourse.value = processed;
-        courseLoaded.value = true;
-        return;
-      }
-
-      bool loadedFromDetail = false;
-      try {
-        final courseDetailResponse = await _apiService.get('/learner/courses/course-1');
-        final detailPayload = courseDetailResponse.data is Map<String, dynamic>
-            ? courseDetailResponse.data as Map<String, dynamic>
-            : <String, dynamic>{};
-        final courseData = detailPayload['data'] as Map<String, dynamic>? ?? <String, dynamic>{};
-
-        final detail = app_models.Course.fromDetailJson(courseData);
-        final processed = _progress.applyCourseProgress(detail);
-        await _progress.cacheCourse(processed);
-        continueCourse.value = processed;
-        courseLoaded.value = true;
-        loadedFromDetail = true;
-      } catch (_) {
-        // Detail fetch failed, fall back to courses list
-      }
-
-      if (loadedFromDetail) return;
-
       final listResponse = await _apiService.get('/learner/courses');
       final listPayload = listResponse.data is Map<String, dynamic>
           ? listResponse.data as Map<String, dynamic>
           : <String, dynamic>{};
-      final listData = listPayload['data'] as Map<String, dynamic>? ?? <String, dynamic>{};
+      final listData =
+          listPayload['data'] as Map<String, dynamic>? ?? <String, dynamic>{};
       final items = (listData['items'] as List<dynamic>? ?? <dynamic>[])
           .whereType<Map>()
           .map((item) => app_models.Course.fromListItemJson(
@@ -1058,11 +1065,40 @@ class HomeDashboardController extends BaseController {
           .toList();
       final withProgress = _progress.applyCourseProgressList(items);
       await _progress.cacheCourses(withProgress);
-      final course = withProgress.firstWhereOrNull(
-        (c) => c.chapters.any((ch) => !ch.isCompleted && !ch.isLocked),
-      );
-      continueCourse.value = course;
-      courseLoaded.value = course != null;
+
+      // 找第一个有未完成章节的课程，获取详情
+      for (final course in withProgress) {
+        try {
+          final detailResponse =
+              await _apiService.get('/learner/courses/${course.id}');
+          final detailPayload = detailResponse.data is Map<String, dynamic>
+              ? detailResponse.data as Map<String, dynamic>
+              : <String, dynamic>{};
+          final courseData = detailPayload['data'] as Map<String, dynamic>? ??
+              <String, dynamic>{};
+          final detail = app_models.Course.fromDetailJson(courseData);
+          final processed = _progress.applyCourseProgress(detail);
+          await _progress.cacheCourse(processed);
+
+          if (processed.chapters.any((ch) => !ch.isCompleted && !ch.isLocked)) {
+            continueCourse.value = processed;
+            courseLoaded.value = true;
+            return;
+          }
+        } catch (_) {
+          continue;
+        }
+      }
+
+      // 如果没有未完成的，显示第一个课程
+      final firstCourse = withProgress.firstOrNull;
+      if (firstCourse != null) {
+        final cached = _progress.getCachedCourse(firstCourse.id);
+        continueCourse.value = cached ?? firstCourse;
+        courseLoaded.value = true;
+      } else {
+        courseLoaded.value = false;
+      }
     } catch (e) {
       courseLoaded.value = false;
     }
@@ -1074,7 +1110,8 @@ class HomeDashboardController extends BaseController {
       final payload = response.data is Map<String, dynamic>
           ? response.data as Map<String, dynamic>
           : <String, dynamic>{};
-      final data = payload['data'] as Map<String, dynamic>? ?? <String, dynamic>{};
+      final data =
+          payload['data'] as Map<String, dynamic>? ?? <String, dynamic>{};
       final items = (data['items'] as List<dynamic>? ?? <dynamic>[])
           .whereType<Map>()
           .map((item) =>
@@ -1093,7 +1130,8 @@ class HomeDashboardController extends BaseController {
       final payload = response.data is Map<String, dynamic>
           ? response.data as Map<String, dynamic>
           : <String, dynamic>{};
-      final data = payload['data'] as Map<String, dynamic>? ?? <String, dynamic>{};
+      final data =
+          payload['data'] as Map<String, dynamic>? ?? <String, dynamic>{};
       final items = (data['badges'] as List<dynamic>? ?? <dynamic>[])
           .whereType<Map>()
           .map((item) => app_models.Badge.fromAwardJson(
@@ -1117,14 +1155,15 @@ class HomeDashboardController extends BaseController {
     if (cachedDaily != null) {
       dailyChallenge.value = _progress.applyDailyChallengeProgress(cachedDaily);
     }
-    final cachedCourseDetail = _progress.getCachedCourse('course-1');
-    if (cachedCourseDetail != null) {
-      continueCourse.value = _progress.applyCourseProgress(cachedCourseDetail);
-    } else {
-      final cachedCourses = _progress.applyCourseProgressList(_progress.getCachedCourses());
-      continueCourse.value = cachedCourses.firstWhereOrNull(
-        (c) => c.chapters.any((ch) => !ch.isCompleted && !ch.isLocked),
-      );
+    // 从缓存课程中找第一个有未完成章节的课程
+    final cachedCourses =
+        _progress.applyCourseProgressList(_progress.getCachedCourses());
+    continueCourse.value = cachedCourses.firstWhereOrNull(
+      (c) => c.chapters.any((ch) => !ch.isCompleted && !ch.isLocked),
+    );
+    // 如果没有未完成的，显示第一个课程
+    if (continueCourse.value == null && cachedCourses.isNotEmpty) {
+      continueCourse.value = cachedCourses.first;
     }
     userLoaded.value = user.value != null;
     statsLoaded.value = stats.value != null;
@@ -1133,7 +1172,10 @@ class HomeDashboardController extends BaseController {
     activitiesLoaded.value = activities.isNotEmpty;
     badgesLoaded.value = badges.isNotEmpty;
 
-    if (userLoaded.value || statsLoaded.value || dailyLoaded.value || courseLoaded.value) {
+    if (userLoaded.value ||
+        statsLoaded.value ||
+        dailyLoaded.value ||
+        courseLoaded.value) {
       setPartialData(message: '当前为离线模式，已显示本地学习统计与缓存内容。');
     } else {
       setOffline(message: '当前没有可用网络，且本地暂无可展示的仪表板缓存。');

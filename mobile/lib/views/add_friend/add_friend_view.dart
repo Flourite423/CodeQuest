@@ -260,11 +260,13 @@ class AddFriendController extends BaseController {
     isSearching.value = true;
 
     try {
-      final response = await _apiService.get('/learner/friends', queryParameters: {'q': query});
+      final response = await _apiService
+          .get('/learner/users/search', queryParameters: {'q': query});
       final payload = response.data is Map<String, dynamic>
           ? response.data as Map<String, dynamic>
           : <String, dynamic>{};
-      final data = payload['data'] as Map<String, dynamic>? ?? <String, dynamic>{};
+      final data =
+          payload['data'] as Map<String, dynamic>? ?? <String, dynamic>{};
       final results = (data['items'] as List<dynamic>? ?? <dynamic>[])
           .whereType<Map>()
           .map((item) => User(
@@ -272,8 +274,9 @@ class AddFriendController extends BaseController {
                 email: '',
                 nickname: (item['nickname'] ?? '').toString(),
                 avatar: item['avatar_url'] as String?,
-                level: _asInt(item['level'] ?? item['current_level'], fallback: 1),
-                xp: _asInt(item['xp'] ?? item['total_xp']),
+                level:
+                    _asInt(item['current_level'] ?? item['level'], fallback: 1),
+                xp: _asInt(item['total_xp'] ?? item['xp']),
                 streak: _asInt(item['streak'] ?? item['streak_days']),
                 dailyGoal: _asInt(item['daily_goal_minutes'], fallback: 30),
                 themeMode: (item['theme_mode'] ?? 'system').toString(),

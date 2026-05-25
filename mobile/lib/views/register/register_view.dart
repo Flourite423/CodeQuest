@@ -1,4 +1,7 @@
+import 'dart:math';
+
 import 'package:dio/dio.dart' as dio;
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
@@ -21,9 +24,9 @@ class RegisterView extends GetView<RegisterController> {
       ),
       body: SafeArea(
         child: Obx(() => PageStateHost(
-          state: controller.pageState.value,
-          child: _buildForm(context),
-        )),
+              state: controller.pageState.value,
+              child: _buildForm(context),
+            )),
       ),
     );
   }
@@ -56,117 +59,118 @@ class RegisterView extends GetView<RegisterController> {
 
           // Nickname field
           Obx(() => TextField(
-            controller: controller.nicknameController,
-            decoration: InputDecoration(
-              labelText: '昵称',
-              prefixIcon: const Icon(Icons.person_outline),
-              errorText: controller.nicknameError.value.isEmpty
-                  ? null
-                  : controller.nicknameError.value,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12.r),
-              ),
-            ),
-            textInputAction: TextInputAction.next,
-            onChanged: (_) => controller.clearNicknameError(),
-          )),
+                controller: controller.nicknameController,
+                decoration: InputDecoration(
+                  labelText: '昵称',
+                  prefixIcon: const Icon(Icons.person_outline),
+                  errorText: controller.nicknameError.value.isEmpty
+                      ? null
+                      : controller.nicknameError.value,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12.r),
+                  ),
+                ),
+                textInputAction: TextInputAction.next,
+                onChanged: (_) => controller.clearNicknameError(),
+              )),
           SizedBox(height: 16.h),
 
           // Email field
           Obx(() => TextField(
-            controller: controller.emailController,
-            decoration: InputDecoration(
-              labelText: '邮箱',
-              prefixIcon: const Icon(Icons.email_outlined),
-              errorText: controller.emailError.value.isEmpty
-                  ? null
-                  : controller.emailError.value,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12.r),
-              ),
-            ),
-            keyboardType: TextInputType.emailAddress,
-            textInputAction: TextInputAction.next,
-            onChanged: (_) => controller.clearEmailError(),
-          )),
+                controller: controller.emailController,
+                decoration: InputDecoration(
+                  labelText: '邮箱',
+                  prefixIcon: const Icon(Icons.email_outlined),
+                  errorText: controller.emailError.value.isEmpty
+                      ? null
+                      : controller.emailError.value,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12.r),
+                  ),
+                ),
+                keyboardType: TextInputType.emailAddress,
+                textInputAction: TextInputAction.next,
+                onChanged: (_) => controller.clearEmailError(),
+              )),
           SizedBox(height: 16.h),
 
           // Password field
           Obx(() => TextField(
-            controller: controller.passwordController,
-            decoration: InputDecoration(
-              labelText: '密码',
-              prefixIcon: const Icon(Icons.lock_outline),
-              suffixIcon: IconButton(
-                icon: Icon(
-                  controller.isPasswordVisible.value
-                      ? Icons.visibility_off
-                      : Icons.visibility,
+                controller: controller.passwordController,
+                decoration: InputDecoration(
+                  labelText: '密码',
+                  prefixIcon: const Icon(Icons.lock_outline),
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      controller.isPasswordVisible.value
+                          ? Icons.visibility_off
+                          : Icons.visibility,
+                    ),
+                    onPressed: controller.togglePasswordVisibility,
+                  ),
+                  errorText: controller.passwordError.value.isEmpty
+                      ? null
+                      : controller.passwordError.value,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12.r),
+                  ),
                 ),
-                onPressed: controller.togglePasswordVisibility,
-              ),
-              errorText: controller.passwordError.value.isEmpty
-                  ? null
-                  : controller.passwordError.value,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12.r),
-              ),
-            ),
-            obscureText: !controller.isPasswordVisible.value,
-            textInputAction: TextInputAction.next,
-            onChanged: (_) => controller.clearPasswordError(),
-          )),
+                obscureText: !controller.isPasswordVisible.value,
+                textInputAction: TextInputAction.next,
+                onChanged: (_) => controller.clearPasswordError(),
+              )),
           SizedBox(height: 16.h),
 
           // Confirm password field
           Obx(() => TextField(
-            controller: controller.confirmPasswordController,
-            decoration: InputDecoration(
-              labelText: '确认密码',
-              prefixIcon: const Icon(Icons.lock_outline),
-              suffixIcon: IconButton(
-                icon: Icon(
-                  controller.isConfirmPasswordVisible.value
-                      ? Icons.visibility_off
-                      : Icons.visibility,
+                controller: controller.confirmPasswordController,
+                decoration: InputDecoration(
+                  labelText: '确认密码',
+                  prefixIcon: const Icon(Icons.lock_outline),
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      controller.isConfirmPasswordVisible.value
+                          ? Icons.visibility_off
+                          : Icons.visibility,
+                    ),
+                    onPressed: controller.toggleConfirmPasswordVisibility,
+                  ),
+                  errorText: controller.confirmPasswordError.value.isEmpty
+                      ? null
+                      : controller.confirmPasswordError.value,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12.r),
+                  ),
                 ),
-                onPressed: controller.toggleConfirmPasswordVisibility,
-              ),
-              errorText: controller.confirmPasswordError.value.isEmpty
-                  ? null
-                  : controller.confirmPasswordError.value,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12.r),
-              ),
-            ),
-            obscureText: !controller.isConfirmPasswordVisible.value,
-            textInputAction: TextInputAction.done,
-            onChanged: (_) => controller.clearConfirmPasswordError(),
-            onSubmitted: (_) => controller.register(),
-          )),
+                obscureText: !controller.isConfirmPasswordVisible.value,
+                textInputAction: TextInputAction.done,
+                onChanged: (_) => controller.clearConfirmPasswordError(),
+                onSubmitted: (_) => controller.register(),
+              )),
           SizedBox(height: 32.h),
 
           // Register button
           Obx(() => SizedBox(
-            width: double.infinity,
-            height: 56.h,
-            child: FilledButton(
-              onPressed: controller.isLoading.value ? null : controller.register,
-              child: controller.isLoading.value
-                  ? SizedBox(
-                      width: 24.w,
-                      height: 24.w,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2.w,
-                        color: theme.colorScheme.onPrimary,
-                      ),
-                    )
-                  : const Text(
-                      '注册',
-                      style: TextStyle(fontSize: 16),
-                    ),
-            ),
-          )),
+                width: double.infinity,
+                height: 56.h,
+                child: FilledButton(
+                  onPressed:
+                      controller.isLoading.value ? null : controller.register,
+                  child: controller.isLoading.value
+                      ? SizedBox(
+                          width: 24.w,
+                          height: 24.w,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2.w,
+                            color: theme.colorScheme.onPrimary,
+                          ),
+                        )
+                      : const Text(
+                          '注册',
+                          style: TextStyle(fontSize: 16),
+                        ),
+                ),
+              )),
           SizedBox(height: 24.h),
 
           // Login link
@@ -257,8 +261,12 @@ class RegisterController extends BaseController {
     if (password.isEmpty) {
       passwordError.value = '请输入密码';
       isValid = false;
-    } else if (password.length < 6) {
-      passwordError.value = '密码至少需要6个字符';
+    } else if (password.length < 8) {
+      passwordError.value = '密码至少需要8个字符';
+      isValid = false;
+    } else if (!RegExp(r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$')
+        .hasMatch(password)) {
+      passwordError.value = '密码需包含大写字母、小写字母和数字';
       isValid = false;
     }
 
@@ -286,15 +294,25 @@ class RegisterController extends BaseController {
     resetState();
 
     try {
+      final platform = kIsWeb ? 'web' : 'android';
       final response = await _apiService.post('/auth/register', data: {
         'nickname': nicknameController.text.trim(),
         'email': emailController.text.trim(),
         'password': passwordController.text,
+        'device_id':
+            '$platform-${DateTime.now().millisecondsSinceEpoch}-${Random().nextInt(9999)}',
+        'platform': platform,
       });
 
       if (response.statusCode == 201 || response.statusCode == 200) {
         // Auto-login after successful registration
-        final token = response.data['token'] as String?;
+        final payload = response.data is Map<String, dynamic>
+            ? response.data as Map<String, dynamic>
+            : <String, dynamic>{};
+        final data = payload['data'] is Map<String, dynamic>
+            ? payload['data'] as Map<String, dynamic>
+            : payload;
+        final token = (data['access_token'] ?? data['token']) as String?;
         if (token != null && token.isNotEmpty) {
           await _storage.write(StorageService.authTokenKey, token);
           Get.offAllNamed('/home');
@@ -311,7 +329,15 @@ class RegisterController extends BaseController {
         }
       }
     } on dio.DioException catch (e) {
-      if (e.response?.statusCode == 409) {
+      if (e.response?.statusCode == 400) {
+        final payload = e.response?.data is Map<String, dynamic>
+            ? e.response?.data as Map<String, dynamic>
+            : null;
+        final msg = payload?['error']?['message'] ??
+            payload?['message'] ??
+            '请求参数错误，请检查输入';
+        setError(message: msg.toString());
+      } else if (e.response?.statusCode == 409) {
         setError(message: '该邮箱已被注册');
       } else if (e.response?.statusCode == 422) {
         setError(message: '输入信息无效，请检查');

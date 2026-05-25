@@ -82,7 +82,8 @@ class ProgressService extends GetxService {
       _connectivitySubscription = _connectivity.onConnectivityChanged.listen(
         _handleConnectivityChanged,
         onError: (Object error) {
-          debugPrint('Connectivity stream error (expected on Linux desktop): $error');
+          debugPrint(
+              'Connectivity stream error (expected on Linux desktop): $error');
           isOnline.value = true;
         },
       );
@@ -92,9 +93,11 @@ class ProgressService extends GetxService {
     }
   }
 
-  Future<void> _handleConnectivityChanged(List<ConnectivityResult> results) async {
+  Future<void> _handleConnectivityChanged(
+      List<ConnectivityResult> results) async {
     final wasOnline = isOnline.value;
-    final hasConnection = results.any((item) => item != ConnectivityResult.none);
+    final hasConnection =
+        results.any((item) => item != ConnectivityResult.none);
     isOnline.value = hasConnection;
 
     if (!wasOnline && hasConnection) {
@@ -102,13 +105,16 @@ class ProgressService extends GetxService {
     }
   }
 
-  String chapterCompletedKey(String chapterId) => 'chapter_completed_$chapterId';
+  String chapterCompletedKey(String chapterId) =>
+      'chapter_completed_$chapterId';
 
   String courseProgressKey(String courseId) => 'course_progress_$courseId';
 
-  String challengeCompletedKey(String challengeId) => 'challenge_completed_$challengeId';
+  String challengeCompletedKey(String challengeId) =>
+      'challenge_completed_$challengeId';
 
-  String challengeStarsKey(String challengeId) => 'challenge_stars_$challengeId';
+  String challengeStarsKey(String challengeId) =>
+      'challenge_stars_$challengeId';
 
   String challengeCompletedAtKey(String challengeId) =>
       'challenge_completed_at_$challengeId';
@@ -217,7 +223,8 @@ class ProgressService extends GetxService {
   }
 
   DateTime? getChallengeRewardSettledAt(String challengeId) {
-    final value = _storage.read<String>(challengeRewardSettledAtKey(challengeId));
+    final value =
+        _storage.read<String>(challengeRewardSettledAtKey(challengeId));
     if (value == null || value.isEmpty) {
       return null;
     }
@@ -265,7 +272,8 @@ class ProgressService extends GetxService {
   }
 
   Map<String, dynamic> getDailyChallengeRecords() {
-    final stored = _storage.read<Map<String, dynamic>>(_dailyChallengeRecordsKey);
+    final stored =
+        _storage.read<Map<String, dynamic>>(_dailyChallengeRecordsKey);
     return Map<String, dynamic>.from(stored ?? <String, dynamic>{});
   }
 
@@ -338,7 +346,8 @@ class ProgressService extends GetxService {
       return 0;
     }
 
-    final startedAt = DateTime.tryParse((current['startedAt'] ?? '').toString());
+    final startedAt =
+        DateTime.tryParse((current['startedAt'] ?? '').toString());
     await _removeProgressValue(_activeStudySessionKey);
     if (startedAt == null) {
       return 0;
@@ -368,7 +377,8 @@ class ProgressService extends GetxService {
       return;
     }
 
-    final yesterdayKey = _formatDateKey(currentDate.subtract(const Duration(days: 1)));
+    final yesterdayKey =
+        _formatDateKey(currentDate.subtract(const Duration(days: 1)));
     final nextStreak = lastDateKey == yesterdayKey ? currentStreak + 1 : 1;
 
     await _writeProgressValue(_lastStudyDateKey, dateKey);
@@ -380,7 +390,8 @@ class ProgressService extends GetxService {
   }
 
   int getCompletedCourseCount() {
-    final progressKeys = _storage.read<List<dynamic>>(_progressKeysRegistry) ?? <dynamic>[];
+    final progressKeys =
+        _storage.read<List<dynamic>>(_progressKeysRegistry) ?? <dynamic>[];
     return progressKeys
         .map((item) => item.toString())
         .where((key) => key.startsWith('course_progress_'))
@@ -389,7 +400,8 @@ class ProgressService extends GetxService {
   }
 
   int getCompletedChallengeCount() {
-    final progressKeys = _storage.read<List<dynamic>>(_progressKeysRegistry) ?? <dynamic>[];
+    final progressKeys =
+        _storage.read<List<dynamic>>(_progressKeysRegistry) ?? <dynamic>[];
     return progressKeys
         .map((item) => item.toString())
         .where((key) => key.startsWith('challenge_completed_'))
@@ -409,18 +421,18 @@ class ProgressService extends GetxService {
     List<Course> courses = const <Course>[],
     List<Challenge> challenges = const <Challenge>[],
   }) {
-    final completedCourses = courses
-        .where((course) => (course.progress ?? 0) >= 1.0)
-        .length;
-    final completedChallenges = challenges
-        .where((challenge) => challenge.isCompleted)
-        .length;
+    final completedCourses =
+        courses.where((course) => (course.progress ?? 0) >= 1.0).length;
+    final completedChallenges =
+        challenges.where((challenge) => challenge.isCompleted).length;
 
     return LearningStatsSnapshot(
       studyMinutes: getStudyMinutes(),
-      completedCourses: completedCourses > 0 ? completedCourses : getCompletedCourseCount(),
-      completedChallenges:
-          completedChallenges > 0 ? completedChallenges : getCompletedChallengeCount(),
+      completedCourses:
+          completedCourses > 0 ? completedCourses : getCompletedCourseCount(),
+      completedChallenges: completedChallenges > 0
+          ? completedChallenges
+          : getCompletedChallengeCount(),
       streakDays: getStreakDays(),
       earnedXp: getEarnedXp(),
       completedDailyChallenges: getCompletedDailyChallengeCount(),
@@ -434,7 +446,8 @@ class ProgressService extends GetxService {
     for (var index = 0; index < course.chapters.length; index++) {
       final chapter = course.chapters[index];
       final isCompleted = isChapterCompleted(chapter.id) || chapter.isCompleted;
-      final isLocked = index == 0 ? false : !processedChapters[index - 1].isCompleted;
+      final isLocked =
+          index == 0 ? false : !processedChapters[index - 1].isCompleted;
       processedChapters.add(
         Chapter(
           id: chapter.id,
@@ -486,7 +499,8 @@ class ProgressService extends GetxService {
   }
 
   Challenge applyChallengeProgress(Challenge challenge) {
-    final completed = isChallengeCompleted(challenge.id) || challenge.isCompleted;
+    final completed =
+        isChallengeCompleted(challenge.id) || challenge.isCompleted;
     final stars = getChallengeStars(challenge.id);
     return Challenge(
       id: challenge.id,
@@ -535,7 +549,8 @@ class ProgressService extends GetxService {
   }
 
   Course? getCachedCourse(String courseId) {
-    final stored = _storage.read<Map<String, dynamic>>(_cacheCourseKey(courseId));
+    final stored =
+        _storage.read<Map<String, dynamic>>(_cacheCourseKey(courseId));
     if (stored == null) {
       return null;
     }
@@ -550,14 +565,19 @@ class ProgressService extends GetxService {
   }
 
   List<Challenge> getCachedChallenges() {
-    final stored = _storage.read<List<dynamic>>('cache_challenges') ?? <dynamic>[];
+    final stored =
+        _storage.read<List<dynamic>>('cache_challenges') ?? <dynamic>[];
     return stored
         .whereType<Map>()
         .map((item) => Challenge.fromJson(Map<String, dynamic>.from(item)))
         .toList();
   }
 
-  Future<void> cacheDailyChallenge(DailyChallenge challenge) async {
+  Future<void> cacheDailyChallenge(DailyChallenge? challenge) async {
+    if (challenge == null) {
+      await _storage.remove('cache_daily_challenge');
+      return;
+    }
     await _writeCacheValue('cache_daily_challenge', challenge.toJson());
   }
 
@@ -594,7 +614,8 @@ class ProgressService extends GetxService {
   }
 
   List<Map<String, dynamic>> getPendingSyncActions() {
-    final stored = _storage.read<List<dynamic>>(_pendingSyncActionsKey) ?? <dynamic>[];
+    final stored =
+        _storage.read<List<dynamic>>(_pendingSyncActionsKey) ?? <dynamic>[];
     return stored
         .whereType<Map>()
         .map((item) => Map<String, dynamic>.from(item))
@@ -636,7 +657,8 @@ class ProgressService extends GetxService {
     isSyncing.value = true;
     try {
       await Future<void>.delayed(const Duration(milliseconds: 300));
-      await _writeProgressValue(_pendingSyncActionsKey, <Map<String, dynamic>>[]);
+      await _writeProgressValue(
+          _pendingSyncActionsKey, <Map<String, dynamic>>[]);
       final now = DateTime.now();
       lastSyncTime.value = now;
       await _writeProgressValue(_lastSyncTimeKey, now.toIso8601String());
@@ -656,13 +678,15 @@ class ProgressService extends GetxService {
   }
 
   Future<void> clearLearningProgress() async {
-    final progressKeys = _storage.read<List<dynamic>>(_progressKeysRegistry) ?? <dynamic>[];
+    final progressKeys =
+        _storage.read<List<dynamic>>(_progressKeysRegistry) ?? <dynamic>[];
     for (final key in progressKeys.map((item) => item.toString())) {
       await _storage.remove(key);
     }
     await _storage.write(_progressKeysRegistry, <String>[]);
 
-    final cacheKeys = _storage.read<List<dynamic>>(_cacheKeysRegistry) ?? <dynamic>[];
+    final cacheKeys =
+        _storage.read<List<dynamic>>(_cacheKeysRegistry) ?? <dynamic>[];
     for (final key in cacheKeys.map((item) => item.toString())) {
       await _storage.remove(key);
     }

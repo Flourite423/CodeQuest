@@ -1,4 +1,7 @@
+import 'dart:math';
+
 import 'package:dio/dio.dart' as dio;
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
@@ -16,9 +19,9 @@ class LoginView extends GetView<LoginController> {
     return Scaffold(
       body: SafeArea(
         child: Obx(() => PageStateHost(
-          state: controller.pageState.value,
-          child: _buildForm(context),
-        )),
+              state: controller.pageState.value,
+              child: _buildForm(context),
+            )),
       ),
     );
   }
@@ -54,74 +57,71 @@ class LoginView extends GetView<LoginController> {
             textAlign: TextAlign.center,
           ),
           SizedBox(height: 48.h),
-
           Obx(() => TextField(
-            controller: controller.emailController,
-            decoration: InputDecoration(
-              labelText: '邮箱',
-              prefixIcon: const Icon(Icons.email_outlined),
-              errorText: controller.emailError.value.isEmpty
-                  ? null
-                  : controller.emailError.value,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12.r),
-              ),
-            ),
-            keyboardType: TextInputType.emailAddress,
-            textInputAction: TextInputAction.next,
-            onChanged: (_) => controller.clearEmailError(),
-          )),
-          SizedBox(height: 16.h),
-
-          Obx(() => TextField(
-            controller: controller.passwordController,
-            decoration: InputDecoration(
-              labelText: '密码',
-              prefixIcon: const Icon(Icons.lock_outline),
-              suffixIcon: IconButton(
-                icon: Icon(
-                  controller.isPasswordVisible.value
-                      ? Icons.visibility_off
-                      : Icons.visibility,
+                controller: controller.emailController,
+                decoration: InputDecoration(
+                  labelText: '邮箱',
+                  prefixIcon: const Icon(Icons.email_outlined),
+                  errorText: controller.emailError.value.isEmpty
+                      ? null
+                      : controller.emailError.value,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12.r),
+                  ),
                 ),
-                onPressed: controller.togglePasswordVisibility,
-              ),
-              errorText: controller.passwordError.value.isEmpty
-                  ? null
-                  : controller.passwordError.value,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12.r),
-              ),
-            ),
-            obscureText: !controller.isPasswordVisible.value,
-            textInputAction: TextInputAction.done,
-            onChanged: (_) => controller.clearPasswordError(),
-            onSubmitted: (_) => controller.login(),
-          )),
-          SizedBox(height: 32.h),
-
-          Obx(() => SizedBox(
-            width: double.infinity,
-            height: 56.h,
-            child: FilledButton(
-              onPressed: controller.isLoading.value ? null : controller.login,
-              child: controller.isLoading.value
-                  ? SizedBox(
-                      width: 24.w,
-                      height: 24.w,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2.w,
-                        color: theme.colorScheme.onPrimary,
-                      ),
-                    )
-                  : const Text(
-                      '登录',
-                      style: TextStyle(fontSize: 16),
+                keyboardType: TextInputType.emailAddress,
+                textInputAction: TextInputAction.next,
+                onChanged: (_) => controller.clearEmailError(),
+              )),
+          SizedBox(height: 16.h),
+          Obx(() => TextField(
+                controller: controller.passwordController,
+                decoration: InputDecoration(
+                  labelText: '密码',
+                  prefixIcon: const Icon(Icons.lock_outline),
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      controller.isPasswordVisible.value
+                          ? Icons.visibility_off
+                          : Icons.visibility,
                     ),
-            ),
-          )),
+                    onPressed: controller.togglePasswordVisibility,
+                  ),
+                  errorText: controller.passwordError.value.isEmpty
+                      ? null
+                      : controller.passwordError.value,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12.r),
+                  ),
+                ),
+                obscureText: !controller.isPasswordVisible.value,
+                textInputAction: TextInputAction.done,
+                onChanged: (_) => controller.clearPasswordError(),
+                onSubmitted: (_) => controller.login(),
+              )),
+          SizedBox(height: 32.h),
+          Obx(() => SizedBox(
+                width: double.infinity,
+                height: 56.h,
+                child: FilledButton(
+                  onPressed:
+                      controller.isLoading.value ? null : controller.login,
+                  child: controller.isLoading.value
+                      ? SizedBox(
+                          width: 24.w,
+                          height: 24.w,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2.w,
+                            color: theme.colorScheme.onPrimary,
+                          ),
+                        )
+                      : const Text(
+                          '登录',
+                          style: TextStyle(fontSize: 16),
+                        ),
+                ),
+              )),
           SizedBox(height: 24.h),
-
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -183,8 +183,12 @@ class LoginController extends BaseController {
     if (password.isEmpty) {
       passwordError.value = '请输入密码';
       isValid = false;
-    } else if (password.length < 6) {
-      passwordError.value = '密码至少需要6个字符';
+    } else if (password.length < 8) {
+      passwordError.value = '密码至少需要8个字符';
+      isValid = false;
+    } else if (!RegExp(r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$')
+        .hasMatch(password)) {
+      passwordError.value = '密码需包含大写字母、小写字母和数字';
       isValid = false;
     }
 
@@ -206,6 +210,9 @@ class LoginController extends BaseController {
       final response = await _apiService.post('/auth/learner/login', data: {
         'email': emailController.text.trim(),
         'password': passwordController.text,
+        'device_id':
+            'web-${DateTime.now().millisecondsSinceEpoch}-${Random().nextInt(9999)}',
+        'platform': kIsWeb ? 'web' : 'android',
       });
 
       if (response.statusCode == 200) {
@@ -224,7 +231,15 @@ class LoginController extends BaseController {
         }
       }
     } on dio.DioException catch (e) {
-      if (e.response?.statusCode == 401) {
+      if (e.response?.statusCode == 400) {
+        final payload = e.response?.data is Map<String, dynamic>
+            ? e.response?.data as Map<String, dynamic>
+            : null;
+        final msg = payload?['error']?['message'] ??
+            payload?['message'] ??
+            '请求参数错误，请检查输入';
+        setError(message: msg.toString());
+      } else if (e.response?.statusCode == 401) {
         setError(message: '邮箱或密码错误');
       } else if (e.response?.statusCode == 403) {
         setError(message: '账号已被禁用，请联系客服');

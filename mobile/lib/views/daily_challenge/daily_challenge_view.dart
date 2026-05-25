@@ -84,7 +84,8 @@ class DailyChallengeController extends BaseController {
         return;
       }
 
-      final challengeData = data['daily_challenge'] as JsonMap? ?? <String, dynamic>{};
+      final challengeData =
+          data['daily_challenge'] as JsonMap? ?? <String, dynamic>{};
       final recordData = data['learner_record'] as JsonMap?;
 
       final challenge = DailyChallenge.fromContracts(
@@ -268,6 +269,10 @@ class DailyChallengeController extends BaseController {
   String getTimeLimitText() {
     final challenge = dailyChallenge.value;
     if (challenge == null) return '';
+
+    if (challenge.timeLimit <= 0) {
+      return '无时间限制';
+    }
 
     final minutes = challenge.timeLimit ~/ 60;
     final seconds = challenge.timeLimit % 60;
@@ -658,9 +663,7 @@ class DailyChallengeView extends GetView<DailyChallengeController> {
       switch (status) {
         case DailyChallengeStatus.notAttempted:
           return CTABar(
-            primaryLabel: controller.isSubmitting.value
-                ? '开始中...'
-                : '开始每日挑战',
+            primaryLabel: controller.isSubmitting.value ? '开始中...' : '开始每日挑战',
             onPrimary: controller.isSubmitting.value
                 ? () {}
                 : controller.startDailyChallenge,
