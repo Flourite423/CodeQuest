@@ -94,4 +94,14 @@
   \label{fig:er-diagram}
 \end{figure}
 
-从图\ref{fig:er-diagram} 可以观察到，核心数据表按业务域可划分为四组。\textbf{用户与认证域}以 \texttt{Account} 表为中心，存储登录凭据与角色信息，通过一对一关系关联 \texttt{LearnerProfile} 表记录学习者的昵称、经验值、连续学习天数和成长等级；\texttt{FriendRelation} 表通过请求方与接收方两个外键维护好友关系状态。\textbf{课程与内容域}以 \texttt{Course} 表为起点，通过一对多关系级联到 \texttt{Chapter} 表，再由 \texttt{Chapter} 关联 \texttt{Exercise} 表；\texttt{CourseProgress} 表记录学习者与课程之间的进度百分比，连接用户域与课程域。\textbf{练习与评测域}由 \texttt{Exercise} 表承载题目信息，通过一对多关系关联 \texttt{Submission} 表存储代码提交记录与评测结果；\texttt{AiHelpRequest} 表记录学习者在练习过程中请求 AI 辅助的历史，关联到具体练习和学习者。\textbf{挑战与奖励域}中，\texttt{Challenge} 表定义闯关挑战的基本属性，\texttt{DailyChallenge} 表维护每日挑战题目与日期；\texttt{XpLedger} 表以流水形式记录经验值变动来源，\texttt{LearnerBadge} 表关联学习者与徽章定义，\texttt{Leaderboard} 表按不同维度存储排名快照。这种以业务域为边界的数据组织方式，使各模块之间的耦合度保持在合理范围内，同时通过外键约束保证了数据一致性。
+从图\ref{fig:er-diagram} 可以观察到，核心数据表按业务模块可划分为四组。
+
+\textbf{用户与认证模块}以 \texttt{Account} 表为中心，存储登录凭据与角色信息。\texttt{Account} 通过一对一关系关联 \texttt{LearnerProfile} 表，记录学习者的昵称、经验值、连续学习天数和成长等级；\texttt{FriendRelation} 表则通过请求方与接收方两个外键维护好友关系状态。
+
+\textbf{课程与内容模块}以 \texttt{Course} 为起点，通过一对多级联到 \texttt{Chapter}，再由 \texttt{Chapter} 关联 \texttt{Exercise}。\texttt{CourseProgress} 表记录学习者与课程之间的进度百分比，在用户模块与课程模块之间起到桥梁作用。
+
+\textbf{练习与评测模块}由 \texttt{Exercise} 表承载题目信息，通过一对多关系关联 \texttt{Submission} 表存储代码提交记录与评测结果。\texttt{AiHelpRequest} 表记录学习者在练习过程中请求 AI 辅助的历史，关联到具体练习和学习者。
+
+\textbf{挑战与奖励模块}中，\texttt{Challenge} 定义闯关挑战的基本属性，\texttt{DailyChallenge} 维护每日挑战题目与日期；\texttt{XpLedger} 以流水形式记录经验值变动来源，\texttt{LearnerBadge} 关联学习者与徽章定义，\texttt{Leaderboard} 按不同维度存储排名快照。
+
+这种以业务模块为边界的数据组织方式，使各模块之间的耦合度保持在合理范围内，同时通过外键约束保证了数据一致性。
