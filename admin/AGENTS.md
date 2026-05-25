@@ -1,75 +1,162 @@
-# Admin — Agent Knowledge Base
+# Admin — Vue 3 管理后台开发指南
 
-**Scope:** Vue 3 + Element Plus + Pinia management dashboard
-**Pattern:** Composition API + `<script setup>` + SCSS
+> 面向 AI Agent 的管理后台开发规范。根目录规范见 [../AGENTS.md](../AGENTS.md)。
 
-## STRUCTURE
+---
+
+## 1. 技术栈
+
+| 组件 | 库 |
+|------|-----|
+| 框架 | Vue 3 + TypeScript |
+| 构建工具 | Vite |
+| UI 组件库 | Element Plus |
+| 状态管理 | Pinia |
+| 路由 | Vue Router |
+| HTTP | Axios（封装在 `src/api/`） |
+| 代码规范 | ESLint + Prettier |
+
+---
+
+## 2. 目录结构
 
 ```
 admin/src/
-├── main.ts           # Entry: createApp → router → pinia → mount
-├── App.vue           # Root component
+├── main.ts                 # 入口：创建 app → 注册插件 → mount
+├── App.vue
 ├── api/
-│   └── index.ts      # Axios instance with interceptors
-├── router/
-│   └── index.ts      # Route definitions + auth guards
+│   └── index.ts            # Axios 实例 + 拦截器 + 错误处理
 ├── stores/
-│   ├── auth.ts       # Auth state (token, user)
-│   └── app.ts        # App state (sidebar, theme)
-├── layouts/
-│   └── default.vue   # Sidebar + topbar layout
+│   └── index.ts            # Pinia store（用户状态、全局状态）
+├── router/
+│   └── index.ts            # Vue Router 配置
 ├── views/
-│   ├── login/        # Admin login
-│   ├── dashboard/    # Stats overview
-│   ├── courses/      # Course CRUD
-│   ├── challenges/   # Challenge CRUD
-│   ├── users/        # User management
-│   ├── leaderboard/  # Rankings
-│   ├── moderation/   # Content review
-│   ├── settings/     # System config
-│   └── error/        # 404 page
-└── styles/
-    ├── global.scss
-    └── variables.scss
+│   ├── login/index.vue     # 登录页
+│   └── ...                 # 其他管理页面
+└── components/             # 公共组件
 ```
 
-## WHERE TO LOOK
+---
 
-| Task | Location | Notes |
-|------|----------|-------|
-| Add page | `src/views/{name}/` | Create directory + SFC |
-| Add route | `src/router/index.ts` | Register with auth meta |
-| API call | `src/api/index.ts` | Add method, use in store/component |
-| Add store | `src/stores/` | Pinia store with `defineStore` |
-| Layout change | `src/layouts/default.vue` | Sidebar/topbar structure |
+## 3. 开发规范
 
-## CONVENTIONS
+### 3.1 Vue SFC 格式
 
-1. **Composition API** — Always use `<script setup>`
-2. **TypeScript** — Type annotations on props, refs, function params
-3. **Pinia** — All shared state in stores, never prop drilling
-4. **Element Plus** — Use component library, avoid custom CSS when possible
-5. **SCSS scoped** — Component styles with `scoped` attribute
-6. **API centralization** — All HTTP through `src/api/index.ts`
+```vue
+<template>
+  <div class="app-container">
+    <!-- Element Plus 组件 -->
+  </div>
+</template>
 
-## ANTI-PATTERNS
+<script setup lang="ts">
+import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
+import { useUserStore } from '@/stores'
+import { getSomeData } from '@/api'
 
-- **Never** call axios directly — use `src/api/index.ts`
-- **Never** mutate store state outside actions
-- **Never** use Options API — Composition API only
-- **Never** hardcode colors — use Element Plus theme vars
+const router = useRouter()
+const userStore = useUserStore()
+const loading = ref(false)
+const dataList = ref<any[]>([])
 
-## COMMANDS
+const fetchData = async () => {
+  loading.value = true
+  try {
+    const res = await getSomeData()
+    dataList.value = res.data.items
+  } finally {
+    loading.value = false
+  }
+}
+
+onMounted(() => {
+  fetchData()
+})
+</script>
+
+<style scoped>
+.app-container {
+  padding: 20px;
+}
+</style>
+```
+
+### 3.2 API 调用
+
+所有 HTTP 请求通过 `src/api/index.ts` 的 Axios 实例：
+
+```typescript
+import request from '@/api'
+
+export const getDashboardStats = () =>
+  request.get('/admin/stats/dashboard')
+
+export const getCourseList = (params: any) =>
+  request.get('/admin/courses', { params })
+
+export const createCourse = (data: any) =>
+  request.post('/admin/courses', data)
+```
+
+### 3.3 路由
+
+```typescript
+// src/router/index.ts
+const routes = [
+  {
+    path: '/login',
+    component: () => import('@/views/login/index.vue'),
+    hidden: true,
+  },
+  {
+    path: '/',
+    component: Layout,
+    children: [
+      {
+        path: 'dashboard',
+        component: () => import('@/views/dashboard/index.vue'),
+        name: 'Dashboard',
+        meta: { title: '仪表板', icon: 'dashboard' },
+      },
+    ],
+  },
+]
+```
+
+---
+
+## 4. 快速启动
 
 ```bash
-npm run dev        # localhost:3000
-npm run build      # vue-tsc + vite build
-npm run lint       # ESLint --fix
-npm run format     # Prettier
+cd admin
+npm install
+npm run dev          # localhost:3000
+npm run build        # 生产构建
+npm run lint         # ESLint 检查
 ```
 
-## NOTES
+---
 
-- Vite proxy: `/api` → `http://localhost:8080`
-- Auth guard redirects unauthenticated to `/login`
-- All management pages require authentication
+## 5. 与后端交互
+
+Admin 使用独立的管理员登录接口：
+
+```
+POST /api/v1/auth/admin/login
+```
+
+管理员 JWT 带有 `role: admin`，访问 `/admin/*` 端点需要此角色。
+
+常用管理端点：
+
+```
+GET    /api/v1/admin/stats/dashboard     仪表板统计
+GET    /api/v1/admin/stats/courses        课程统计
+GET    /api/v1/admin/stats/users          用户统计
+GET    /api/v1/admin/courses              课程列表（管理）
+POST   /api/v1/admin/courses              创建课程
+PUT    /api/v1/admin/courses/{id}         更新课程
+GET    /api/v1/admin/challenges           挑战列表（管理）
+POST   /api/v1/admin/challenges           创建挑战
+```

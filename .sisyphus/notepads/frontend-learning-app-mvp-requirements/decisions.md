@@ -1,2 +1,0 @@
-- 审计采用“章节覆盖 + Must Have/Must NOT Have关键词 + 范围一致性”三层校验，而非仅检查标题是否存在。
-- Scope Fidelity Check Round 3 结论为 REJECT：范围审计必须同时检查主契约与辅助文档，任一处残留支付、推荐、组队挑战、社区扩展等超范围语义都不合格。
