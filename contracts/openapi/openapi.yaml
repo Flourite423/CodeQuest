@@ -4771,6 +4771,17 @@ components:
         awarded_at:
           type: string
           format: date-time
+        name:
+          type: string
+          description: Badge display name from badges catalog
+        description:
+          type: string
+          description: Badge description text
+        icon_url:
+          type: string
+          format: uri
+          nullable: true
+          description: Badge icon image URL
     LearnerChallengeMapItem:
       type: object
       description: Learner-visible challenge map item for map and progression screens
@@ -5535,37 +5546,13 @@ components:
       x-permission: learner.stats.read
       x-idempotent: true
       required:
-        - learner_id
-        - board_type
-        - period_key
         - current_xp_balance
-        - lifetime_xp_earned
         - completed_course_count
         - completed_challenge_count
-        - ai_help_request_count
         - total_learning_minutes
         - streak_days
-        - generated_at
       properties:
-        learner_id:
-          type: string
-          format: uuid
-        board_type:
-          type: string
-          enum:
-            - daily
-            - weekly
-            - total
-        period_key:
-          type: string
-        current_rank:
-          type: integer
-          minimum: 1
-          nullable: true
         current_xp_balance:
-          type: integer
-          minimum: 0
-        lifetime_xp_earned:
           type: integer
           minimum: 0
         completed_course_count:
@@ -5574,9 +5561,47 @@ components:
         completed_challenge_count:
           type: integer
           minimum: 0
+        total_learning_minutes:
+          type: integer
+          minimum: 0
+        streak_days:
+          type: integer
+          minimum: 0
+        total_submissions:
+          type: integer
+          minimum: 0
+          description: Total exercise submissions count
+        learner_id:
+          type: string
+          format: uuid
+          description: Deprecated — reserved for future use
+        board_type:
+          type: string
+          enum:
+            - daily
+            - weekly
+            - total
+          description: Deprecated — reserved for future use
+        period_key:
+          type: string
+          description: Deprecated — reserved for future use
+        current_rank:
+          type: integer
+          minimum: 1
+          nullable: true
+          description: Deprecated — reserved for future use
+        lifetime_xp_earned:
+          type: integer
+          minimum: 0
+          description: Deprecated — reserved for future use
         ai_help_request_count:
           type: integer
           minimum: 0
+          description: Deprecated — reserved for future use
+        generated_at:
+          type: string
+          format: date-time
+          description: Deprecated — reserved for future use
         total_learning_minutes:
           type: integer
           minimum: 0
