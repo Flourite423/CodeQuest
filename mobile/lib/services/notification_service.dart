@@ -6,11 +6,11 @@ import 'package:get/get.dart';
 
 const AndroidNotificationChannel _defaultNotificationChannel =
     AndroidNotificationChannel(
-      'codequest_notifications',
-      '学习提醒',
-      description: '用于显示学习应用的推送与测试通知。',
-      importance: Importance.high,
-    );
+  'codequest_notifications',
+  '学习提醒',
+  description: '用于显示学习应用的推送与测试通知。',
+  importance: Importance.high,
+);
 
 @pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
@@ -74,17 +74,16 @@ class NotificationService extends GetxService {
     _isInitializing = true;
 
     try {
-      await _ensureFirebaseInitialized();
+      // Firebase 推送通知模块已禁用，仅使用本地通知。
+      // 如需启用 FCM，取消下方注释并配置 Firebase 凭证。
+      // await _ensureFirebaseInitialized();
+      firebaseReady.value = false;
       await _initializeLocalNotifications();
 
-      if (_supportsFcm && firebaseReady.value) {
-        FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
-        await _configureForegroundPresentation();
-        await requestPermission();
-        await _bindMessageListeners();
-        await refreshToken();
-      } else if (!_supportsFcm) {
-        permissionStatusText.value = '当前平台不支持 FCM';
+      if (_supportsLocalNotifications) {
+        permissionStatusText.value = '本地通知可用';
+      } else {
+        permissionStatusText.value = '当前平台不支持通知';
       }
     } catch (e) {
       debugPrint('通知服务初始化失败: $e');
@@ -116,7 +115,8 @@ class NotificationService extends GetxService {
       return;
     }
 
-    const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
+    const androidSettings =
+        AndroidInitializationSettings('@mipmap/ic_launcher');
     const darwinSettings = DarwinInitializationSettings(
       requestAlertPermission: false,
       requestBadgePermission: false,
@@ -142,8 +142,7 @@ class NotificationService extends GetxService {
 
     await _localNotifications
         .resolvePlatformSpecificImplementation<
-          AndroidFlutterLocalNotificationsPlugin
-        >()
+            AndroidFlutterLocalNotificationsPlugin>()
         ?.createNotificationChannel(_defaultNotificationChannel);
 
     _localNotificationsReady = true;
@@ -197,8 +196,7 @@ class NotificationService extends GetxService {
 
       await _localNotifications
           .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin
-          >()
+              AndroidFlutterLocalNotificationsPlugin>()
           ?.requestNotificationsPermission();
 
       _updatePermissionState(settings.authorizationStatus);
@@ -239,14 +237,14 @@ class NotificationService extends GetxService {
     if (_supportsLocalNotifications && _localNotificationsReady) {
       await _showLocalNotification(
         title: '测试通知',
-        body: token == null ? '本地通知已触发，可用于验证通知展示流程。' : '当前 Token 已刷新，可用于调试推送链路。',
+        body:
+            token == null ? '本地通知已触发，可用于验证通知展示流程。' : '当前 Token 已刷新，可用于调试推送链路。',
         payload: 'test_notification',
       );
     }
 
-    lastMessageSummary.value = token == null
-        ? '已发送本地测试通知'
-        : '已发送测试通知，Token 已刷新';
+    lastMessageSummary.value =
+        token == null ? '已发送本地测试通知' : '已发送测试通知，Token 已刷新';
   }
 
   Future<void> _handleForegroundMessage(RemoteMessage message) async {
@@ -269,9 +267,8 @@ class NotificationService extends GetxService {
     final title = message.notification?.title ?? '通知';
     final body = message.notification?.body ?? '已打开通知内容';
 
-    lastMessageSummary.value = launchedFromTerminated
-        ? '应用通过通知启动：$title'
-        : '已点击通知：$title';
+    lastMessageSummary.value =
+        launchedFromTerminated ? '应用通过通知启动：$title' : '已点击通知：$title';
 
     if (Get.context != null) {
       Get.snackbar(

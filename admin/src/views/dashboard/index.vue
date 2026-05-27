@@ -1,143 +1,199 @@
 <script setup lang="ts">
-import { ref, onMounted, nextTick } from 'vue'
-import { useRouter } from 'vue-router'
-import { User, Reading, View, Warning, DocumentChecked } from '@element-plus/icons-vue'
-import type { DashboardStats } from '@/types'
-import { statsApi } from '@/api'
-import * as echarts from 'echarts'
+import { ref, onMounted, nextTick, markRaw } from "vue";
+import { useRouter } from "vue-router";
+import {
+  User,
+  Reading,
+  View,
+  Warning,
+  DocumentChecked,
+} from "@element-plus/icons-vue";
+import type { DashboardStats } from "@/types";
+import { statsApi } from "@/api";
+import * as echarts from "echarts";
 
-const router = useRouter()
-const loading = ref(false)
-const error = ref('')
-const forbidden = ref(false)
-const sessionExpired = ref(false)
+const router = useRouter();
+const loading = ref(false);
+const error = ref("");
+const forbidden = ref(false);
+const sessionExpired = ref(false);
 
-const stats = ref<{ title: string; value: string; icon: any; color: string }[]>([])
-const trendChartRef = ref<HTMLDivElement | null>(null)
-const barChartRef = ref<HTMLDivElement | null>(null)
+const stats = ref<{ title: string; value: string; icon: any; color: string }[]>(
+  [],
+);
+const trendChartRef = ref<HTMLDivElement | null>(null);
+const barChartRef = ref<HTMLDivElement | null>(null);
 
-let trendChart: echarts.ECharts | null = null
-let barChart: echarts.ECharts | null = null
+let trendChart: echarts.ECharts | null = null;
+let barChart: echarts.ECharts | null = null;
 
 const initTrendChart = (data: DashboardStats) => {
-  if (!trendChartRef.value) return
-  trendChart = echarts.init(trendChartRef.value)
-  trendChart.setOption({
-    title: { text: '近7天活跃用户趋势', left: 'center', textStyle: { fontSize: 16 } },
-    tooltip: { trigger: 'axis' },
-    grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
-    xAxis: {
-      type: 'category',
-      boundaryGap: false,
-      data: data.trend.dates,
-      axisLine: { lineStyle: { color: '#909399' } },
-    },
-    yAxis: {
-      type: 'value',
-      axisLine: { lineStyle: { color: '#909399' } },
-      splitLine: { lineStyle: { color: '#EBEEF5' } },
-    },
-    series: [
-      {
-        name: '活跃用户数',
-        type: 'line',
-        smooth: true,
-        data: data.trend.active_users,
-        areaStyle: {
-          color: new (echarts as any).graphic.LinearGradient(0, 0, 0, 1, [
-            { offset: 0, color: 'rgba(64,158,255,0.3)' },
-            { offset: 1, color: 'rgba(64,158,255,0.05)' },
-          ]),
+  if (!trendChartRef.value) return;
+  // 延迟初始化确保容器有正确尺寸
+  setTimeout(() => {
+    if (!trendChartRef.value) return;
+    try {
+      trendChart = echarts.init(trendChartRef.value);
+      trendChart.setOption({
+        title: {
+          text: "近7天活跃用户趋势",
+          left: "center",
+          textStyle: { fontSize: 16 },
         },
-        lineStyle: { color: '#409EFF', width: 3 },
-        itemStyle: { color: '#409EFF' },
-        symbol: 'circle',
-        symbolSize: 8,
-      },
-    ],
-  })
-}
+        tooltip: { trigger: "axis" },
+        grid: { left: "3%", right: "4%", bottom: "3%", containLabel: true },
+        xAxis: {
+          type: "category",
+          boundaryGap: false,
+          data: data.trend.dates,
+          axisLine: { lineStyle: { color: "#909399" } },
+        },
+        yAxis: {
+          type: "value",
+          axisLine: { lineStyle: { color: "#909399" } },
+          splitLine: { lineStyle: { color: "#EBEEF5" } },
+        },
+        series: [
+          {
+            name: "活跃用户数",
+            type: "line",
+            smooth: true,
+            data: data.trend.active_users,
+            areaStyle: {
+              color: new (echarts as any).graphic.LinearGradient(0, 0, 0, 1, [
+                { offset: 0, color: "rgba(64,158,255,0.3)" },
+                { offset: 1, color: "rgba(64,158,255,0.05)" },
+              ]),
+            },
+            lineStyle: { color: "#409EFF", width: 3 },
+            itemStyle: { color: "#409EFF" },
+            symbol: "circle",
+            symbolSize: 8,
+          },
+        ],
+      });
+    } catch (e) {
+      console.error("Trend chart init failed:", e);
+    }
+  }, 100);
+};
 
 const initBarChart = (data: DashboardStats) => {
-  if (!barChartRef.value) return
-  barChart = echarts.init(barChartRef.value)
-  barChart.setOption({
-    title: { text: '近7天数据增长', left: 'center', textStyle: { fontSize: 16 } },
-    tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
-    legend: { data: ['新增用户', '提交数量'], bottom: 0 },
-    grid: { left: '3%', right: '4%', bottom: '10%', containLabel: true },
-    xAxis: {
-      type: 'category',
-      data: data.trend.dates,
-      axisLine: { lineStyle: { color: '#909399' } },
-    },
-    yAxis: {
-      type: 'value',
-      axisLine: { lineStyle: { color: '#909399' } },
-      splitLine: { lineStyle: { color: '#EBEEF5' } },
-    },
-    series: [
-      {
-        name: '新增用户',
-        type: 'bar',
-        data: data.trend.new_users,
-        itemStyle: { color: '#67C23A', borderRadius: [4, 4, 0, 0] },
-        barWidth: '30%',
-      },
-      {
-        name: '提交数量',
-        type: 'bar',
-        data: data.trend.submissions,
-        itemStyle: { color: '#E6A23C', borderRadius: [4, 4, 0, 0] },
-        barWidth: '30%',
-      },
-    ],
-  })
-}
+  if (!barChartRef.value) return;
+  setTimeout(() => {
+    if (!barChartRef.value) return;
+    try {
+      barChart = echarts.init(barChartRef.value);
+      barChart.setOption({
+        title: {
+          text: "近7天数据增长",
+          left: "center",
+          textStyle: { fontSize: 16 },
+        },
+        tooltip: { trigger: "axis", axisPointer: { type: "shadow" } },
+        legend: { data: ["新增用户", "提交数量"], bottom: 0 },
+        grid: { left: "3%", right: "4%", bottom: "10%", containLabel: true },
+        xAxis: {
+          type: "category",
+          data: data.trend.dates,
+          axisLine: { lineStyle: { color: "#909399" } },
+        },
+        yAxis: {
+          type: "value",
+          axisLine: { lineStyle: { color: "#909399" } },
+          splitLine: { lineStyle: { color: "#EBEEF5" } },
+        },
+        series: [
+          {
+            name: "新增用户",
+            type: "bar",
+            data: data.trend.new_users,
+            itemStyle: { color: "#67C23A", borderRadius: [4, 4, 0, 0] },
+            barWidth: "30%",
+          },
+          {
+            name: "提交数量",
+            type: "bar",
+            data: data.trend.submissions,
+            itemStyle: { color: "#E6A23C", borderRadius: [4, 4, 0, 0] },
+            barWidth: "30%",
+          },
+        ],
+      });
+    } catch (e) {
+      console.error("Bar chart init failed:", e);
+    }
+  }, 100);
+};
 
 const handleResize = () => {
-  trendChart?.resize()
-  barChart?.resize()
-}
+  trendChart?.resize();
+  barChart?.resize();
+};
 
 const fetchData = async () => {
-  loading.value = true
-  error.value = ''
-  forbidden.value = false
-  sessionExpired.value = false
+  loading.value = true;
+  error.value = "";
+  forbidden.value = false;
+  sessionExpired.value = false;
   try {
-    const statsRes = await statsApi.dashboard()
-    const data = statsRes.data as DashboardStats
+    const statsRes = await statsApi.dashboard();
+    const data = statsRes.data as DashboardStats;
 
     stats.value = [
-      { title: '总用户数', value: data.total_users.toLocaleString(), icon: User, color: '#409EFF' },
-      { title: '总课程数', value: data.total_courses.toLocaleString(), icon: Reading, color: '#67C23A' },
-      { title: '总提交数', value: data.total_submissions.toLocaleString(), icon: DocumentChecked, color: '#909399' },
-      { title: '今日活跃', value: data.active_today.toLocaleString(), icon: View, color: '#E6A23C' },
-      { title: '待审核数', value: data.pending_moderation.toLocaleString(), icon: Warning, color: '#F56C6C' },
-    ]
+      {
+        title: "总用户数",
+        value: data.total_users.toLocaleString(),
+        icon: markRaw(User),
+        color: "#409EFF",
+      },
+      {
+        title: "总课程数",
+        value: data.total_courses.toLocaleString(),
+        icon: markRaw(Reading),
+        color: "#67C23A",
+      },
+      {
+        title: "总提交数",
+        value: data.total_submissions.toLocaleString(),
+        icon: markRaw(DocumentChecked),
+        color: "#909399",
+      },
+      {
+        title: "今日活跃",
+        value: data.active_today.toLocaleString(),
+        icon: markRaw(View),
+        color: "#E6A23C",
+      },
+      {
+        title: "待审核数",
+        value: data.pending_moderation.toLocaleString(),
+        icon: markRaw(Warning),
+        color: "#F56C6C",
+      },
+    ];
 
-    await nextTick()
-    initTrendChart(data)
-    initBarChart(data)
+    await nextTick();
+    initTrendChart(data);
+    initBarChart(data);
   } catch (e: unknown) {
-    if (e instanceof Error && e.message.includes('403')) {
-      forbidden.value = true
-    } else if (e instanceof Error && e.message.includes('401')) {
-      sessionExpired.value = true
-      setTimeout(() => router.push('/login?expired=1'), 2000)
+    if (e instanceof Error && e.message.includes("403")) {
+      forbidden.value = true;
+    } else if (e instanceof Error && e.message.includes("401")) {
+      sessionExpired.value = true;
+      setTimeout(() => router.push("/login?expired=1"), 2000);
     } else {
-      error.value = '加载数据失败，请重试'
+      error.value = "加载数据失败，请重试";
     }
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-}
+};
 
 onMounted(() => {
-  fetchData()
-  window.addEventListener('resize', handleResize)
-})
+  fetchData();
+  window.addEventListener("resize", handleResize);
+});
 </script>
 
 <template>
@@ -168,7 +224,14 @@ onMounted(() => {
     <template v-else>
       <!-- 统计卡片 -->
       <el-row :gutter="16" class="stats-row">
-        <el-col v-for="stat in stats" :key="stat.title" :xs="12" :sm="8" :md="4" :lg="4">
+        <el-col
+          v-for="stat in stats"
+          :key="stat.title"
+          :xs="12"
+          :sm="8"
+          :md="4"
+          :lg="4"
+        >
           <el-card class="stat-card" shadow="hover">
             <div class="stat-content">
               <el-icon :size="36" :color="stat.color">

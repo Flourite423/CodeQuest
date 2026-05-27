@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:firebase_core/firebase_core.dart';
 import 'package:get_storage/get_storage.dart';
 
 import 'bindings/app_binding.dart';
@@ -12,11 +11,12 @@ import 'themes/app_theme.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  try {
-    await Firebase.initializeApp();
-  } catch (_) {
-    // 无 Firebase 配置时静默降级，不影响核心功能
-  }
+  // Firebase 推送通知模块已禁用。如需启用，取消下方注释并配置 Firebase 凭证。
+  // try {
+  //   await Firebase.initializeApp();
+  // } catch (_) {
+  //   // 无 Firebase 配置时静默降级，不影响核心功能
+  // }
 
   // Initialize GetStorage
   try {

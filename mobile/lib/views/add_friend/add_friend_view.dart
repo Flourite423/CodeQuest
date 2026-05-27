@@ -304,7 +304,7 @@ class AddFriendController extends BaseController {
   Future<void> sendFriendRequest(String userId) async {
     try {
       await _apiService.post('/learner/friends/requests', data: {
-        'friend_id': userId,
+        'addressee_id': userId,
       });
       _sentRequestIds.add(userId);
       Get.snackbar(

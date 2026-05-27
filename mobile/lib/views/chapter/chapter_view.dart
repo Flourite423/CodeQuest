@@ -500,6 +500,12 @@ class ChapterController extends BaseController {
     chapterId.value = Get.parameters['id'] ?? '';
     courseId.value = Get.parameters['courseId'] ?? '';
 
+    // 从 URL query 参数读取 course_id（如从练习页返回时）
+    if (courseId.value.isEmpty) {
+      final uri = Uri.tryParse(Get.currentRoute);
+      courseId.value = uri?.queryParameters['course_id'] ?? '';
+    }
+
     // 如果路由参数中没有 courseId，尝试从缓存课程中查找包含此章节的课程
     if (courseId.value.isEmpty && chapterId.value.isNotEmpty) {
       final cachedCourses = _progressService.getCachedCourses();

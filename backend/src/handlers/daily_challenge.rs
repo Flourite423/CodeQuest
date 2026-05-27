@@ -85,7 +85,11 @@ pub async fn get_today_challenge(depot: &mut Depot) -> Result<Json<ApiResponse<s
     let learner_id = auth::get_current_account_id(depot)?;
     let record = if let Some(ref ch) = challenge {
         sqlx::query_as::<_, DailyChallengeRecord>(
-            "SELECT * FROM daily_challenge_records WHERE daily_challenge_id = $1 AND learner_id = $2"
+            "SELECT id, daily_challenge_id, learner_id, status::text,
+                    score, elapsed_seconds, streak_after_completion,
+                    completed_at, created_at, updated_at
+             FROM daily_challenge_records
+             WHERE daily_challenge_id = $1 AND learner_id = $2"
         )
         .bind(ch.id)
         .bind(learner_id)
@@ -163,7 +167,12 @@ pub async fn get_daily_challenge_records(req: &mut Request, depot: &mut Depot) -
         .map_err(|_| StatusError::bad_request().brief("Invalid challenge_id"))?;
     
     let records = sqlx::query_as::<_, DailyChallengeRecord>(
-        "SELECT * FROM daily_challenge_records WHERE daily_challenge_id = $1 AND learner_id = $2 ORDER BY created_at DESC"
+        "SELECT id, daily_challenge_id, learner_id, status::text,
+                score, elapsed_seconds, streak_after_completion,
+                completed_at, created_at, updated_at
+         FROM daily_challenge_records
+         WHERE daily_challenge_id = $1 AND learner_id = $2
+         ORDER BY created_at DESC"
     )
     .bind(challenge_uuid)
     .bind(learner_id)
@@ -283,11 +292,31 @@ pub async fn submit_daily_challenge(req: &mut Request, depot: &mut Depot) -> Res
     let challenge_uuid = Uuid::parse_str(&challenge_id)
         .map_err(|_| StatusError::bad_request().brief("Invalid challenge_id"))?;
     
+    // 检查是否已提交过（唯一约束：同一天同一用户只能提交一次）
+    let existing = sqlx::query_scalar::<_, i32>(
+        "SELECT 1 FROM daily_challenge_records 
+         WHERE daily_challenge_id = $1 AND learner_id = $2
+         LIMIT 1"
+    )
+    .bind(challenge_uuid)
+    .bind(learner_id)
+    .fetch_optional(pool)
+    .await
+    .map_err(|_| StatusError::internal_server_error())?;
+
+    if existing.is_some() {
+        return Err(StatusError::bad_request().brief("今日挑战已完成，请明日再来"));
+    }
+
+    // 显式指定列并转换自定义类型，避免 RETURNING * 类型不匹配
     let record = sqlx::query_as::<_, DailyChallengeRecord>(
-        "INSERT INTO daily_challenge_records (id, daily_challenge_id, learner_id, status, 
-         score, elapsed_seconds, streak_after_completion, completed_at) 
+        "INSERT INTO daily_challenge_records 
+            (id, daily_challenge_id, learner_id, status, 
+             score, elapsed_seconds, streak_after_completion, completed_at) 
          VALUES ($1, $2, $3, 'passed', $4, $5, 1, NOW())
-         RETURNING *"
+         RETURNING id, daily_challenge_id, learner_id, status::text,
+                   score, elapsed_seconds, streak_after_completion,
+                   completed_at, created_at, updated_at"
     )
     .bind(id)
     .bind(challenge_uuid)

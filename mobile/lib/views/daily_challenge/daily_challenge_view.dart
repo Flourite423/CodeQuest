@@ -174,7 +174,7 @@ class DailyChallengeController extends BaseController {
       await _apiService.post(
         '/learner/daily-challenges/$challengeId/submit',
         data: <String, dynamic>{
-          'source_code': '',
+          'score': 100,
           'elapsed_seconds': 0,
         },
       );
@@ -194,7 +194,19 @@ class DailyChallengeController extends BaseController {
         colorText: cs.onPrimaryContainer,
       );
     } on dio.DioException catch (e) {
-      if (e.response?.statusCode == 401) {
+      if (e.response?.statusCode == 400) {
+        // 今日已提交过，刷新状态
+        status.value = DailyChallengeStatus.attempted;
+        final cs = Theme.of(Get.context!).colorScheme;
+        Get.snackbar(
+          '已完成',
+          '今日挑战已经完成。',
+          snackPosition: SnackPosition.BOTTOM,
+          margin: const EdgeInsets.all(16),
+          backgroundColor: cs.primaryContainer,
+          colorText: cs.onPrimaryContainer,
+        );
+      } else if (e.response?.statusCode == 401) {
         await setAuthExpired(message: '登录状态已失效，请重新登录。');
       } else if (e.response?.statusCode == 403) {
         Get.snackbar(

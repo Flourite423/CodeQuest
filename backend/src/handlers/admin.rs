@@ -71,6 +71,7 @@ pub struct CreateAnnouncementRequest {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct SafeAccount {
+    #[serde(rename = "account_id")]
     pub id: String,
     pub email: String,
     pub default_role: String,
@@ -78,6 +79,30 @@ pub struct SafeAccount {
     pub last_login_at: Option<DateTime<Utc>>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub profile_summary: Option<ProfileSummary>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ProfileSummary {
+    pub display_name: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub avatar_url: Option<String>,
+}
+
+#[derive(Debug, sqlx::FromRow)]
+struct AdminUserListRow {
+    pub id: Uuid,
+    pub email: String,
+    pub default_role: Option<String>,
+    pub account_status: Option<String>,
+    pub last_login_at: Option<DateTime<Utc>>,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+    pub learner_nickname: Option<String>,
+    pub learner_avatar_url: Option<String>,
+    pub admin_display_name: Option<String>,
+    pub admin_avatar_url: Option<String>,
 }
 
 #[derive(Debug, Serialize)]
@@ -232,21 +257,47 @@ pub async fn list_admin_users(req: &mut Request, depot: &mut Depot) -> Result<Js
     let page_size = req.query::<i64>("page_size").unwrap_or(20).clamp(1, 100);
     let offset = (page - 1) * page_size;
 
-    let users = sqlx::query_as::<_, crate::models::Account>("SELECT * FROM accounts ORDER BY created_at DESC LIMIT $1 OFFSET $2")
-        .bind(page_size)
-        .bind(offset)
-        .fetch_all(pool)
-        .await
-        .map_err(|_| StatusError::internal_server_error())?;
+    let rows = sqlx::query_as::<_, AdminUserListRow>(
+        r#"
+        SELECT 
+            a.id, a.email, a.default_role::text AS default_role, a.account_status::text AS account_status,
+            a.last_login_at, a.created_at, a.updated_at,
+            lp.nickname AS learner_nickname, lp.avatar_url AS learner_avatar_url,
+            ap.display_name AS admin_display_name, ap.avatar_url AS admin_avatar_url
+        FROM accounts a
+        LEFT JOIN learner_profiles lp ON a.id = lp.account_id
+        LEFT JOIN admin_profiles ap ON a.id = ap.account_id
+        ORDER BY a.created_at DESC
+        LIMIT $1 OFFSET $2
+        "#
+    )
+    .bind(page_size)
+    .bind(offset)
+    .fetch_all(pool)
+    .await
+    .map_err(|e| {
+        tracing::error!("Failed to list admin users: {}", e);
+        StatusError::internal_server_error()
+    })?;
 
-    let safe_users: Vec<SafeAccount> = users.into_iter().map(|account| SafeAccount {
-        id: account.id.to_string(),
-        email: account.email,
-        default_role: format!("{:?}", account.default_role).to_lowercase(),
-        account_status: format!("{:?}", account.account_status).to_lowercase(),
-        last_login_at: account.last_login_at,
-        created_at: account.created_at,
-        updated_at: account.updated_at,
+    let safe_users: Vec<SafeAccount> = rows.into_iter().map(|row| {
+        let display_name = row.admin_display_name
+            .or(row.learner_nickname)
+            .unwrap_or_else(|| row.email.split('@').next().unwrap_or("Unknown").to_string());
+        let avatar_url = row.admin_avatar_url.or(row.learner_avatar_url);
+        SafeAccount {
+            id: row.id.to_string(),
+            email: row.email,
+            default_role: row.default_role.unwrap_or_else(|| "learner".to_string()).to_lowercase(),
+            account_status: row.account_status.unwrap_or_else(|| "active".to_string()).to_lowercase(),
+            last_login_at: row.last_login_at,
+            created_at: row.created_at,
+            updated_at: row.updated_at,
+            profile_summary: Some(ProfileSummary {
+                display_name,
+                avatar_url,
+            }),
+        }
     }).collect();
     
     let total: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM accounts")
@@ -948,12 +999,16 @@ pub async fn get_admin_user(req: &mut Request, depot: &mut Depot) -> Result<Json
     
     let safe_user = SafeAccount {
         id: user.id.to_string(),
-        email: user.email,
+        email: user.email.clone(),
         default_role: format!("{:?}", user.default_role).to_lowercase(),
         account_status: format!("{:?}", user.account_status).to_lowercase(),
         last_login_at: user.last_login_at,
         created_at: user.created_at,
         updated_at: user.updated_at,
+        profile_summary: Some(ProfileSummary {
+            display_name: user.email.split('@').next().unwrap_or("Unknown").to_string(),
+            avatar_url: None,
+        }),
     };
     
     Ok(Json(ApiResponse::new(safe_user)))

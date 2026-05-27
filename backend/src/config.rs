@@ -1,6 +1,16 @@
 use config::{Config, ConfigError, Environment, File};
 use serde::Deserialize;
 
+/// 从 .env 文件加载环境变量（如果存在）
+fn load_dotenv() {
+    if let Err(e) = dotenvy::dotenv() {
+        // 仅在文件不存在时静默忽略，其他错误则打印
+        if !e.not_found() {
+            eprintln!("Warning: failed to load .env file: {}", e);
+        }
+    }
+}
+
 #[derive(Debug, Deserialize, Clone)]
 pub struct AiConfig {
     pub provider: String,
@@ -26,6 +36,8 @@ pub struct AppConfig {
 
 impl AppConfig {
     pub fn from_env() -> Result<Self, ConfigError> {
+        load_dotenv();
+
         let cfg = Config::builder()
             .add_source(File::with_name("config/default").required(false))
             .add_source(File::with_name("config/local").required(false))
