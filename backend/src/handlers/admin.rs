@@ -541,7 +541,6 @@ pub async fn create_course(req: &mut Request, depot: &mut Depot) -> Result<Json<
         .map_err(|_| StatusError::bad_request().brief("Invalid request body"))?;
     
     let id = Uuid::new_v4();
-    let difficulty_enum = map_course_difficulty(body.get("difficulty").and_then(|v| v.as_str()));
     let estimated_minutes = body.get("estimated_minutes").and_then(|v| v.as_i64()).unwrap_or(0) as i32;
     let status = body.get("status").and_then(|v| v.as_str()).unwrap_or("draft");
     let sort_order = body.get("sort_order").and_then(|v| v.as_i64()).unwrap_or(0) as i32;
@@ -549,11 +548,13 @@ pub async fn create_course(req: &mut Request, depot: &mut Depot) -> Result<Json<
     let published_at = if status == "published" { Some(chrono::Utc::now()) } else { None };
     let created_by = auth::get_current_account_id(depot)?;
     
+    let difficulty_str = body.get("difficulty").and_then(|v| v.as_str()).unwrap_or("beginner");
+    
     sqlx::query(
         "INSERT INTO courses (
             id, course_code, title, summary, description, cover_image_url, difficulty,
             estimated_minutes, status, sort_order, content_version, created_by, published_at
-         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9::course_status, $10, $11, $12, $13)"
+         ) VALUES ($1, $2, $3, $4, $5, $6, $7::difficulty_level, $8, $9::course_status, $10, $11, $12, $13)"
     )
     .bind(id)
     .bind(body.get("course_code").and_then(|v| v.as_str()).unwrap_or(""))
@@ -561,7 +562,7 @@ pub async fn create_course(req: &mut Request, depot: &mut Depot) -> Result<Json<
     .bind(body.get("summary").and_then(|v| v.as_str()).unwrap_or(""))
     .bind(body.get("description").and_then(|v| v.as_str()))
     .bind(body.get("cover_image_url").and_then(|v| v.as_str()))
-    .bind(difficulty_enum)
+    .bind(difficulty_str)
     .bind(estimated_minutes)
     .bind(status)
     .bind(sort_order)

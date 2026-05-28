@@ -123,7 +123,23 @@ npm run lint
 
 ---
 
-## 6. 已知陷阱（跨端）
+## 6. 子项目详细规范
+
+| 子项目 | 规范文件 | 关键内容 |
+|--------|----------|----------|
+| **Backend** | [backend/AGENTS.md](backend/AGENTS.md) | Handler 模板、SQL 陷阱、配置说明 |
+| **Backend Handlers** | [backend/src/handlers/AGENTS.md](backend/src/handlers/AGENTS.md) | Handler 函数签名、同步判题、自动复制每日挑战 |
+| **Backend Services** | [backend/src/services/AGENTS.md](backend/src/services/AGENTS.md) | Service 两种风格（Struct/裸函数）、调用链 |
+| **Mobile** | [mobile/AGENTS.md](mobile/AGENTS.md) | View+Controller 同文件、PageState、离线优先 |
+| **Mobile Views** | [mobile/lib/views/AGENTS.md](mobile/lib/views/AGENTS.md) | 5-Tab 系统、API 解析模式、导航参数 |
+| **Admin** | [admin/AGENTS.md](admin/AGENTS.md) | Vue SFC 格式、API 调用、路由 |
+| **Admin Views** | [admin/src/views/AGENTS.md](admin/src/views/AGENTS.md) | 6 状态模板、ECharts、CRUD 弹窗 |
+| **Contracts** | [contracts/AGENTS.md](contracts/AGENTS.md) | Contract-first、响应信封、修改步骤 |
+| **OpenAPI** | [contracts/openapi/AGENTS.md](contracts/openapi/AGENTS.md) | 路径规范、Schema 命名、版本兼容规则 |
+
+---
+
+## 7. 已知陷阱（跨端）
 
 | 问题 | 影响 | 解决方案 |
 |------|------|---------|

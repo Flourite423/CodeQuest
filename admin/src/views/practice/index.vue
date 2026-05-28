@@ -2,7 +2,7 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { Plus, Warning, Document } from '@element-plus/icons-vue'
-import type { AdminExerciseListItem, ExerciseType, ExerciseStatus } from '@/types'
+import type { AdminExerciseListItem, AdminExerciseDetail, ExerciseType, ExerciseStatus } from '@/types'
 import { exerciseApi } from '@/api'
 import { ElMessage, ElMessageBox } from 'element-plus'
 
@@ -26,7 +26,7 @@ const pagination = ref({
 interface ExerciseForm {
   id?: string
   title: string
-  type: ExerciseType
+  exercise_type: ExerciseType
   difficulty: 'beginner' | 'intermediate'
   status: ExerciseStatus
 }
@@ -39,7 +39,7 @@ const handleCreate = () => {
   isCreating.value = true
   editingExercise.value = {
     title: '',
-    type: 'coding',
+    exercise_type: 'coding',
     difficulty: 'beginner',
     status: 'draft',
   }
@@ -51,7 +51,7 @@ const handleEdit = (exercise: AdminExerciseListItem) => {
   editingExercise.value = {
     id: exercise.id,
     title: exercise.title,
-    type: exercise.type,
+    exercise_type: exercise.exercise_type,
     difficulty: exercise.difficulty,
     status: exercise.status,
   }
@@ -82,12 +82,12 @@ const handleSave = async () => {
     if (isCreating.value) {
       const { ...createData } = editingExercise.value
       delete createData.id
-      await exerciseApi.create(createData as Omit<AdminExerciseListItem, 'id' | 'created_at' | 'updated_at'>)
+      await exerciseApi.create(createData as unknown as Omit<AdminExerciseListItem, 'id' | 'created_at' | 'updated_at'>)
       ElMessage.success('创建成功')
     } else {
       const { id, ...updateData } = editingExercise.value
       if (id) {
-        await exerciseApi.update(id, updateData)
+        await exerciseApi.update(id, updateData as unknown as Partial<AdminExerciseDetail>)
         ElMessage.success('更新成功')
       }
     }
@@ -327,11 +327,11 @@ fetchData()
           label="题目名称"
         />
         <el-table-column
-          prop="type"
+          prop="exercise_type"
           label="类型"
         >
           <template #default="{ row }">
-            <el-tag>{{ getTypeLabel(row.type) }}</el-tag>
+            <el-tag>{{ getTypeLabel(row.exercise_type) }}</el-tag>
           </template>
         </el-table-column>
         <el-table-column
@@ -407,7 +407,7 @@ fetchData()
           <el-input v-model="editingExercise.title" />
         </el-form-item>
         <el-form-item label="类型">
-          <el-select v-model="editingExercise.type">
+          <el-select v-model="editingExercise.exercise_type">
             <el-option
               label="编程题"
               value="coding"

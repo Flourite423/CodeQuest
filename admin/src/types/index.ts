@@ -94,7 +94,7 @@ export interface AdminExerciseListItem {
   id: string
   chapter_id: string
   title: string
-  type: ExerciseType
+  exercise_type: ExerciseType
   difficulty: CourseDifficulty
   status: ExerciseStatus
   sort_order: number

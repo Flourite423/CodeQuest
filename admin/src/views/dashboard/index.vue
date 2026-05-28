@@ -10,7 +10,7 @@ import {
 } from "@element-plus/icons-vue";
 import type { DashboardStats } from "@/types";
 import { statsApi } from "@/api";
-import * as echarts from "echarts";
+import { init as echartsInit, graphic as echartsGraphic } from "echarts";
 
 const router = useRouter();
 const loading = ref(false);
@@ -33,7 +33,7 @@ const initTrendChart = (data: DashboardStats) => {
   setTimeout(() => {
     if (!trendChartRef.value) return;
     try {
-      trendChart = echarts.init(trendChartRef.value);
+      trendChart = echartsInit(trendChartRef.value);
       trendChart.setOption({
         title: {
           text: "近7天活跃用户趋势",
@@ -60,7 +60,7 @@ const initTrendChart = (data: DashboardStats) => {
             smooth: true,
             data: data.trend.active_users,
             areaStyle: {
-              color: new (echarts as any).graphic.LinearGradient(0, 0, 0, 1, [
+              color: new (echartsGraphic as any).LinearGradient(0, 0, 0, 1, [
                 { offset: 0, color: "rgba(64,158,255,0.3)" },
                 { offset: 1, color: "rgba(64,158,255,0.05)" },
               ]),
@@ -83,7 +83,7 @@ const initBarChart = (data: DashboardStats) => {
   setTimeout(() => {
     if (!barChartRef.value) return;
     try {
-      barChart = echarts.init(barChartRef.value);
+      barChart = echartsInit(barChartRef.value);
       barChart.setOption({
         title: {
           text: "近7天数据增长",
@@ -174,8 +174,11 @@ const fetchData = async () => {
     ];
 
     await nextTick();
-    initTrendChart(data);
-    initBarChart(data);
+    // Wait for DOM to fully render before initializing charts
+    setTimeout(() => {
+      initTrendChart(data);
+      initBarChart(data);
+    }, 300);
   } catch (e: unknown) {
     if (e instanceof Error && e.message.includes("403")) {
       forbidden.value = true;

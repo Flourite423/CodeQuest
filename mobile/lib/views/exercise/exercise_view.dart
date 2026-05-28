@@ -890,8 +890,13 @@ class ExerciseController extends BaseController {
       choiceOptions.assignAll(_buildChoiceOptions(item));
       await _restoreDraft(item);
 
-      if (item.testCases.isEmpty) {
+      if (item.type == 'coding' && item.testCases.isEmpty) {
         setEmpty(message: '暂无可用的测试用例。');
+        return;
+      }
+
+      if (item.type == 'single_choice' && item.options.isEmpty) {
+        setEmpty(message: '暂无可用的选项。');
         return;
       }
 
