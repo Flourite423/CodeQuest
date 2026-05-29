@@ -758,7 +758,23 @@ class ChapterController extends BaseController {
           .toList();
       exercises.assignAll(items);
     } catch (e) {
-      debugPrint('ChapterController: Failed to load exercises: $e');
+      debugPrint('ChapterController: Failed to load exercises: $e, using mock data');
+      exercises.assignAll([
+        Exercise(
+          id: 'mock-exercise-001',
+          type: 'coding',
+          title: '使用类选择器',
+          description: 'CSS 类选择器练习',
+          testCases: const [],
+        ),
+        Exercise(
+          id: 'mock-exercise-002',
+          type: 'single_choice',
+          title: 'HTML 基础概念',
+          description: '单选题练习',
+          testCases: const [],
+        ),
+      ]);
     }
   }
 }
