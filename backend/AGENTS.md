@@ -61,7 +61,8 @@ backend/
 │   ├── 004_feedback_moderation.sql
 │   ├── 005_add_challenges_published_at.sql
 │   ├── 006_comprehensive_seed_data.sql
-│   └── 007_extend_ai_request_type.sql
+│   ├── 007_extend_ai_request_type.sql
+│   └── 008_fix_chapter_content_newlines.sql
 ├── config/
 │   └── default.toml         # 默认配置（git 追踪）
 │   # local.toml             # 本地覆盖（gitignored）
@@ -289,3 +290,137 @@ sqlx migrate revert
 ```
 
 迁移文件按数字前缀顺序执行，**不要修改已执行的迁移文件**。
+
+---
+
+## 11. 入口点与初始化顺序
+
+### 11.1 main.rs 初始化流程
+
+```
+1. tracing_subscriber — 日志初始化
+2. AppConfig::from_env() — 加载配置（default.toml → local.toml → APP__* 环境变量）
+3. db::create_pool() — 创建 PgPool（max 20, min 5 连接）
+4. db::run_migrations() — 可选（auto_run_migrations 标志）
+5. db::seed_dev_accounts() — 可选（seed_dev_accounts 标志，创建 test@example.com + admin@example.com）
+6. routes::create_router() — 构建 Salvo Router 树，注入 PgPool + AppConfig
+7. 预置 OpenAPI 文档端点 + Swagger UI
+8. Server::new(acceptor).serve(router).await — 开始监听
+```
+
+### 11.2 路由结构（routes.rs, 359 行）
+
+```
+/api/v1/
+├── health                              GET     (no auth)
+├── auth/
+│   ├── register                        POST    (no auth)
+│   ├── learner/login                   POST    (no auth)
+│   ├── admin/login                     POST    (no auth)
+│   ├── refresh                         POST    (no auth)
+│   └── logout                          POST    (no auth)
+├── learner/                            ← JWT auth middleware
+│   ├── courses/                        GET/POST
+│   │   └── {course_id}/                GET/PATCH/DELETE
+│   │       └── chapters/               GET/POST
+│   │           └── {chapter_id}/       GET/PUT/DELETE
+│   │               └── exercises/      GET/POST
+│   │                   └── {exercise_id} GET/PUT/DELETE
+│   ├── profile/                        GET/PATCH
+│   ├── users/search                    GET
+│   ├── friends/                        GET
+│   │   └── requests/                   GET/POST
+│   │       └── {request_id}            PATCH
+│   ├── exercises/{exercise_id}         GET
+│   ├── activities/                     GET
+│   ├── leaderboards/                   GET
+│   │   ├── friends/                    GET
+│   │   └── courses/{course_id}         GET
+│   ├── stats/personal                  GET
+│   ├── challenges/                     GET
+│   │   └── {challenge_id}/
+│   │       └── attempts                POST
+│   ├── daily-challenges/               GET
+│   │   ├── today/                      GET
+│   │   └── {id}/submit                 POST
+│   ├── rewards/                        GET
+│   │   ├── xp/                         GET
+│   │   └── badges/                     GET
+│   ├── submissions/                    POST
+│   │   └── {submission_id}             GET
+│   ├── ai/help/                        POST/GET
+│   └── progress/                       GET/POST
+│       └── courses/{course_id}         GET/PUT/DELETE
+│           └── chapters/{chid}/complete POST
+├── admin/                              ← JWT + require_admin middleware
+│   ├── stats/{dashboard,courses,users} GET
+│   ├── courses/                        GET/POST
+│   │   └── {course_id}                 GET/PATCH/DELETE
+│   ├── challenges/                     GET/POST
+│   │   └── {challenge_id}              GET/PATCH/DELETE
+│   ├── exercises/                      GET/POST
+│   │   └── {exercise_id}               PATCH
+│   ├── chapters/                       GET/POST
+│   │   └── {chapter_id}                GET/PUT/DELETE
+│   │       └── exercises/              GET/POST
+│   │           └── {exercise_id}       GET/PUT/DELETE
+│   ├── users/                          GET
+│   │   └── {user_id}                   GET/PUT/DELETE
+│   │       └── status                  PATCH
+│   ├── feedback/                       GET
+│   │   └── {ticket_id}                GET/PATCH
+│   ├── moderation/                     GET
+│   │   └── {case_id}                   GET/PATCH
+│   ├── announcements/                  GET/POST
+│   │   └── {announcement_id}           GET/PATCH/DELETE
+│   ├── configs/                        GET/POST
+│   │   └── {config_key}               GET/PATCH/DELETE
+│   └── daily-challenges/               GET/POST
+│       └── {id}                        GET/PUT/DELETE
+└── me/                                 GET     (JWT, get current user)
+```
+
+---
+
+## 12. 已知非标准模式
+
+| 问题 | 位置 | 影响 | 解决方案 |
+|------|------|------|---------|
+| `eprintln!` 代替 `tracing` | `db.rs:21,67` | 日志不一致 | 替换为 `tracing::error!` |
+| `unwrap()` 在 main.rs | `main.rs:21-22` | 可能 panic | 使用 `map_err` + 错误处理 |
+| Models 单体文件（618 行） | `models.rs` | 所有领域类型在一个文件 | 考虑按领域拆分 |
+| `admin.rs` 文件过大（1585 行） | `handlers/admin.rs` | 25+ 管理端点 | 考虑拆分为多个文件 |
+| 配置 crate 不匹配 | `config.rs` | 代码用 `config`，文档说 `figment` | 统一文档或代码 |
+| `account_service.rs` dead code | `services/account_service.rs` | `#[allow(dead_code)]` | 确认是否需要或移除 |
+
+---
+
+## 13. 依赖管理
+
+### 13.1 核心依赖（Cargo.toml）
+
+| 依赖 | 版本 | 用途 |
+|------|------|------|
+| **salvo** | 0.89.3 | Web 框架（affix-state, jwt-auth, test, oapi, cors） |
+| **jsonwebtoken** | 9 | JWT 创建/验证 |
+| **tokio** | 1 | 异步运行时 |
+| **serde / serde_json** | 1 | 序列化 |
+| **sqlx** | 0.8 | 数据库（pg, uuid, chrono, migrate） |
+| **chrono** | 0.4 | 时间处理 |
+| **uuid** | 1 | UUID v4 |
+| **thiserror** | 1 | 错误推导 |
+| **tracing / tracing-subscriber** | 0.1 / 0.3 | 日志 |
+| **config / dotenvy** | 0.14 / 0.15 | TOML + 环境变量配置 |
+| **validator** | 0.18 | 请求体验证 |
+| **bcrypt** | 0.16 | 密码哈希 |
+| **reqwest** | 0.12 | HTTP 客户端（AI API） |
+| **tokio-retry** | 0.3 | 重试机制 |
+
+### 13.2 测试依赖
+
+- 69 个 tokio 测试，分属 15 个文件
+- 使用 `setup_test_db()` 连接测试数据库
+- 测试数据库默认为 `learning_app_test`
+- 运行所有 SQLx 迁移
+- 清空所有表（`TRUNCATE ... RESTART IDENTITY CASCADE`）
+- 植入测试账户

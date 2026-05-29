@@ -198,3 +198,41 @@ let offset = (page - 1) * page_size;
 3. 在 `src/handlers/{domain}.rs` 中实现 Handler
 4. 在 `src/routes.rs` 中注册路由
 5. 返回格式：始终 `ApiResponse<T>` 或 `ApiError`
+
+---
+
+## 8. Handler 文件清单
+
+```
+backend/src/handlers/
+├── mod.rs              # health_check + not_found + 模块声明
+├── auth.rs             # 注册/登录/JWT/刷新/登出（~669行）
+├── course.rs           # 课程列表/详情
+├── chapter.rs          # 章节 CRUD
+├── exercise.rs         # 练习 CRUD
+├── submission.rs       # 代码提交 + 同步判题
+├── challenge.rs        # 挑战 CRUD + 提交
+├── daily_challenge.rs  # 每日挑战 + 自动复制
+├── user.rs             # 个人资料/统计
+├── social.rs           # 好友/动态/搜索
+├── leaderboard.rs      # 排行榜
+├── reward.rs           # XP/徽章
+├── ai_help.rs          # AI 辅助
+├── progress.rs         # 学习进度
+└── admin.rs            # 管理后台全功能（~1585行，最大文件）
+```
+
+**按领域分文件**，每个文件包含该领域的全部 HTTP Handler 函数。
+
+---
+
+## 9. 已知非标准模式
+
+| 问题 | 位置 | 影响 | 解决方案 |
+|------|------|------|---------|
+| `eprintln!` 代替 `tracing` | `db.rs:21,67` | 日志不一致 | 替换为 `tracing::error!` |
+| `unwrap()` 在 main.rs | `main.rs:21-22` | 可能 panic | 使用 `map_err` + 错误处理 |
+| Models 单体文件（618 行） | `models.rs` | 所有领域类型在一个文件 | 考虑按领域拆分 |
+| `admin.rs` 文件过大（1585 行） | `handlers/admin.rs` | 25+ 管理端点 | 考虑拆分为多个文件 |
+| 配置 crate 不匹配 | `config.rs` | 代码用 `config`，文档说 `figment` | 统一文档或代码 |
+| `account_service.rs` dead code | `services/account_service.rs` | `#[allow(dead_code)]` | 确认是否需要或移除 |

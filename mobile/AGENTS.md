@@ -370,3 +370,101 @@ flutter run -d chrome              # Web 开发运行
 flutter build web --release        # 发布构建
 cd build/web && python3 -m http.server 8088   # 本地预览
 ```
+
+---
+
+## 9. 入口点与初始化顺序
+
+### 9.1 main.dart 初始化流程
+
+```
+1. WidgetsFlutterBinding.ensureInitialized()
+2. Firebase 注释掉（lines 15-19）
+3. GetStorage.init() — try/catch 和 fallback
+4. runApp(CodeQuestApp()) 立即启动
+```
+
+### 9.2 CodeQuestApp 构建
+
+```
+1. ScreenUtilInit（design size 400x890）
+2. GetMaterialApp：
+   - initialBinding: AppBinding() — 注册 StorageService, ProgressService, ApiService, NotificationService
+   - initialRoute: '/splash' — 启动页
+   - getPages: AppPages.routes — 18 个命名路由
+   - defaultTransition: Transition.fade
+   - Builder 包装 _OfflineAwareShell — 通过 ProgressService 显示离线横幅
+```
+
+### 9.3 导航流程
+
+```
+/splash → 检查 first_launch 标志 + auth_token
+  ├── 首次启动 → /onboarding（滑动教程）
+  ├── 有 token → /home（5-Tab 仪表板）
+  └── 无 token → /login
+```
+
+### 9.4 路由表（18 个条目）
+
+| 路径 | 页面 | Binding |
+|------|------|---------|
+| `/splash` | SplashView | SplashBinding |
+| `/login` | LoginView | LoginBinding |
+| `/onboarding` | OnboardingView | OnboardingBinding |
+| `/register` | RegisterView | RegisterBinding |
+| `/home` | HomeView | HomeBinding |
+| `/courses` | CourseListView | CourseListBinding |
+| `/course/:id` | CourseDetailView | CourseBinding |
+| `/chapter/:id` | ChapterView | ChapterBinding |
+| `/exercise/:id` | ExerciseView | ExerciseBinding |
+| `/challenges` | ChallengeListView | ChallengeListBinding |
+| `/challenge/:id` | ChallengeDetailView | ChallengeBinding |
+| `/daily-challenge` | DailyChallengeView | DailyChallengeBinding |
+| `/social` | SocialView | SocialBinding |
+| `/add-friend` | AddFriendView | AddFriendBinding |
+| `/profile` | ProfileView | ProfileBinding |
+| `/profile/stats` | ProfileStatsView | ProfileStatsBinding |
+| `/profile/rewards` | ProfileRewardsView | ProfileRewardsBinding |
+| `/profile/edit` | ProfileEditView | ProfileEditBinding |
+| `/settings` | SettingsView | SettingsBinding |
+
+---
+
+## 10. 已知非标准模式
+
+| 问题 | 位置 | 影响 | 解决方案 |
+|------|------|------|---------|
+| View+Controller+Binding 同文件 | `lib/views/*` | 20 个文件各 200-1300 行，混合 UI + 逻辑 + DI | 这是有意的架构选择 |
+| API 基地址硬编码 | `lib/services/api_service.dart:16` | 无环境配置，仅开发值 | 提取到配置层 |
+| `friends/` 目录死代码 | `lib/views/friends/` | 目录存在，无路由注册 | 移除或连接 |
+| NotificationService 注册但 Firebase 禁用 | `lib/main.dart:14-19` | 死服务注册 | 移除或启用 |
+| `admin.rs` 文件过大 | `handlers/admin.rs` | 25+ 管理端点 | 考虑拆分 |
+
+---
+
+## 11. 依赖管理
+
+### 11.1 核心依赖（pubspec.yaml）
+
+| 依赖 | 版本 | 用途 |
+|------|------|------|
+| **get** | ^4.6.6 | 状态管理 + 路由 |
+| **dio** | ^5.4.0 | HTTP 客户端 |
+| **connectivity_plus** | ^6.1.5 | 网络状态 |
+| **get_storage** | ^2.1.1 | 本地存储 |
+| **flutter_screenutil** | ^5.9.0 | 屏幕适配 |
+| **image_picker** | ^1.0.7 | 图片选择 |
+| **logger** | ^2.0.2 | 日志 |
+| **firebase_core / firebase_messaging** | ^2.27 / ^14.7 | FCM 推送 |
+| **flutter_local_notifications** | ^17.2.1 | 本地通知 |
+| **webview_flutter** | ^4.7.0 | WebView |
+
+### 11.2 测试依赖
+
+- 55 个测试，分属 6 个文件
+- `shared_widgets_test.dart` — 26 个共享组件单元测试
+- `page_golden_test.dart` — 13 个 Golden 快照测试
+- `page_state_host_test.dart` — 10 个 PageState 组件测试
+- `base_controller_test.dart` — 4 个控制器基类测试
+- 其他 2 个测试文件

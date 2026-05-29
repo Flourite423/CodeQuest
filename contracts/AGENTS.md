@@ -137,3 +137,89 @@ openapi-generator-cli generate \
   -g dart \
   -o ../mobile/lib/generated_api
 ```
+
+---
+
+## 6. 目录结构
+
+```
+contracts/
+├── openapi/
+│   └── openapi.yaml         # OpenAPI 3.0.3 规范（唯一数据源，5800+ 行）
+├── state-machines/
+│   └── ...                  # 业务状态机定义
+├── dictionaries/
+│   └── ...                  # 枚举/字典值定义
+├── examples/
+│   └── ...                  # 请求/响应示例（52 个文件）
+└── mocks/
+    ├── learner/             # 学习者移动端专用 mock（12 个文件）
+    ├── admin/               # 运营管理后台专用 mock（9 个文件）
+    └── shared/              # 两端共用 mock（5 个文件）
+```
+
+---
+
+## 7. 三端使用流程
+
+1. **后端实现**：以后端路由、鉴权与响应实现对齐 `contracts/openapi/openapi.yaml`，不得让代码实现先于契约漂移。
+2. **Flutter 学习者移动端**：从同一份 OpenAPI 生成客户端模型、请求封装或校验代码；生成前先确认 `x-audience` 为 `learner` 或 `shared`。
+3. **运营管理后台**：从同一份 OpenAPI 生成管理端接口类型、SDK 或 mock；生成前先确认 `x-audience` 为 `admin` 或 `shared`。
+
+---
+
+## 8. 版本兼容规则
+
+- `v1` 内只允许向后兼容变更：新增可选字段、追加不改变旧语义的 path、追加枚举值。
+- `v1` 内禁止删除字段、修改字段语义、改变响应包络结构、重定义已有枚举值。
+- 删除字段、移除 path、改变必填约束或调整鉴权语义等 breaking change，只能进入 `/api/v2`。
+
+---
+
+## 9. 三端联调顺序
+
+所有端点必须按以下顺序推进，禁止跳过任何阶段：
+
+1. **OpenAPI**：在 `contracts/openapi/openapi.yaml` 中定义或更新 path、schema、example。
+2. **mock/examples**：根据 OpenAPI 生成或更新 mock 资产和请求/响应示例。
+3. **backend impl**：后端实现路由、鉴权与响应，严格对齐契约。
+4. **frontend adapters**：Flutter 与后台根据契约生成客户端模型、请求封装和校验代码。
+5. **contract tests**：运行 schema 校验与 example 校验，确保实现与契约一致。
+6. **end-to-end verify**：三端联调，端到端验证完整流程。
+
+完整顺序: OpenAPI → mock/examples → backend impl → frontend adapters → contract tests → end-to-end verify
+
+---
+
+## 10. Mock 资产目录结构
+
+```
+contracts/
+  mocks/
+    README.md           # mock 资产使用说明
+    learner/            # 学习者移动端专用 mock
+    admin/              # 运营管理后台专用 mock
+    shared/             # 两端共用 mock
+```
+
+- 每个 mock 文件必须与 `contracts/openapi/openapi.yaml` 中的 schema 保持一致。
+- 禁止移动端或后台维护私有 mock 字段；所有字段必须来自 OpenAPI 定义。
+
+---
+
+## 11. Example 命名规范
+
+示例文件统一放在 `contracts/examples/` 目录下，命名格式为：
+
+```
+{audience}-{resource}-{action}.json
+```
+
+- `audience`：`learner`、`admin` 或 `shared`。
+- `resource`：领域资源名，如 `course`、`chapter`、`exercise`。
+- `action`：操作语义，如 `list`、`create`、`detail`、`submit`。
+
+示例：
+- `learner-course-list.json`：学习者获取课程列表
+- `admin-course-create.json`：管理员创建课程
+- `shared-auth-login.json`：共用登录接口

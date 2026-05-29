@@ -334,3 +334,26 @@ factory Badge.fromAwardJson(JsonMap json)
 - **黄金测试**：`test/widgets/page_golden_test.dart`（753 行）
 
 如需添加测试，遵循现有 `_FakeStorageService` 和 `_Test*Controller` 模式。
+
+---
+
+## 11. 已知非标准模式
+
+| 问题 | 位置 | 影响 | 解决方案 |
+|------|------|------|---------|
+| View+Controller+Binding 同文件 | `lib/views/*` | 20 个文件各 200-1300 行，混合 UI + 逻辑 + DI | 这是有意的架构选择 |
+| API 基地址硬编码 | `lib/services/api_service.dart:16` | 无环境配置，仅开发值 | 提取到配置层 |
+| `friends/` 目录死代码 | `lib/views/friends/` | 目录存在，无路由注册 | 移除或连接 |
+| NotificationService 注册但 Firebase 禁用 | `lib/main.dart:14-19` | 死服务注册 | 移除或启用 |
+| `admin.rs` 文件过大 | `handlers/admin.rs` | 25+ 管理端点 | 考虑拆分 |
+
+---
+
+## 12. 测试依赖
+
+- 55 个测试，分属 6 个文件
+- `shared_widgets_test.dart` — 26 个共享组件单元测试
+- `page_golden_test.dart` — 13 个 Golden 快照测试
+- `page_state_host_test.dart` — 10 个 PageState 组件测试
+- `base_controller_test.dart` — 4 个控制器基类测试
+- 其他 2 个测试文件

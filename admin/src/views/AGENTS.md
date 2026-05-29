@@ -346,3 +346,27 @@ onMounted(fetchData)
 .header { display: flex; justify-content: space-between; margin-bottom: 20px; }
 </style>
 ```
+
+---
+
+## 9. 已知非标准模式
+
+| 问题 | 位置 | 影响 | 解决方案 |
+|------|------|------|---------|
+| 6 状态模板重复 | 7 个页面 | 维护困难 | 如需提取组件，保持向后兼容 |
+| 错误检测用 `message.includes` | 6 个页面 | 可能误触发 | 使用 `e.response?.status` |
+| CRUD 弹窗无验证 | 所有 CRUD 弹窗 | 数据质量 | 添加 FormRules |
+| ECharts setTimeout | `dashboard/index.vue` | 初始化失败 | 使用 nextTick + ResizeObserver |
+| 路由 meta 未使用 | `router/index.ts` | 硬编码菜单 | 可从 route.meta 驱动 |
+| SCSS 变量未使用 | 全局样式 | 样式不一致 | 替换硬编码颜色 |
+| `theme` 未使用 | `stores/app.ts` | 残留字段 | 移除或实现 |
+| 过度使用 `any` 类型 | `src/api/index.ts` | 失去 TypeScript 安全性 | 添加具体类型 |
+| 硬重定向 401 | `src/api/index.ts:33` | 全页面重载，破坏 SPA 导航 | 使用 `router.push('/login')` |
+
+---
+
+## 10. 测试依赖
+
+- 0 个测试
+- `package.json` 中无测试脚本（无 `jest`、`vitest`、`mocha` 等）
+- 无测试目录，无测试依赖

@@ -188,3 +188,30 @@ account_service.rs
     ├── 依赖：models.rs（Account）
     └── 被依赖：auth.rs（部分函数）
 ```
+
+---
+
+## 8. Service 文件清单
+
+```
+backend/src/services/
+├── judge_service.rs      # 判题引擎（mock / 测试用例匹配）
+├── xp_service.rs         # XP 计算与发放
+├── ai_service.rs         # DeepSeek API 封装
+├── course_service.rs     # 课程列表/CRUD
+├── progress_service.rs   # 学习进度 CRUD
+└── account_service.rs    # 账户查询/创建
+```
+
+**Service 层无 HTTP 依赖**，不导入 `salvo`。
+
+---
+
+## 9. 已知非标准模式
+
+| 问题 | 位置 | 影响 | 解决方案 |
+|------|------|------|---------|
+| `account_service.rs` 中 `#[allow(dead_code)]` | `services/account_service.rs` | 代码未使用 | 确认是否需要，或移除 |
+| `judge_service.rs` 中 `eprintln!` | `services/judge_service.rs` | 日志不一致 | 替换为 `tracing::error!` |
+| `ai_service.rs` 中 `unwrap_or_else` | `services/ai_service.rs` | 静默回盖非 JSON 响应 | 添加错误日志 |
+| 异步 XP 奖励失败 | `services/xp_service.rs` | 静默失败 | 添加错误处理和重试 |
