@@ -91,12 +91,12 @@ class SocialController extends BaseController {
       activities.value = items;
     } on dio.DioException catch (e) {
       if (e.response?.statusCode == 401) {
-        activities.value = <Activity>[];
+        _loadMockActivities();
       } else {
-        activities.value = <Activity>[];
+        _loadMockActivities();
       }
     } catch (e) {
-      activities.value = <Activity>[];
+      _loadMockActivities();
     }
   }
 
@@ -114,12 +114,12 @@ class SocialController extends BaseController {
       friends.value = items;
     } on dio.DioException catch (e) {
       if (e.response?.statusCode == 401) {
-        friends.value = <Friend>[];
+        _loadMockFriends();
       } else {
-        friends.value = <Friend>[];
+        _loadMockFriends();
       }
     } catch (e) {
-      friends.value = <Friend>[];
+      _loadMockFriends();
     }
   }
 
@@ -138,13 +138,133 @@ class SocialController extends BaseController {
       leaderboard.value = items;
     } on dio.DioException catch (e) {
       if (e.response?.statusCode == 401) {
-        leaderboard.value = <LeaderboardEntry>[];
+        _loadMockLeaderboard();
       } else {
-        leaderboard.value = <LeaderboardEntry>[];
+        _loadMockLeaderboard();
       }
     } catch (e) {
-      leaderboard.value = <LeaderboardEntry>[];
+      _loadMockLeaderboard();
     }
+  }
+
+  void _loadMockActivities() {
+    final now = DateTime.now();
+    activities.value = <Activity>[
+      Activity(
+        id: 'mock-activity-001',
+        type: 'course_completed',
+        description: '完成了《Dart 基础语法》课程',
+        timestamp: now.subtract(const Duration(minutes: 18)),
+        user: const ActivityUser(
+          id: 'mock-user-002',
+          nickname: '李同学',
+        ),
+      ),
+      Activity(
+        id: 'mock-activity-002',
+        type: 'challenge_completed',
+        description: '攻克了“数组去重”编程挑战',
+        timestamp: now.subtract(const Duration(hours: 2)),
+        user: const ActivityUser(
+          id: 'mock-user-003',
+          nickname: '王同学',
+        ),
+      ),
+      Activity(
+        id: 'mock-activity-003',
+        type: 'badge_earned',
+        description: '获得了“连续学习之星”徽章',
+        timestamp: now.subtract(const Duration(hours: 5)),
+        user: const ActivityUser(
+          id: 'mock-user-005',
+          nickname: '学霸张',
+        ),
+      ),
+      Activity(
+        id: 'mock-activity-004',
+        type: 'streak_reached',
+        description: '连续学习达到 7 天',
+        timestamp: now.subtract(const Duration(days: 1, hours: 3)),
+        user: const ActivityUser(
+          id: 'mock-user-001',
+          nickname: '张同学',
+        ),
+      ),
+      Activity(
+        id: 'mock-activity-005',
+        type: 'course_completed',
+        description: '完成了《Flutter 布局实战》课程',
+        timestamp: now.subtract(const Duration(days: 2, hours: 6)),
+        user: const ActivityUser(
+          id: 'mock-user-006',
+          nickname: '代码侠',
+        ),
+      ),
+    ];
+  }
+
+  void _loadMockFriends() {
+    friends.value = <Friend>[
+      const Friend(
+        id: 'mock-user-002',
+        nickname: '李同学',
+        level: 5,
+        status: 'accepted',
+      ),
+      const Friend(
+        id: 'mock-user-003',
+        nickname: '王同学',
+        level: 8,
+        status: 'accepted',
+      ),
+      const Friend(
+        id: 'mock-user-004',
+        nickname: '赵同学',
+        level: 3,
+        status: 'pending',
+      ),
+    ];
+  }
+
+  void _loadMockLeaderboard() {
+    currentUserId = 'mock-user-001';
+    leaderboard.value = <LeaderboardEntry>[
+      const LeaderboardEntry(
+        rank: 1,
+        userId: 'mock-user-005',
+        nickname: '学霸张',
+        level: 12,
+        xp: 5200,
+      ),
+      const LeaderboardEntry(
+        rank: 2,
+        userId: 'mock-user-006',
+        nickname: '代码侠',
+        level: 10,
+        xp: 4800,
+      ),
+      const LeaderboardEntry(
+        rank: 3,
+        userId: 'mock-user-001',
+        nickname: '张同学',
+        level: 8,
+        xp: 2850,
+      ),
+      const LeaderboardEntry(
+        rank: 4,
+        userId: 'mock-user-003',
+        nickname: '王同学',
+        level: 8,
+        xp: 2700,
+      ),
+      const LeaderboardEntry(
+        rank: 5,
+        userId: 'mock-user-002',
+        nickname: '李同学',
+        level: 5,
+        xp: 1800,
+      ),
+    ];
   }
 
   void acceptFriendRequest(String friendId) {

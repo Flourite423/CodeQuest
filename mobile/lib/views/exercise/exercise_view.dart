@@ -895,17 +895,6 @@ class ExerciseController extends BaseController {
     } on dio.DioException catch (e) {
       if (e.response?.statusCode == 401) {
         await setAuthExpired(message: '登录状态已失效，请重新登录。');
-      } else if (e.response?.statusCode == 403) {
-        setError(message: '当前账号暂无练习访问权限。');
-      } else if (e.response?.statusCode == 404) {
-        setEmpty(message: '该练习未找到。');
-      } else if (e.response?.statusCode == 500) {
-        setError(message: '练习服务暂时不可用，请稍后重试。');
-      } else if (e.type == dio.DioExceptionType.connectionTimeout ||
-          e.type == dio.DioExceptionType.receiveTimeout) {
-        setError(message: '加载练习超时，请重试。');
-      } else if (e.type == dio.DioExceptionType.connectionError) {
-        _loadMockExercise();
       } else {
         _loadMockExercise();
       }
@@ -915,6 +904,20 @@ class ExerciseController extends BaseController {
   }
 
   void _loadMockExercise() {
+    final normalizedId = exerciseId.value.toLowerCase();
+    final isSingleChoiceMock = normalizedId.contains('single') ||
+        normalizedId.contains('choice') ||
+        exerciseId.value == 'mock-exercise-002';
+
+    if (isSingleChoiceMock) {
+      _loadMockSingleChoiceExercise();
+      return;
+    }
+
+    _loadMockCodingExercise();
+  }
+
+  void _loadMockCodingExercise() {
     final mockExercise = Exercise(
       id: exerciseId.value.isNotEmpty ? exerciseId.value : 'mock-exercise-001',
       type: 'coding',
@@ -927,22 +930,71 @@ class ExerciseController extends BaseController {
           type: 'visible',
           name: '示例 1：基本类选择器',
           weight: 50,
-          inputPayload: {'selector': '.highlight', 'property': 'background-color', 'value': 'yellow'},
+          inputPayload: {
+            'selector': '.highlight',
+            'property': 'background-color',
+            'value': 'yellow',
+          },
         ),
         ExerciseTestCase(
           id: 'tc-002',
           type: 'visible',
           name: '示例 2：多元素选择',
           weight: 50,
-          inputPayload: {'selector': '.highlight', 'elements': ['div', 'span', 'p']},
+          inputPayload: {
+            'selector': '.highlight',
+            'elements': ['div', 'span', 'p'],
+          },
         ),
       ],
     );
 
     exercise.value = mockExercise;
     choiceOptions.assignAll(_buildChoiceOptions(mockExercise));
+    selectedChoiceKey.value = '';
     codeController.text = mockExercise.codeTemplate ?? '';
+    draftRestored.value = false;
     resetState();
+  }
+
+  void _loadMockSingleChoiceExercise() {
+    final mockExercise = Exercise(
+      id: exerciseId.value.isNotEmpty ? exerciseId.value : 'mock-exercise-002',
+      type: 'single_choice',
+      title: 'HTML 基础概念',
+      description: '以下哪个标签用于定义 HTML 文档的根元素？',
+      options: const [
+        ExerciseChoiceOption(key: 'A', text: '<html>'),
+        ExerciseChoiceOption(key: 'B', text: '<body>'),
+        ExerciseChoiceOption(key: 'C', text: '<head>'),
+        ExerciseChoiceOption(key: 'D', text: '<div>'),
+      ],
+    );
+
+    exercise.value = mockExercise;
+    choiceOptions.assignAll(_buildChoiceOptions(mockExercise));
+    selectedChoiceKey.value = '';
+    codeController.clear();
+    draftRestored.value = false;
+    resetState();
+  }
+
+  Future<void> _mockSubmitResult() async {
+    final isCorrect = isSingleChoice
+        ? selectedChoiceKey.value == 'A'
+        : currentCode.contains('.highlight') && currentCode.contains('yellow');
+    final result = SubmissionResult(
+      score: isCorrect ? 100 : 0,
+      passedCases: isCorrect ? 2 : 0,
+      totalCases: 2,
+      feedback: isCorrect
+          ? '状态：passed。Mock 评测已通过，当前答案满足兜底规则。'
+          : '状态：failed。单选题正确答案为 A；编程题需同时包含 .highlight 和 yellow。',
+      aiHelp: _buildLearnerSafeAiHelp(passed: isCorrect),
+    );
+
+    latestSubmission.value = result;
+    await _openSubmissionResultSheet(result);
   }
 
   List<ExerciseChoiceOption> _buildChoiceOptions(Exercise item) {
@@ -1069,20 +1121,11 @@ class ExerciseController extends BaseController {
     } on dio.DioException catch (e) {
       if (e.response?.statusCode == 401) {
         await setAuthExpired(message: '登录状态已失效，请重新登录。');
-      } else if (e.response?.statusCode == 403) {
-        setError(message: '当前账号暂无提交权限。');
-      } else if (e.response?.statusCode == 500) {
-        setError(message: '评测服务暂时不可用，请稍后重试。');
-      } else if (e.type == dio.DioExceptionType.connectionTimeout ||
-          e.type == dio.DioExceptionType.receiveTimeout) {
-        setError(message: '提交超时，请重试。');
-      } else if (e.type == dio.DioExceptionType.connectionError) {
-        setError(message: '网络连接异常，请检查后重试。');
       } else {
-        setError(message: '提交失败，请重试。');
+        await _mockSubmitResult();
       }
     } catch (_) {
-      setError(message: '提交失败，请重试。');
+      await _mockSubmitResult();
     } finally {
       isSubmitting.value = false;
     }
