@@ -253,14 +253,16 @@ class ProfileRewardsView extends GetView<ProfileRewardsController> {
                 radius: 32.r,
                 backgroundColor: colorScheme.primaryContainer,
                 backgroundImage:
-                    badge.icon != null ? NetworkImage(badge.icon!) : null,
-                child: badge.icon == null
-                    ? Icon(
+                    badge.icon != null && badge.icon!.startsWith('http')
+                        ? NetworkImage(badge.icon!)
+                        : null,
+                child: badge.icon != null && badge.icon!.startsWith('http')
+                    ? null
+                    : Icon(
                         Icons.workspace_premium,
                         size: 32.sp,
                         color: colorScheme.onPrimaryContainer,
-                      )
-                    : null,
+                      ),
               ),
               SizedBox(height: 12.h),
               Text(
@@ -526,14 +528,16 @@ class BadgePreviewSheet extends StatelessWidget {
                 radius: 56.r,
                 backgroundColor: colorScheme.primaryContainer,
                 backgroundImage:
-                    badge.icon != null ? NetworkImage(badge.icon!) : null,
-                child: badge.icon == null
-                    ? Icon(
+                    badge.icon != null && badge.icon!.startsWith('http')
+                        ? NetworkImage(badge.icon!)
+                        : null,
+                child: badge.icon != null && badge.icon!.startsWith('http')
+                    ? null
+                    : Icon(
                         Icons.workspace_premium,
                         size: 56.sp,
                         color: colorScheme.onPrimaryContainer,
-                      )
-                    : null,
+                      ),
               ),
               SizedBox(height: 20.h),
               // Badge name
@@ -849,21 +853,21 @@ class ProfileRewardsController extends BaseController {
         id: 'mock-badge-001',
         name: '初学者',
         description: '完成第一个练习',
-        icon: 'school',
+        icon: null,
         earnedAt: DateTime.now().subtract(const Duration(days: 30)),
       ),
       app_models.Badge(
         id: 'mock-badge-002',
         name: '挑战者',
         description: '完成第一个挑战',
-        icon: 'emoji_events',
+        icon: null,
         earnedAt: DateTime.now().subtract(const Duration(days: 20)),
       ),
       app_models.Badge(
         id: 'mock-badge-003',
         name: '连续学习者',
         description: '连续学习7天',
-        icon: 'local_fire_department',
+        icon: null,
         earnedAt: DateTime.now().subtract(const Duration(days: 10)),
       ),
     ]);
