@@ -2,7 +2,7 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { Plus, Warning, Document } from '@element-plus/icons-vue'
-import type { AdminExerciseListItem, AdminExerciseDetail, ExerciseType, ExerciseStatus } from '@/types'
+import type { AdminExerciseListItem, ExerciseType, ExerciseStatus } from '@/types'
 import { exerciseApi } from '@/api'
 import { ElMessage, ElMessageBox } from 'element-plus'
 
@@ -25,10 +25,13 @@ const pagination = ref({
 
 interface ExerciseForm {
   id?: string
+  chapter_id: string
   title: string
   exercise_type: ExerciseType
   difficulty: 'beginner' | 'intermediate'
   status: ExerciseStatus
+  sort_order: number
+  content_json: string
 }
 
 const dialogVisible = ref(false)
@@ -38,10 +41,13 @@ const isCreating = ref(false)
 const handleCreate = () => {
   isCreating.value = true
   editingExercise.value = {
+    chapter_id: '',
     title: '',
     exercise_type: 'coding',
     difficulty: 'beginner',
     status: 'draft',
+    sort_order: 0,
+    content_json: '{}',
   }
   dialogVisible.value = true
 }
@@ -50,10 +56,15 @@ const handleEdit = (exercise: AdminExerciseListItem) => {
   isCreating.value = false
   editingExercise.value = {
     id: exercise.id,
+    chapter_id: (exercise as any).chapter_id || '',
     title: exercise.title,
     exercise_type: exercise.exercise_type,
     difficulty: exercise.difficulty,
     status: exercise.status,
+    sort_order: (exercise as any).sort_order || 0,
+    content_json: (exercise as any).content_json
+      ? JSON.stringify((exercise as any).content_json, null, 2)
+      : '{}',
   }
   dialogVisible.value = true
 }
@@ -79,15 +90,22 @@ const handleSave = async () => {
   if (!editingExercise.value) return
   
   try {
+    let contentJson: Record<string, unknown> = {}
+    try {
+      contentJson = JSON.parse(editingExercise.value.content_json || '{}')
+    } catch {
+      ElMessage.error('题目内容 JSON 格式错误')
+      return
+    }
+
     if (isCreating.value) {
-      const { ...createData } = editingExercise.value
-      delete createData.id
-      await exerciseApi.create(createData as unknown as Omit<AdminExerciseListItem, 'id' | 'created_at' | 'updated_at'>)
+      const { content_json, ...rest } = editingExercise.value
+      await exerciseApi.create({ ...rest, content_json: contentJson } as any)
       ElMessage.success('创建成功')
     } else {
-      const { id, ...updateData } = editingExercise.value
+      const { id, content_json, ...updateData } = editingExercise.value
       if (id) {
-        await exerciseApi.update(id, updateData as unknown as Partial<AdminExerciseDetail>)
+        await exerciseApi.update(id, { ...updateData, content_json: contentJson } as any)
         ElMessage.success('更新成功')
       }
     }
@@ -403,6 +421,14 @@ fetchData()
         :model="editingExercise"
         label-width="100px"
       >
+        <el-form-item label="所属章节">
+          <el-select v-model="editingExercise.chapter_id" placeholder="选择章节" filterable>
+            <el-option label="CSS 简介 (mock-chapter-004)" value="mock-chapter-004" />
+            <el-option label="CSS 选择器 (mock-chapter-005)" value="mock-chapter-005" />
+            <el-option label="HTML 基础 (mock-chapter-001)" value="mock-chapter-001" />
+            <el-option label="HTML 属性 (mock-chapter-002)" value="mock-chapter-002" />
+          </el-select>
+        </el-form-item>
         <el-form-item label="题目名称">
           <el-input v-model="editingExercise.title" />
         </el-form-item>
@@ -441,6 +467,18 @@ fetchData()
               value="published"
             />
           </el-select>
+        </el-form-item>
+        <el-form-item label="排序">
+          <el-input-number v-model="editingExercise.sort_order" :min="0" />
+        </el-form-item>
+        <el-form-item label="题目内容">
+          <el-input
+            v-model="editingExercise.content_json"
+            type="textarea"
+            :rows="8"
+            placeholder='{"description": "...", "code_template": "..."}'
+          />
+          <div class="field-hint">JSON 格式，包含题目说明、代码模板、测试用例等</div>
         </el-form-item>
       </el-form>
       <template #footer>

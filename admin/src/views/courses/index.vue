@@ -26,6 +26,8 @@ interface CourseForm {
   course_code: string
   title: string
   summary: string
+  description: string
+  cover_image_url: string
   difficulty: 'beginner' | 'intermediate'
   estimated_minutes: number
   status: 'draft' | 'published'
@@ -43,6 +45,8 @@ const handleCreate = () => {
     course_code: '',
     title: '',
     summary: '',
+    description: '',
+    cover_image_url: '',
     difficulty: 'beginner',
     estimated_minutes: 0,
     status: 'draft',
@@ -59,6 +63,8 @@ const handleEdit = (course: AdminCourseListItem) => {
     course_code: course.course_code,
     title: course.title,
     summary: course.summary || '',
+    description: (course as any).description || '',
+    cover_image_url: (course as any).cover_image_url || '',
     difficulty: course.difficulty,
     estimated_minutes: course.estimated_minutes,
     status: course.status === 'archived' ? 'published' : course.status,
@@ -409,6 +415,20 @@ fetchData()
             v-model="editingCourse.summary"
             type="textarea"
             :rows="3"
+          />
+        </el-form-item>
+        <el-form-item label="详细描述">
+          <el-input
+            v-model="editingCourse.description"
+            type="textarea"
+            :rows="5"
+            placeholder="课程的详细描述，支持 Markdown 格式"
+          />
+        </el-form-item>
+        <el-form-item label="封面图URL">
+          <el-input
+            v-model="editingCourse.cover_image_url"
+            placeholder="https://example.com/cover.png"
           />
         </el-form-item>
         <el-form-item label="难度">

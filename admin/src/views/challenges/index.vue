@@ -23,9 +23,11 @@ const pagination = ref({
 interface ChallengeForm {
   id?: string
   title: string
+  description: string
   difficulty: 'beginner' | 'intermediate'
   reward_xp: number
   status: 'draft' | 'published'
+  related_course_id: string
 }
 
 const dialogVisible = ref(false)
@@ -36,9 +38,11 @@ const handleCreate = () => {
   isCreating.value = true
   editingChallenge.value = {
     title: '',
+    description: '',
     difficulty: 'beginner',
     reward_xp: 0,
     status: 'draft',
+    related_course_id: '',
   }
   dialogVisible.value = true
 }
@@ -48,9 +52,11 @@ const handleEdit = (challenge: AdminChallengeListItem) => {
   editingChallenge.value = {
     id: challenge.id,
     title: challenge.title,
+    description: challenge.description || '',
     difficulty: challenge.difficulty,
     reward_xp: challenge.reward_xp,
     status: challenge.status === 'archived' ? 'published' : challenge.status,
+    related_course_id: challenge.related_course_id || '',
   }
   dialogVisible.value = true
 }
@@ -348,6 +354,14 @@ fetchData()
         <el-form-item label="挑战名称">
           <el-input v-model="editingChallenge.title" />
         </el-form-item>
+        <el-form-item label="挑战描述">
+          <el-input
+            v-model="editingChallenge.description"
+            type="textarea"
+            :rows="4"
+            placeholder="挑战的详细描述和要求"
+          />
+        </el-form-item>
         <el-form-item label="难度">
           <el-select v-model="editingChallenge.difficulty">
             <el-option
@@ -365,6 +379,14 @@ fetchData()
             v-model="editingChallenge.reward_xp"
             :min="0"
           />
+        </el-form-item>
+        <el-form-item label="关联课程">
+          <el-select v-model="editingChallenge.related_course_id" placeholder="选择关联课程" clearable filterable>
+            <el-option label="HTML 基础入门 (mock-course-001)" value="mock-course-001" />
+            <el-option label="CSS 基础入门 (mock-course-002)" value="mock-course-002" />
+            <el-option label="JavaScript 基础入门 (mock-course-003)" value="mock-course-003" />
+            <el-option label="响应式设计 (mock-course-004)" value="mock-course-004" />
+          </el-select>
         </el-form-item>
         <el-form-item label="状态">
           <el-select v-model="editingChallenge.status">
