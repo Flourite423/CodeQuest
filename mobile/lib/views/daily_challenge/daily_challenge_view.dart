@@ -135,8 +135,8 @@ class DailyChallengeController extends BaseController {
     final now = DateTime.now();
     dailyChallenge.value = DailyChallenge(
       id: 'mock-daily-001',
-      title: '每日算法挑战：数组去重',
-      description: '给定一个整数数组，移除重复元素，返回去重后的数组长度。要求原地修改数组，不使用额外空间。',
+      title: '每日CSS挑战：Flexbox布局',
+      description: '使用 Flexbox 实现一个三栏布局：左侧固定宽度200px，右侧固定宽度150px，中间部分自适应填充剩余空间。要求使用 flex 属性实现。',
       timeLimit: 300,
       isAttempted: false,
       isExpired: false,
