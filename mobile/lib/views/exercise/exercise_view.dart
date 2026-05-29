@@ -923,23 +923,23 @@ class ExerciseController extends BaseController {
     final mockExercise = Exercise(
       id: exerciseId.value.isNotEmpty ? exerciseId.value : 'mock-exercise-001',
       type: 'coding',
-      title: '两数之和',
-      description: '给定一个整数数组 nums 和一个整数目标值 target，请你在该数组中找出和为目标值的那两个整数，并返回它们的数组下标。\n\n你可以假设每种输入只会对应一个答案。但是，数组中同一个元素在答案里不能重复出现。',
-      codeTemplate: 'def two_sum(nums, target):\n    # 请在此编写你的代码\n    pass\n\n# 测试用例\nprint(two_sum([2, 7, 11, 15], 9))  # 预期输出: [0, 1]',
+      title: 'CSS 类选择器练习',
+      description: '请使用 CSS 类选择器将 class 为 "highlight" 的元素背景色设置为黄色。\n\n要求：\n1. 使用类选择器（.highlight）\n2. 设置背景色为黄色（background-color: yellow）\n3. 保持其他样式不变',
+      codeTemplate: '.highlight {\n    /* 请在此编写你的 CSS 代码 */\n}',
       testCases: const [
         ExerciseTestCase(
           id: 'tc-001',
           type: 'visible',
-          name: '示例 1',
+          name: '示例 1：基本类选择器',
           weight: 50,
-          inputPayload: {'nums': [2, 7, 11, 15], 'target': 9},
+          inputPayload: {'selector': '.highlight', 'property': 'background-color', 'value': 'yellow'},
         ),
         ExerciseTestCase(
           id: 'tc-002',
           type: 'visible',
-          name: '示例 2',
+          name: '示例 2：多元素选择',
           weight: 50,
-          inputPayload: {'nums': [3, 2, 4], 'target': 6},
+          inputPayload: {'selector': '.highlight', 'elements': ['div', 'span', 'p']},
         ),
       ],
     );
