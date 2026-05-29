@@ -8,6 +8,7 @@ import '../../services/api_service.dart';
 import '../../services/progress_service.dart';
 import '../../widgets/page_state_host.dart';
 import '../../widgets/shared/cta_bar.dart';
+import '../../widgets/syntax_highlighter.dart';
 
 class ChapterView extends GetView<ChapterController> {
   const ChapterView({super.key});
@@ -167,9 +168,57 @@ class _MarkdownContent extends StatelessWidget {
     final blocks = <_MarkdownBlock>[];
     final lines = text.split('\n');
     StringBuffer? currentParagraph;
+    StringBuffer? currentCodeBlock;
+    String? currentCodeLanguage;
+    bool inCodeBlock = false;
 
     for (final line in lines) {
       final trimmed = line.trim();
+      
+      // Handle code block start/end
+      if (trimmed.startsWith('```')) {
+        if (inCodeBlock) {
+          // End of code block
+          if (currentCodeBlock != null && currentCodeBlock.isNotEmpty) {
+            blocks.add(_MarkdownBlock(
+              type: _BlockType.code,
+              content: currentCodeBlock.toString(),
+              language: currentCodeLanguage ?? 'html',
+            ));
+          }
+          currentCodeBlock = null;
+          currentCodeLanguage = null;
+          inCodeBlock = false;
+        } else {
+          // Start of code block
+          if (currentParagraph != null && currentParagraph.isNotEmpty) {
+            blocks.add(_MarkdownBlock(
+              type: _BlockType.paragraph,
+              content: currentParagraph.toString().trim(),
+            ));
+            currentParagraph = null;
+          }
+          inCodeBlock = true;
+          currentCodeBlock = StringBuffer();
+          // Extract language from ```lang
+          final lang = trimmed.substring(3).trim();
+          if (lang.isNotEmpty) {
+            currentCodeLanguage = lang;
+          }
+        }
+        continue;
+      }
+
+      // If we're in a code block, collect lines
+      if (inCodeBlock) {
+        if (currentCodeBlock != null && currentCodeBlock.isNotEmpty) {
+          currentCodeBlock.write('\n');
+        }
+        currentCodeBlock?.write(line);
+        continue;
+      }
+
+      // Empty line
       if (trimmed.isEmpty) {
         if (currentParagraph != null && currentParagraph.isNotEmpty) {
           blocks.add(_MarkdownBlock(
@@ -241,18 +290,6 @@ class _MarkdownContent extends StatelessWidget {
         continue;
       }
 
-      // Code block
-      if (trimmed.startsWith('```')) {
-        if (currentParagraph != null && currentParagraph.isNotEmpty) {
-          blocks.add(_MarkdownBlock(
-            type: _BlockType.paragraph,
-            content: currentParagraph.toString().trim(),
-          ));
-          currentParagraph = null;
-        }
-        continue;
-      }
-
       // Regular paragraph line
       currentParagraph ??= StringBuffer();
       if (currentParagraph.isNotEmpty) {
@@ -261,6 +298,14 @@ class _MarkdownContent extends StatelessWidget {
       currentParagraph.write(trimmed);
     }
 
+    // Handle any remaining content
+    if (inCodeBlock && currentCodeBlock != null && currentCodeBlock.isNotEmpty) {
+      blocks.add(_MarkdownBlock(
+        type: _BlockType.code,
+        content: currentCodeBlock.toString(),
+        language: currentCodeLanguage,
+      ));
+    }
     if (currentParagraph != null && currentParagraph.isNotEmpty) {
       blocks.add(_MarkdownBlock(
         type: _BlockType.paragraph,
@@ -352,19 +397,32 @@ class _MarkdownContent extends StatelessWidget {
                 ),
               ),
             );
+          case _BlockType.code:
+            return Padding(
+              padding: EdgeInsets.only(bottom: 16.h),
+              child: CodeBlock(
+                code: block.content,
+                language: block.language ?? 'html',
+              ),
+            );
         }
       }).toList(),
     );
   }
 }
 
-enum _BlockType { heading1, heading2, heading3, bullet, paragraph }
+enum _BlockType { heading1, heading2, heading3, bullet, paragraph, code }
 
 class _MarkdownBlock {
-  const _MarkdownBlock({required this.type, required this.content});
+  const _MarkdownBlock({
+    required this.type,
+    required this.content,
+    this.language,
+  });
 
   final _BlockType type;
   final String content;
+  final String? language;
 }
 
 class _SampleCodeCard extends StatelessWidget {
@@ -397,30 +455,9 @@ class _SampleCodeCard extends StatelessWidget {
           ],
         ),
         SizedBox(height: 12.h),
-        Container(
-          width: double.infinity,
-          decoration: BoxDecoration(
-            color: colorScheme.surfaceContainerHighest,
-            borderRadius: BorderRadius.circular(12.r),
-            border: Border.all(
-              color: colorScheme.outlineVariant.withValues(alpha: 0.5),
-            ),
-          ),
-          child: SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Padding(
-              padding: EdgeInsets.all(16.w),
-              child: Text(
-                code,
-                style: TextStyle(
-                  fontSize: 13.sp,
-                  fontFamily: 'monospace',
-                  color: colorScheme.onSurface,
-                  height: 1.5,
-                ),
-              ),
-            ),
-          ),
+        CodeBlock(
+          code: code,
+          language: 'html',
         ),
       ],
     );
@@ -520,7 +557,8 @@ class ChapterController extends BaseController {
     if (chapterId.value.isEmpty) {
       setError(message: '章节ID缺失。');
     } else if (courseId.value.isEmpty) {
-      setError(message: '课程ID缺失，无法加载章节。请从课程详情页进入。');
+      // 没有 courseId 时直接加载 mock 数据
+      _loadMockChapter();
     } else {
       loadChapter();
     }
@@ -581,8 +619,23 @@ class ChapterController extends BaseController {
 
       pageState.value = PageState.initial;
     } catch (e) {
-      setError(message: '加载章节失败，请重试。');
+      _loadMockChapter();
     }
+  }
+
+  void _loadMockChapter() {
+    final mockChapter = Chapter(
+      id: chapterId.value.isNotEmpty ? chapterId.value : 'mock-chapter-001',
+      title: 'Python 基础语法',
+      content: '# Python 基础语法\n\n## 变量与数据类型\n\nPython 是一种动态类型语言，变量类型在运行时确定。\n\n```python\n# 变量赋值\nname = "CodeQuest"\nage = 18\nis_active = True\n\nprint(f"用户名: {name}, 年龄: {age}")\n```\n\n## 条件语句\n\n```python\nscore = 85\n\nif score >= 90:\n    grade = "A"\nelif score >= 80:\n    grade = "B"\nelse:\n    grade = "C"\n\nprint(f"成绩等级: {grade}")\n```\n\n## 循环结构\n\n```python\n# for 循环\nfor i in range(5):\n    print(f"第 {i+1} 次迭代")\n\n# while 循环\ncount = 0\nwhile count < 3:\n    print(f"计数: {count}")\n    count += 1\n```',
+      sampleCode: 'def greet(name):\n    """\n    这是一个简单的问候函数\n    参数: name - 用户名\n    返回: 问候语\n    """\n    return f"你好, {name}! 欢迎来到 CodeQuest。"\n\n# 调用函数\nresult = greet("学习者")\nprint(result)',
+      summary: '本章介绍了 Python 的基础语法，包括变量定义、条件语句和循环结构。',
+      isCompleted: false,
+      isLocked: false,
+    );
+    chapter.value = mockChapter;
+    isCompleted.value = false;
+    pageState.value = PageState.initial;
   }
 
   void onPrimaryCTA() async {

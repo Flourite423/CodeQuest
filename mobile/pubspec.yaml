@@ -20,6 +20,7 @@ dependencies:
   firebase_messaging: ^14.7.19
   flutter_local_notifications: ^17.2.1
   webview_flutter: ^4.7.0
+  flutter_highlight: ^0.7.0
 
 dev_dependencies:
   flutter_test:
