@@ -51,41 +51,6 @@ class AIHelpSheet extends StatelessWidget {
               ],
             ),
           ),
-          if (aiHelp.isFallback) ...[
-            SizedBox(height: 12.h),
-            Container(
-              width: double.infinity,
-              padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
-              decoration: BoxDecoration(
-                color: Colors.orange.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(8.r),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.offline_bolt, size: 16.sp, color: Colors.orange),
-                  SizedBox(width: 6.w),
-                  Text(
-                    '离线提示模式',
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: Colors.orange.shade800,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  SizedBox(width: 6.w),
-                  Expanded(
-                    child: Text(
-                      'AI 服务暂不可用，以下为本地生成的方向性提示',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: Colors.orange.shade700,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
           SizedBox(height: 16.h),
           Text(
             '提示内容',

@@ -128,11 +128,6 @@ class _ExerciseMetaCard extends StatelessWidget {
                 icon: Icons.cloud_done_outlined,
                 label: controller.lastSavedLabel,
               ),
-              if (controller.isCoding)
-                _MetaChip(
-                  icon: Icons.save_outlined,
-                  label: '离线草稿已启用',
-                ),
             ],
           ),
           if (controller.draftRestored.value) ...[
@@ -1169,7 +1164,6 @@ class ExerciseController extends BaseController {
       requestType: hintLevel,
       status: 'succeeded',
       content: content,
-      isFallback: true,
     );
   }
 
