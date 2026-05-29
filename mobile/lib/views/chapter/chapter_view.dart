@@ -626,10 +626,10 @@ class ChapterController extends BaseController {
   void _loadMockChapter() {
     final mockChapter = Chapter(
       id: chapterId.value.isNotEmpty ? chapterId.value : 'mock-chapter-001',
-      title: 'Python 基础语法',
-      content: '# Python 基础语法\n\n## 变量与数据类型\n\nPython 是一种动态类型语言，变量类型在运行时确定。\n\n```python\n# 变量赋值\nname = "CodeQuest"\nage = 18\nis_active = True\n\nprint(f"用户名: {name}, 年龄: {age}")\n```\n\n## 条件语句\n\n```python\nscore = 85\n\nif score >= 90:\n    grade = "A"\nelif score >= 80:\n    grade = "B"\nelse:\n    grade = "C"\n\nprint(f"成绩等级: {grade}")\n```\n\n## 循环结构\n\n```python\n# for 循环\nfor i in range(5):\n    print(f"第 {i+1} 次迭代")\n\n# while 循环\ncount = 0\nwhile count < 3:\n    print(f"计数: {count}")\n    count += 1\n```',
-      sampleCode: 'def greet(name):\n    """\n    这是一个简单的问候函数\n    参数: name - 用户名\n    返回: 问候语\n    """\n    return f"你好, {name}! 欢迎来到 CodeQuest。"\n\n# 调用函数\nresult = greet("学习者")\nprint(result)',
-      summary: '本章介绍了 Python 的基础语法，包括变量定义、条件语句和循环结构。',
+      title: 'CSS 选择器基础',
+      content: '# CSS 选择器基础\n\n## 类选择器\n\n类选择器用于选择具有特定 class 属性的 HTML 元素。\n\n```css\n/* 类选择器 */\n.highlight {\n    background-color: yellow;\n    padding: 10px;\n}\n\n/* 多个类选择器 */\n.container .highlight {\n    margin: 5px;\n}\n```\n\n## ID 选择器\n\nID 选择器用于选择具有特定 id 属性的 HTML 元素。\n\n```css\n/* ID 选择器 */\n#header {\n    background-color: #333;\n    color: white;\n}\n\n/* 组合选择器 */\n#header h1 {\n    font-size: 24px;\n}\n```\n\n## 伪类选择器\n\n伪类选择器用于选择元素的特定状态。\n\n```css\n/* 链接状态 */\na:hover {\n    color: red;\n}\n\n/* 输入框状态 */\ninput:focus {\n    border: 2px solid blue;\n}\n```',
+      sampleCode: '/* 基础样式 */\n.highlight {\n    background-color: #fff3cd;\n    border-left: 4px solid #ffc107;\n    padding: 15px;\n    margin: 10px 0;\n}\n\n/* 容器样式 */\n.container {\n    max-width: 1200px;\n    margin: 0 auto;\n    padding: 0 20px;\n}\n\n/* 按钮样式 */\n.btn-primary {\n    background-color: #007bff;\n    color: white;\n    padding: 10px 20px;\n    border: none;\n    border-radius: 4px;\n}\n\n.btn-primary:hover {\n    background-color: #0056b3;\n}',
+      summary: '本章介绍了 CSS 选择器的基础知识，包括类选择器、ID 选择器和伪类选择器的使用方法。',
       isCompleted: false,
       isLocked: false,
     );
