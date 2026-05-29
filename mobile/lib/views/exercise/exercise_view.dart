@@ -1127,6 +1127,11 @@ class ExerciseController extends BaseController {
         ? submission.totalCases - submission.passedCases
         : 0;
     final testCases = exercise.value?.testCases ?? const <ExerciseTestCase>[];
+    final userCode = codeController.text.trim();
+    final exerciseType = exercise.value?.type ?? '';
+
+    // Analyze user code for specific patterns
+    final codeAnalysis = _analyzeUserCode(userCode, exerciseType);
 
     String content;
 
@@ -1136,12 +1141,16 @@ class ExerciseController extends BaseController {
           passed: passed,
           failedCount: failedCount,
           testCases: testCases,
+          codeAnalysis: codeAnalysis,
+          userCode: userCode,
         );
         break;
       case 'correction_hint':
         content = _buildCorrectionHint(
           passed: passed,
           isSingleChoice: isSingleChoice,
+          codeAnalysis: codeAnalysis,
+          userCode: userCode,
         );
         break;
       case 'operation_suggestion':
@@ -1150,6 +1159,8 @@ class ExerciseController extends BaseController {
           passed: passed,
           isSingleChoice: isSingleChoice,
           failedCount: failedCount,
+          codeAnalysis: codeAnalysis,
+          userCode: userCode,
         );
         break;
     }
@@ -1162,75 +1173,312 @@ class ExerciseController extends BaseController {
     );
   }
 
+  /// Analyze user code to detect common patterns and issues
+  Map<String, dynamic> _analyzeUserCode(String code, String exerciseType) {
+    final analysis = <String, dynamic>{
+      'isEmpty': code.isEmpty,
+      'isSingleChoice': exerciseType == 'single_choice',
+      'hasSelector': false,
+      'hasProperty': false,
+      'hasValue': false,
+      'selectorType': 'none', // class, id, tag, attribute, pseudo
+      'commonMistakes': <String>[],
+      'codeLength': code.length,
+      'hasComments': code.contains('//') || code.contains('/*'),
+      'hasSemicolon': code.contains(';'),
+      'hasBraces': code.contains('{') && code.contains('}'),
+    };
+
+    if (code.isEmpty) return analysis;
+
+    // Check for CSS selectors
+    if (code.contains('.')) {
+      analysis['hasSelector'] = true;
+      analysis['selectorType'] = 'class';
+    } else if (code.contains('#')) {
+      analysis['hasSelector'] = true;
+      analysis['selectorType'] = 'id';
+    } else if (code.contains('[') && code.contains(']')) {
+      analysis['hasSelector'] = true;
+      analysis['selectorType'] = 'attribute';
+    } else if (code.contains(':')) {
+      analysis['hasSelector'] = true;
+      analysis['selectorType'] = 'pseudo';
+    }
+
+    // Check for CSS properties
+    final cssProperties = [
+      'background-color', 'color', 'margin', 'padding',
+      'border', 'display', 'flex', 'grid', 'width', 'height',
+      'font-size', 'text-align', 'position', 'top', 'left',
+    ];
+    for (final prop in cssProperties) {
+      if (code.contains(prop)) {
+        analysis['hasProperty'] = true;
+        break;
+      }
+    }
+
+    // Check for CSS values
+    if (code.contains('px') || code.contains('rem') || code.contains('em') ||
+        code.contains('#') || code.contains('rgb') || code.contains('yellow') ||
+        code.contains('red') || code.contains('blue') || code.contains('green')) {
+      analysis['hasValue'] = true;
+    }
+
+    // Detect common mistakes
+    if (!analysis['hasSelector'] && !analysis['isSingleChoice']) {
+      analysis['commonMistakes'].add('missing_selector');
+    }
+    if (!analysis['hasProperty'] && !analysis['isSingleChoice']) {
+      analysis['commonMistakes'].add('missing_property');
+    }
+    if (!analysis['hasValue'] && analysis['hasProperty']) {
+      analysis['commonMistakes'].add('missing_value');
+    }
+    if (!analysis['hasBraces'] && !analysis['isSingleChoice'] && code.isNotEmpty) {
+      analysis['commonMistakes'].add('missing_braces');
+    }
+    if (!analysis['hasSemicolon'] && analysis['hasProperty'] && !analysis['isSingleChoice']) {
+      analysis['commonMistakes'].add('missing_semicolon');
+    }
+
+    return analysis;
+  }
+
   String _buildErrorLocationHint({
     required bool passed,
     required int failedCount,
     required List<ExerciseTestCase> testCases,
+    required Map<String, dynamic> codeAnalysis,
+    required String userCode,
   }) {
     if (passed) {
-      return '所有公开用例已通过。如果仍有隐藏用例失败，可能是边界条件或命名规范问题。';
+      return '✅ 所有公开用例已通过！\n\n'
+          '如果仍有隐藏用例失败，可能是：\n'
+          '• 边界条件处理（如空值、特殊字符）\n'
+          '• 命名规范（语义化类名、BEM命名）\n'
+          '• 浏览器兼容性（前缀、属性支持）\n'
+          '• 响应式适配（不同屏幕尺寸）';
     }
 
-    if (isSingleChoice) {
-      return '请重新审题，关注题干中的关键词和约束条件。选项中的干扰项通常会在某个细节上不符合要求。';
+    if (codeAnalysis['isSingleChoice']) {
+      return '🔍 请重新审题\n\n'
+          '重点关注：\n'
+          '• 题干中的"必须"、"不能"、"应该"等关键词\n'
+          '• 选项中的细节差异（属性值、顺序、大小写）\n'
+          '• 干扰项通常在某个细节上不符合要求\n\n'
+          '排除法：先排除明显错误的选项';
     }
 
-    final buffer = StringBuffer('检测到 $failedCount 个测试用例未通过。');
+    if (codeAnalysis['isEmpty']) {
+      return '📝 代码编辑区为空\n\n'
+          '请先编写代码，然后点击"提交"按钮。\n'
+          '系统会自动检测并给出针对性提示。';
+    }
+
+    final buffer = StringBuffer();
+    buffer.writeln('🔍 错误定位分析');
+    buffer.writeln('');
+
+    if (codeAnalysis['commonMistakes'].contains('missing_selector')) {
+      buffer.writeln('❌ 缺少CSS选择器');
+      buffer.writeln('   → 请添加类选择器(.class)、ID选择器(#id)或标签选择器');
+      buffer.writeln('');
+    }
+
+    if (codeAnalysis['commonMistakes'].contains('missing_property')) {
+      buffer.writeln('❌ 缺少CSS属性');
+      buffer.writeln('   → 请添加background-color、color、margin等属性');
+      buffer.writeln('');
+    }
+
+    if (codeAnalysis['commonMistakes'].contains('missing_value')) {
+      buffer.writeln('❌ 缺少属性值');
+      buffer.writeln('   → 请为CSS属性设置具体值（如 yellow、#fff、10px）');
+      buffer.writeln('');
+    }
+
+    if (codeAnalysis['commonMistakes'].contains('missing_braces')) {
+      buffer.writeln('❌ 缺少花括号 {}');
+      buffer.writeln('   → CSS选择器需要用花括号包裹属性声明');
+      buffer.writeln('');
+    }
+
+    if (codeAnalysis['commonMistakes'].contains('missing_semicolon')) {
+      buffer.writeln('⚠️ 缺少分号');
+      buffer.writeln('   → CSS属性值后面需要添加分号 ;');
+      buffer.writeln('');
+    }
+
+    if (codeAnalysis['commonMistakes'].isEmpty && failedCount > 0) {
+      buffer.writeln('检测到 $failedCount 个测试用例未通过。');
+      buffer.writeln('');
+      buffer.writeln('可能的问题：');
+      buffer.writeln('• 选择器与目标元素不匹配');
+      buffer.writeln('• 属性名拼写错误');
+      buffer.writeln('• 属性值不正确');
+      buffer.writeln('');
+    }
+
     if (testCases.isNotEmpty) {
-      buffer.write('请仔细对照以下测试用例的要求：');
+      buffer.writeln('📋 测试用例要求：');
       for (final tc in testCases.take(3)) {
-        buffer.write('\n• ${tc.name}');
+        buffer.writeln('• ${tc.name}');
       }
       if (testCases.length > 3) {
-        buffer.write('\n• ...等');
+        buffer.writeln('• ...等共 ${testCases.length} 个用例');
       }
     }
+
     return buffer.toString();
   }
 
   String _buildCorrectionHint({
     required bool passed,
     required bool isSingleChoice,
+    required Map<String, dynamic> codeAnalysis,
+    required String userCode,
   }) {
     if (passed) {
-      return '已通过公开用例。可以检查：CSS 命名是否语义化、标签嵌套是否合理、属性值是否完整。';
+      return '✅ 代码已通过公开用例！\n\n'
+          '可进一步优化：\n'
+          '• 命名语义化（使用有意义的类名）\n'
+          '• 代码复用（提取公共样式）\n'
+          '• 响应式适配（媒体查询）\n'
+          '• 浏览器兼容性（前缀处理）';
     }
 
-    if (isSingleChoice) {
-      return '建议分步排除：先排除明显错误的选项，再对比剩余选项的差异点。关注题干中提到的具体要求。';
+    if (codeAnalysis['isSingleChoice']) {
+      return '💡 单选题解题技巧\n\n'
+          '1. 仔细阅读题干，圈出关键词\n'
+          '2. 逐一对比每个选项\n'
+          '3. 排除明显错误的选项\n'
+          '4. 关注选项中的细节差异\n'
+          '5. 选择最符合题意的答案\n\n'
+          '常见陷阱：\n'
+          '• 选项A和B可能只差一个单词\n'
+          '• 注意"不"、"不能"等否定词';
     }
 
-    return '建议按以下顺序排查：\n'
-        '1. 检查 HTML 标签是否完整闭合\n'
-        '2. 确认选择器与目标元素是否匹配\n'
-        '3. 验证 CSS 属性名和值是否正确\n'
-        '4. 检查元素的层级关系是否正确';
+    if (codeAnalysis['isEmpty']) {
+      return '📝 开始编写代码\n\n'
+          '对于CSS练习，建议：\n'
+          '1. 先写出选择器（如 .highlight）\n'
+          '2. 添加花括号 {}\n'
+          '3. 在花括号内写属性和值\n\n'
+          '示例结构：\n'
+          '.selector {\n'
+          '    property: value;\n'
+          '}';
+    }
+
+    final buffer = StringBuffer();
+    buffer.writeln('🔧 修正建议');
+    buffer.writeln('');
+
+    if (codeAnalysis['selectorType'] == 'none') {
+      buffer.writeln('选择器问题：');
+      buffer.writeln('• 类选择器：.className { }');
+      buffer.writeln('• ID选择器：#idName { }');
+      buffer.writeln('• 标签选择器：div { }');
+      buffer.writeln('');
+    }
+
+    if (codeAnalysis['hasSelector'] && !codeAnalysis['hasProperty']) {
+      buffer.writeln('属性问题：');
+      buffer.writeln('• 背景色：background-color: yellow;');
+      buffer.writeln('• 文字颜色：color: red;');
+      buffer.writeln('• 边距：margin: 10px;');
+      buffer.writeln('');
+    }
+
+    if (codeAnalysis['hasProperty'] && !codeAnalysis['hasValue']) {
+      buffer.writeln('属性值问题：');
+      buffer.writeln('• 颜色值：#fff, rgb(255,255,255), yellow');
+      buffer.writeln('• 尺寸值：10px, 1rem, 50%');
+      buffer.writeln('');
+    }
+
+    buffer.writeln('代码检查清单：');
+    buffer.writeln('□ 选择器是否正确匹配目标元素？');
+    buffer.writeln('□ 属性名是否拼写正确？');
+    buffer.writeln('□ 属性值是否符合要求？');
+    buffer.writeln('□ 是否添加了分号？');
+    buffer.writeln('□ 花括号是否配对？');
+
+    return buffer.toString();
   }
 
   String _buildOperationSuggestion({
     required bool passed,
     required bool isSingleChoice,
     required int failedCount,
+    required Map<String, dynamic> codeAnalysis,
+    required String userCode,
   }) {
     if (passed) {
-      return '可以尝试的优化步骤：\n'
+      return '🎉 恭喜！代码已通过\n\n'
+          '后续优化建议：\n'
           '1. 检查代码可读性，变量和类名是否有意义\n'
           '2. 确认没有冗余代码或重复样式\n'
-          '3. 提交后观察是否有隐藏用例通过';
+          '3. 考虑响应式适配（媒体查询）\n'
+          '4. 检查浏览器兼容性（前缀）\n'
+          '5. 提交后观察是否有隐藏用例通过';
     }
 
-    if (isSingleChoice) {
-      return '操作建议：\n'
-          '1. 重新阅读题目要求，画出关键词\n'
-          '2. 逐一排除每个选项，记录排除理由\n'
-          '3. 如果仍有疑问，先选择最确定的答案并提交查看反馈';
+    if (codeAnalysis['isSingleChoice']) {
+      return '📋 单选题操作步骤\n\n'
+          '1. 仔细阅读题目，理解要求\n'
+          '2. 在纸上画出关键词\n'
+          '3. 逐一对比每个选项\n'
+          '4. 排除明显错误的选项\n'
+          '5. 选择最符合题意的答案\n'
+          '6. 点击"提交"查看反馈\n\n'
+          '提示：不确定时先提交，系统会给出反馈';
     }
 
-    return '操作建议：\n'
-        '1. 对照未通过的 $failedCount 个用例，逐个检查对应代码\n'
-        '2. 从最外层结构开始，逐层深入检查\n'
-        '3. 修改后重新提交，观察哪些用例状态变化\n'
-        '4. 如果卡住，尝试在浏览器中实时预览页面效果';
+    if (codeAnalysis['isEmpty']) {
+      return '🚀 开始编写代码\n\n'
+          '步骤：\n'
+          '1. 在代码编辑器中输入CSS代码\n'
+          '2. 先写选择器（如 .highlight）\n'
+          '3. 添加花括号 {}\n'
+          '4. 在花括号内写属性和值\n'
+          '5. 点击"提交"查看结果\n\n'
+          '提示：可以参考题目中的示例代码';
+    }
+
+    final buffer = StringBuffer();
+    buffer.writeln('📝 操作建议');
+    buffer.writeln('');
+
+    if (failedCount > 0) {
+      buffer.writeln('当前状态：$failedCount 个测试用例未通过');
+      buffer.writeln('');
+    }
+
+    buffer.writeln('执行步骤：');
+    buffer.writeln('1. 对照测试用例要求，逐个检查代码');
+    buffer.writeln('2. 从选择器开始，确保匹配目标元素');
+    buffer.writeln('3. 检查属性名是否正确（注意拼写）');
+    buffer.writeln('4. 验证属性值是否符合要求');
+    buffer.writeln('5. 修改后点击"提交"查看结果');
+    buffer.writeln('');
+
+    if (codeAnalysis['codeLength'] < 20) {
+      buffer.writeln('💡 建议：代码较短，可能需要补充更多内容');
+    } else if (codeAnalysis['codeLength'] > 200) {
+      buffer.writeln('💡 建议：代码较长，检查是否有冗余部分');
+    }
+
+    buffer.writeln('');
+    buffer.writeln('调试技巧：');
+    buffer.writeln('• 使用浏览器开发者工具检查元素');
+    buffer.writeln('• 在控制台查看CSS属性是否生效');
+    buffer.writeln('• 尝试简化代码，逐步添加功能');
+
+    return buffer.toString();
   }
 
   Future<void> openAiHelpSheet() async {
@@ -1288,10 +1536,7 @@ class ExerciseController extends BaseController {
           return _generateFallbackHint('hint');
         }
       }
-      return _buildLearnerSafeAiHelp(
-        passed: latestSubmission.value?.passedCases ==
-            latestSubmission.value?.totalCases,
-      );
+      return _generateFallbackHint('hint');
     }
   }
 
