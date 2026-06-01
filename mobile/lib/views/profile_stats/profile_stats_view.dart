@@ -669,64 +669,14 @@ class ProfileStatsController extends BaseController {
       } else if (e.response?.statusCode == 403) {
         setError(message: '当前账号暂无查看统计的权限。');
       } else {
-        _loadMockStats();
+        debugPrint('加载统计数据失败: $e');
+        setError(message: '加载统计数据失败，请重试。');
       }
-    } catch (_) {
-      _loadMockStats();
+    } catch (e) {
+      debugPrint('加载统计数据失败: $e');
+      setError(message: '加载统计数据失败，请重试。');
     }
   }
-
-  void _loadMockStats() {
-    debugPrint('Using mock stats data');
-    stats.value = const app_models.Stats(
-      studyTime: 2850,
-      coursesCompleted: 5,
-      challengesWon: 12,
-      currentStreak: 12,
-      totalXp: 2850,
-      mastery: 0.71,
-    );
-    leaderboardData.assignAll([
-      const app_models.LeaderboardEntry(
-        userId: 'mock-user-005',
-        nickname: '学霸张',
-        level: 12,
-        xp: 5200,
-        rank: 1,
-      ),
-      const app_models.LeaderboardEntry(
-        userId: 'mock-user-006',
-        nickname: '代码侠',
-        level: 10,
-        xp: 4800,
-        rank: 2,
-      ),
-      const app_models.LeaderboardEntry(
-        userId: 'mock-user-001',
-        nickname: '张同学',
-        level: 8,
-        xp: 2850,
-        rank: 3,
-      ),
-      const app_models.LeaderboardEntry(
-        userId: 'mock-user-003',
-        nickname: '王同学',
-        level: 8,
-        xp: 2700,
-        rank: 4,
-      ),
-      const app_models.LeaderboardEntry(
-        userId: 'mock-user-002',
-        nickname: '李同学',
-        level: 5,
-        xp: 1800,
-        rank: 5,
-      ),
-    ]);
-    _generateTrendData();
-    resetState();
-  }
-
   void onTimeRangeChanged(TimeRange range) {
     if (selectedTimeRange.value == range) return;
     selectedTimeRange.value = range;

@@ -1,7 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import axios from 'axios'
 import type { AxiosInstance } from 'axios'
-import { resolveMockApiResponse } from './mock'
 
 const api: AxiosInstance = (axios as any).create({
   baseURL: '/api/v1',
@@ -29,20 +28,7 @@ const api: AxiosInstance = (axios as any).create({
     return response.data
   },
   (error: any) => {
-    const errorMessage = typeof error?.message === 'string' ? error.message : ''
     const status = error?.response?.status
-    const shouldUseMock =
-      error?.code === 'ERR_NETWORK' ||
-      errorMessage.includes('ERR_CONNECTION_REFUSED') ||
-      (status >= 500 && status <= 599) ||
-      status === 0
-
-    if (shouldUseMock) {
-      const mockResponse = resolveMockApiResponse(error?.config ?? {})
-      if (mockResponse) {
-        return Promise.resolve(mockResponse)
-      }
-    }
 
     if (status === 401) {
       localStorage.removeItem('token')
@@ -53,6 +39,7 @@ const api: AxiosInstance = (axios as any).create({
 )
 
 export default api
+
 
 export { courseApi } from './courses'
 export { exerciseApi } from './exercises'

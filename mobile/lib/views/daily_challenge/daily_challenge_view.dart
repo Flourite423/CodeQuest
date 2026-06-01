@@ -124,28 +124,15 @@ class DailyChallengeController extends BaseController {
           e.type == dio.DioExceptionType.receiveTimeout) {
         setError(message: '加载每日挑战超时，请重试。');
       } else {
-        _loadMockDailyChallenge();
+        debugPrint('加载每日挑战失败: $e');
+        setError(message: '加载每日挑战失败，请重试。');
       }
     } catch (e) {
-      _loadMockDailyChallenge();
+      debugPrint('加载每日挑战失败: $e');
+      setError(message: '加载每日挑战失败，请重试。');
     }
   }
 
-  void _loadMockDailyChallenge() {
-    final now = DateTime.now();
-    dailyChallenge.value = DailyChallenge(
-      id: 'mock-daily-001',
-      title: '每日CSS挑战：Flexbox布局',
-      description: '使用 Flexbox 实现一个三栏布局：左侧固定宽度200px，右侧固定宽度150px，中间部分自适应填充剩余空间。要求使用 flex 属性实现。',
-      timeLimit: 300,
-      isAttempted: false,
-      isExpired: false,
-    );
-    status.value = DailyChallengeStatus.notAttempted;
-    _nextResetTime = DateTime(now.year, now.month, now.day + 1);
-    _startCountdown();
-    resetState();
-  }
 
   void _startCountdown() {
     _countdownTimer?.cancel();

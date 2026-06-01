@@ -556,9 +556,6 @@ class ChapterController extends BaseController {
 
     if (chapterId.value.isEmpty) {
       setError(message: '章节ID缺失。');
-    } else if (courseId.value.isEmpty) {
-      // 没有 courseId 时直接加载 mock 数据
-      _loadMockChapter();
     } else {
       loadChapter();
     }
@@ -619,23 +616,9 @@ class ChapterController extends BaseController {
 
       pageState.value = PageState.initial;
     } catch (e) {
-      _loadMockChapter();
+      debugPrint('Failed to load chapter: $e');
+      setError(message: '加载章节失败，请重试。');
     }
-  }
-
-  void _loadMockChapter() {
-    final mockChapter = Chapter(
-      id: chapterId.value.isNotEmpty ? chapterId.value : 'mock-chapter-001',
-      title: 'CSS 选择器基础',
-      content: '# CSS 选择器基础\n\n## 类选择器\n\n类选择器用于选择具有特定 class 属性的 HTML 元素。\n\n```css\n/* 类选择器 */\n.highlight {\n    background-color: yellow;\n    padding: 10px;\n}\n\n/* 多个类选择器 */\n.container .highlight {\n    margin: 5px;\n}\n```\n\n## ID 选择器\n\nID 选择器用于选择具有特定 id 属性的 HTML 元素。\n\n```css\n/* ID 选择器 */\n#header {\n    background-color: #333;\n    color: white;\n}\n\n/* 组合选择器 */\n#header h1 {\n    font-size: 24px;\n}\n```\n\n## 伪类选择器\n\n伪类选择器用于选择元素的特定状态。\n\n```css\n/* 链接状态 */\na:hover {\n    color: red;\n}\n\n/* 输入框状态 */\ninput:focus {\n    border: 2px solid blue;\n}\n```',
-      sampleCode: '/* 基础样式 */\n.highlight {\n    background-color: #fff3cd;\n    border-left: 4px solid #ffc107;\n    padding: 15px;\n    margin: 10px 0;\n}\n\n/* 容器样式 */\n.container {\n    max-width: 1200px;\n    margin: 0 auto;\n    padding: 0 20px;\n}\n\n/* 按钮样式 */\n.btn-primary {\n    background-color: #007bff;\n    color: white;\n    padding: 10px 20px;\n    border: none;\n    border-radius: 4px;\n}\n\n.btn-primary:hover {\n    background-color: #0056b3;\n}',
-      summary: '本章介绍了 CSS 选择器的基础知识，包括类选择器、ID 选择器和伪类选择器的使用方法。',
-      isCompleted: false,
-      isLocked: false,
-    );
-    chapter.value = mockChapter;
-    isCompleted.value = false;
-    pageState.value = PageState.initial;
   }
 
   void onPrimaryCTA() async {
@@ -758,23 +741,7 @@ class ChapterController extends BaseController {
           .toList();
       exercises.assignAll(items);
     } catch (e) {
-      debugPrint('ChapterController: Failed to load exercises: $e, using mock data');
-      exercises.assignAll([
-        Exercise(
-          id: 'mock-exercise-001',
-          type: 'coding',
-          title: '使用类选择器',
-          description: 'CSS 类选择器练习',
-          testCases: const [],
-        ),
-        Exercise(
-          id: 'mock-exercise-002',
-          type: 'single_choice',
-          title: 'HTML 基础概念',
-          description: '单选题练习',
-          testCases: const [],
-        ),
-      ]);
+      debugPrint('Failed to load exercises: $e');
     }
   }
 }

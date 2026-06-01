@@ -829,72 +829,13 @@ class ProfileRewardsController extends BaseController {
       } else if (e.response?.statusCode == 403) {
         setError(message: '当前账号暂无查看奖励的权限。');
       } else {
-        _loadMockRewards();
+        debugPrint('加载奖励数据失败: $e');
+        setError(message: '加载奖励数据失败，请重试。');
       }
-    } catch (_) {
-      _loadMockRewards();
+    } catch (e) {
+      debugPrint('加载奖励数据失败: $e');
+      setError(message: '加载奖励数据失败，请重试。');
     }
-  }
-
-  void _loadMockRewards() {
-    debugPrint('Using mock rewards data');
-    user.value = const app_models.User(
-      id: 'mock-user-001',
-      email: 'admin@example.com',
-      nickname: '张同学',
-      level: 8,
-      xp: 2850,
-      streak: 12,
-      dailyGoal: 30,
-      themeMode: 'system',
-    );
-    badges.assignAll([
-      app_models.Badge(
-        id: 'mock-badge-001',
-        name: '初学者',
-        description: '完成第一个练习',
-        icon: null,
-        earnedAt: DateTime.now().subtract(const Duration(days: 30)),
-      ),
-      app_models.Badge(
-        id: 'mock-badge-002',
-        name: '挑战者',
-        description: '完成第一个挑战',
-        icon: null,
-        earnedAt: DateTime.now().subtract(const Duration(days: 20)),
-      ),
-      app_models.Badge(
-        id: 'mock-badge-003',
-        name: '连续学习者',
-        description: '连续学习7天',
-        icon: null,
-        earnedAt: DateTime.now().subtract(const Duration(days: 10)),
-      ),
-    ]);
-    rewards.assignAll([
-      app_models.Reward(
-        id: 'mock-reward-001',
-        type: 'course_completion',
-        amount: 75,
-        description: '完成 CSS 基础入门',
-        timestamp: DateTime(2026, 5, 20, 10, 0, 0),
-      ),
-      app_models.Reward(
-        id: 'mock-reward-002',
-        type: 'challenge_completion',
-        amount: 50,
-        description: '完成 HTML 新手挑战',
-        timestamp: DateTime(2026, 5, 22, 14, 0, 0),
-      ),
-      app_models.Reward(
-        id: 'mock-reward-003',
-        type: 'streak_bonus',
-        amount: 100,
-        description: '连续学习7天奖励',
-        timestamp: DateTime(2026, 5, 25, 9, 0, 0),
-      ),
-    ]);
-    resetState();
   }
 
   int calculateNextLevelXp(int level) {

@@ -892,109 +892,10 @@ class ExerciseController extends BaseController {
       }
 
       resetState();
-    } on dio.DioException catch (e) {
-      if (e.response?.statusCode == 401) {
-        await setAuthExpired(message: '登录状态已失效，请重新登录。');
-      } else {
-        _loadMockExercise();
-      }
-    } catch (_) {
-      _loadMockExercise();
+    } catch (e) {
+      debugPrint('Failed to load exercise: $e');
+      setError(message: '加载练习失败，请重试。');
     }
-  }
-
-  void _loadMockExercise() {
-    final normalizedId = exerciseId.value.toLowerCase();
-    final isSingleChoiceMock = normalizedId.contains('single') ||
-        normalizedId.contains('choice') ||
-        exerciseId.value == 'mock-exercise-002';
-
-    if (isSingleChoiceMock) {
-      _loadMockSingleChoiceExercise();
-      return;
-    }
-
-    _loadMockCodingExercise();
-  }
-
-  void _loadMockCodingExercise() {
-    final mockExercise = Exercise(
-      id: exerciseId.value.isNotEmpty ? exerciseId.value : 'mock-exercise-001',
-      type: 'coding',
-      title: 'CSS 类选择器练习',
-      description: '请使用 CSS 类选择器将 class 为 "highlight" 的元素背景色设置为黄色。\n\n要求：\n1. 使用类选择器（.highlight）\n2. 设置背景色为黄色（background-color: yellow）\n3. 保持其他样式不变',
-      codeTemplate: '.highlight {\n    /* 请在此编写你的 CSS 代码 */\n}',
-      testCases: const [
-        ExerciseTestCase(
-          id: 'tc-001',
-          type: 'visible',
-          name: '示例 1：基本类选择器',
-          weight: 50,
-          inputPayload: {
-            'selector': '.highlight',
-            'property': 'background-color',
-            'value': 'yellow',
-          },
-        ),
-        ExerciseTestCase(
-          id: 'tc-002',
-          type: 'visible',
-          name: '示例 2：多元素选择',
-          weight: 50,
-          inputPayload: {
-            'selector': '.highlight',
-            'elements': ['div', 'span', 'p'],
-          },
-        ),
-      ],
-    );
-
-    exercise.value = mockExercise;
-    choiceOptions.assignAll(_buildChoiceOptions(mockExercise));
-    selectedChoiceKey.value = '';
-    codeController.text = mockExercise.codeTemplate ?? '';
-    draftRestored.value = false;
-    resetState();
-  }
-
-  void _loadMockSingleChoiceExercise() {
-    final mockExercise = Exercise(
-      id: exerciseId.value.isNotEmpty ? exerciseId.value : 'mock-exercise-002',
-      type: 'single_choice',
-      title: 'HTML 基础概念',
-      description: '以下哪个标签用于定义 HTML 文档的根元素？',
-      options: const [
-        ExerciseChoiceOption(key: 'A', text: '<html>'),
-        ExerciseChoiceOption(key: 'B', text: '<body>'),
-        ExerciseChoiceOption(key: 'C', text: '<head>'),
-        ExerciseChoiceOption(key: 'D', text: '<div>'),
-      ],
-    );
-
-    exercise.value = mockExercise;
-    choiceOptions.assignAll(_buildChoiceOptions(mockExercise));
-    selectedChoiceKey.value = '';
-    codeController.clear();
-    draftRestored.value = false;
-    resetState();
-  }
-
-  Future<void> _mockSubmitResult() async {
-    final isCorrect = isSingleChoice
-        ? selectedChoiceKey.value == 'A'
-        : currentCode.contains('.highlight') && currentCode.contains('yellow');
-    final result = SubmissionResult(
-      score: isCorrect ? 100 : 0,
-      passedCases: isCorrect ? 2 : 0,
-      totalCases: 2,
-      feedback: isCorrect
-          ? '状态：passed。Mock 评测已通过，当前答案满足兜底规则。'
-          : '状态：failed。单选题正确答案为 A；编程题需同时包含 .highlight 和 yellow。',
-      aiHelp: _buildLearnerSafeAiHelp(passed: isCorrect),
-    );
-
-    latestSubmission.value = result;
-    await _openSubmissionResultSheet(result);
   }
 
   List<ExerciseChoiceOption> _buildChoiceOptions(Exercise item) {
@@ -1118,46 +1019,21 @@ class ExerciseController extends BaseController {
       final result = SubmissionResult.fromContracts(submission: data);
       latestSubmission.value = result;
       await _openSubmissionResultSheet(result);
-    } on dio.DioException catch (e) {
-      if (e.response?.statusCode == 401) {
-        await setAuthExpired(message: '登录状态已失效，请重新登录。');
-      } else {
-        await _mockSubmitResult();
-      }
-    } catch (_) {
-      await _mockSubmitResult();
+    } catch (e) {
+      debugPrint('Failed to submit exercise: $e');
+      Get.snackbar(
+        '提交失败',
+        '提交练习失败，请重试。',
+        snackPosition: SnackPosition.BOTTOM,
+        margin: const EdgeInsets.all(16),
+      );
     } finally {
       isSubmitting.value = false;
     }
   }
-
-  AIHelp _buildLearnerSafeAiHelp({required bool passed}) {
-    if (passed) {
-      return const AIHelp(
-        requestType: 'hint',
-        status: 'succeeded',
-        content: '你已经通过公开用例了。继续前，快速复查命名是否清晰、结构是否语义化。',
-      );
-    }
-
-    if (isSingleChoice) {
-      return const AIHelp(
-        requestType: 'hint',
-        status: 'succeeded',
-        content: '回到题干，先找"面向 learner 的正确做法"这一类描述，再排除会泄露答案或破坏结构的选项。',
-      );
-    }
-
-    return const AIHelp(
-      requestType: 'error_explanation',
-      status: 'succeeded',
-      content: '先别重写全部代码。先检查最外层结构是否存在，再确认公开用例里提到的选择器是否真的出现在代码中。',
-    );
-  }
-
-  /// Generate context-aware fallback hints when AI service is unavailable.
+  /// Generate context-aware default hints when AI service is unavailable.
   /// Produces safe, directional hints that never reveal answers.
-  AIHelp _generateFallbackHint(String hintLevel) {
+  AIHelp _generateDefaultHint(String hintLevel) {
     final submission = latestSubmission.value;
     final passed = submission != null &&
         submission.passedCases == submission.totalCases;
@@ -1565,15 +1441,15 @@ class ExerciseController extends BaseController {
 
       return AIHelp.fromContract(data);
     } on TimeoutException {
-      return _generateFallbackHint('hint');
+      return _generateDefaultHint('hint');
     } catch (e) {
       if (e is dio.DioException) {
         final statusCode = e.response?.statusCode;
         if (statusCode != null && statusCode >= 500) {
-          return _generateFallbackHint('hint');
+          return _generateDefaultHint('hint');
         }
       }
-      return _generateFallbackHint('hint');
+      return _generateDefaultHint('hint');
     }
   }
 

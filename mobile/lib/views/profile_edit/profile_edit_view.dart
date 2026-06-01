@@ -493,33 +493,15 @@ class ProfileEditController extends BaseController {
       } else if (e.response?.statusCode == 403) {
         setError(message: '当前账号暂无编辑权限。');
       } else {
-        _loadMockProfile();
+        debugPrint('加载个人资料失败: $e');
+        setError(message: '加载个人资料失败，请重试。');
       }
-    } catch (_) {
-      _loadMockProfile();
-    }
+    } catch (e) {
+      debugPrint('加载个人资料失败: $e');
+      setError(message: '加载个人资料失败，请重试。');
+     }
   }
 
-  void _loadMockProfile() {
-    debugPrint('Using mock profile data');
-    user.value = const app_models.User(
-      id: 'mock-user-001',
-      email: 'admin@example.com',
-      nickname: '张同学',
-      bio: '热爱编程的学习者',
-      level: 8,
-      xp: 2850,
-      streak: 12,
-      dailyGoal: 30,
-      themeMode: 'system',
-    );
-    avatarUrl.value = null;
-    nicknameController.text = '张同学';
-    bioController.text = '热爱编程的学习者';
-    dailyGoal.value = 30;
-    themeMode.value = 'system';
-    resetState();
-  }
 
   void validateNickname(String value) {
     if (value.trim().isEmpty) {

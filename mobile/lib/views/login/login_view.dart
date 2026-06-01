@@ -231,25 +231,11 @@ class LoginController extends BaseController {
         }
       }
     } on dio.DioException catch (e) {
-      // Mock login fallback: use mock token when backend is unavailable
       debugPrint('Login failed with DioException: $e');
-      debugPrint('Using mock login fallback...');
-      
-      const mockToken = 'mock-token-for-demo-${1716900000}';
-      await _storage.write(StorageService.authTokenKey, mockToken);
-      await _storage.write('first_launch', false);
-      debugPrint('Mock login successful, navigating to home');
-      Get.offAllNamed('/home');
+      setError(message: '登录失败，请检查网络连接后重试。');
     } catch (e) {
-      // Mock login fallback for any other errors
       debugPrint('Login failed with error: $e');
-      debugPrint('Using mock login fallback...');
-      
-      const mockToken = 'mock-token-for-demo-${1716900000}';
-      await _storage.write(StorageService.authTokenKey, mockToken);
-      await _storage.write('first_launch', false);
-      debugPrint('Mock login successful, navigating to home');
-      Get.offAllNamed('/home');
+      setError(message: '登录失败，请检查网络连接后重试。');
     } finally {
       isLoading.value = false;
     }
