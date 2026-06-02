@@ -10,6 +10,7 @@ import {
 } from "@element-plus/icons-vue";
 import type { DashboardStats } from "@/types";
 import { statsApi } from "@/api";
+import type { ECharts } from "echarts";
 import { init as echartsInit, graphic as echartsGraphic } from "echarts";
 
 const router = useRouter();
@@ -24,8 +25,8 @@ const stats = ref<{ title: string; value: string; icon: any; color: string }[]>(
 const trendChartRef = ref<HTMLDivElement | null>(null);
 const barChartRef = ref<HTMLDivElement | null>(null);
 
-let trendChart: echarts.ECharts | null = null;
-let barChart: echarts.ECharts | null = null;
+let trendChart: ECharts | null = null;
+let barChart: ECharts | null = null;
 
 const initTrendChart = (data: DashboardStats) => {
   if (!trendChartRef.value) return;
